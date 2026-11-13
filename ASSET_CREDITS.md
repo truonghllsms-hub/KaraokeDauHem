@@ -31,3 +31,4 @@ Còn thiếu: âm thanh giao diện, tiếng khách đến, tiếng thanh toán,
 - `assets/characters/motion/*.webp`: minh họa gốc tạo bằng OpenAI ImageGen từ bộ nhân vật đã duyệt, lưu WebP không mất dữ liệu, nền trong suốt. Có 120 khung bước đi (chủ quán bốn hướng, tám nhân viên giao lưu và 18 kiểu khách) cùng 78 hình biểu cảm.
 - `scripts/ui/character_motion.gd` quản lý các khung; `tools/index_character_motion.py` chỉ phân tích alpha để tìm toàn bộ nhân vật, không thay đổi điểm ảnh. Công cụ cần Pillow, NumPy và SciPy khi lập lại chỉ mục, game không cần các thư viện này.
 - Bước đi theo quãng đường di chuyển; tạm dừng cũng dừng hoạt ảnh. Các khung cùng hàng giữ chung kích thước và mốc chân. Biểu cảm gắn với kiên nhẫn, mức hài lòng, hát và nghỉ trong trạng thái mô phỏng hiện có.
+- Godot nhập atlas nhân vật với chất lượng nén 90% để giảm dung lượng tải web; các ảnh WebP gốc trong kho mã vẫn giữ nguyên.

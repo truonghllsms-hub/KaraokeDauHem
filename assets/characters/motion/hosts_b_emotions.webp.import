@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/hosts_b_emotions.webp-e6861d9a1424e4c4fc6587b
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.9
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
