@@ -8,6 +8,7 @@ const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
+const CharacterArt = preload("res://scripts/ui/character_art.gd")
 const VenueView = preload("res://scripts/ui/venue_view.gd")
 
 const KIND_COLOR: Dictionary = {"info": UI.TEXT, "good": UI.GOOD, "bad": UI.BAD, "money": UI.GOLD}
@@ -676,35 +677,36 @@ func _show_lancan() -> void:
 		var hired = sim.hosts.get_host(host_id)
 		var card: PanelContainer = UI.panel(UI.PANEL, UI.GOLD if hired != null else UI.BORDER)
 		card.custom_minimum_size = Vector2(320, 0)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var box: VBoxContainer = VBoxContainer.new()
 		box.add_theme_constant_override("separation", 2)
 		card.add_child(box)
 		var portrait: TextureRect = TextureRect.new()
-		portrait.texture = load("res://assets/sprites/%s.svg" % def["sprite"])
+		portrait.texture = CharacterArt.texture(def["sprite"])
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		portrait.custom_minimum_size = Vector2(0, 92)
+		portrait.custom_minimum_size = Vector2(0, 184)
 		box.add_child(portrait)
-		var name_label: Label = UI.label(def["name"], 15, UI.PINK, true)
+		var name_label: Label = UI.label(def["name"], 24, UI.PINK, true)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(name_label)
-		var about: Label = UI.label(def["personality"], 11, UI.MUTED)
+		var about: Label = UI.label(def["personality"], 18, UI.MUTED)
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		about.custom_minimum_size = Vector2(150, 32)
 		box.add_child(about)
-		var stats: Label = UI.label("Giao tiếp %d · Song ca %d\n%s · %s/đêm" % [def["talk"], def["duet"], sim.customers.music_name(def["music"]), Money.format(def["wage"])], 11, UI.TEXT)
+		var stats: Label = UI.label("Giao tiếp %d · Song ca %d\n%s · %s/đêm" % [def["talk"], def["duet"], sim.customers.music_name(def["music"]), Money.format(def["wage"])], 18, UI.TEXT)
 		stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(stats)
 		if hired != null:
-			var working: Label = UI.label("ĐANG LÀM · tip %s" % Money.format(hired["tips_total"]), 11, UI.GOLD, true)
+			var working: Label = UI.label("ĐANG LÀM · tip %s" % Money.format(hired["tips_total"]), 18, UI.GOLD, true)
 			working.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			working.custom_minimum_size = Vector2(0, 30)
 			working.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			box.add_child(working)
 		else:
-			var hire: Button = UI.button("Tuyển", 13, UI.PINK)
-			hire.custom_minimum_size = Vector2(0, 30)
+			var hire: Button = UI.button("Tuyển", 22, UI.PINK)
+			hire.custom_minimum_size = Vector2(0, 48)
 			hire.disabled = slots_left <= 0 or not sim.economy.can_afford(balance["lancan_hire_cost"])
 			hire.tooltip_text = "Hết vị trí." if slots_left <= 0 else "Phí tuyển %s." % Money.format(balance["lancan_hire_cost"])
 			hire.pressed.connect(func() -> void:

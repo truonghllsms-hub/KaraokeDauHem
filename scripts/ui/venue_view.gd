@@ -11,6 +11,7 @@ signal inspect_requested(room_id: String)
 const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
+const CharacterArt = preload("res://scripts/ui/character_art.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
@@ -58,7 +59,6 @@ var selected_host: String = ""
 
 var _actors: Node2D
 var _owner: Node2D
-var _owner_broom: Sprite2D
 var _guard: Node2D
 var _group_actors: Dictionary = {}
 var _host_actors: Dictionary = {}
@@ -109,8 +109,10 @@ func setup(p_sim) -> void:
 	_guard = Node2D.new()
 	_guard.position = GUARD_POS
 	var seated: Sprite2D = Sprite2D.new()
-	seated.texture = load("res://assets/topdown/guard_seated.svg")
-	seated.position.y = -35
+	seated.texture = CharacterArt.texture("guard")
+	var guard_scale: float = CharacterArt.height("guard") / seated.texture.get_height()
+	seated.scale = Vector2(guard_scale, guard_scale)
+	seated.offset.y = -seated.texture.get_height() * 0.5
 	_guard.add_child(seated)
 	_guard.visible = false
 	_actors.add_child(_guard)
@@ -121,12 +123,6 @@ func setup(p_sim) -> void:
 	_owner.speed = 330.0
 	_owner.set_clickable(false)
 	_actors.add_child(_owner)
-	_owner_broom = Sprite2D.new()
-	_owner_broom.texture = load("res://assets/sprites/broom.svg")
-	_owner_broom.scale = Vector2(0.5, 0.5)
-	_owner_broom.position = Vector2(24, -18)
-	_owner_broom.visible = false
-	_owner.add_child(_owner_broom)
 
 	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 1515, 830, 48), true)
 	_lbl_toast.clip_text = true
@@ -247,11 +243,12 @@ func _active_source(index: int) -> Rect2:
 
 func _seat_position(room_id: String) -> Vector2:
 	var rect: Rect2 = _rect_of(room_id)
-	return rect.position + Vector2(100 if rect.position.x < CORRIDOR_X else 310, 340)
+	return rect.position + Vector2(145 if rect.position.x < CORRIDOR_X else 220, 370)
 
 
 func _host_position(room_id: String) -> Vector2:
-	return _rect_of(room_id).position + Vector2(250, 345)
+	var rect: Rect2 = _rect_of(room_id)
+	return rect.position + Vector2(246 if rect.position.x < CORRIDOR_X else 345, 370)
 
 
 func _work_position(room_id: String) -> Vector2:
@@ -398,7 +395,7 @@ func _update_owner() -> void:
 		if sim.rooms.get_room(_cleaning_room)["state"] == "CLEANING":
 			return
 		_cleaning_room = ""
-		_owner_broom.visible = false
+		_owner.pose = "standing"
 		_owner.singing = false
 
 	if _owner.is_moving():
@@ -422,7 +419,7 @@ func _update_owner() -> void:
 			var reason: String = sim.clean_room(task["room_id"])
 			if reason == "":
 				_cleaning_room = task["room_id"]
-				_owner_broom.visible = true
+				_owner.pose = "cleaning"
 				_owner.singing = true
 				_owner.set_bubble("Đang dọn...")
 			else:
@@ -533,6 +530,7 @@ func _sync_groups() -> void:
 		actor.set_clickable(waiting)
 		actor.set_highlight(group_id == selected_group)
 		actor.singing = not waiting and not actor.is_moving()
+		actor.pose = "standing" if waiting else "seated"
 		if waiting:
 			var left: int = maxi(0, group["patience"] - group["wait_minutes"])
 			actor.patience_ratio = float(left) / float(maxi(1, group["patience"]))
@@ -559,6 +557,7 @@ func _sync_groups() -> void:
 		actor.set_clickable(false)
 		actor.set_highlight(false)
 		actor.singing = false
+		actor.pose = "standing"
 		var points: Array = _route(actor.position, Vector2(STREET.x, 540))
 		points.append(STREET)
 		actor.walk_to(points)
@@ -590,6 +589,7 @@ func _sync_hosts() -> void:
 		actor.set_clickable(host["state"] != "SERVING")
 		actor.set_highlight(host_id == selected_host)
 		actor.singing = host["state"] == "SERVING" and not actor.is_moving()
+		actor.pose = "seated"
 		if host_id == selected_host:
 			actor.set_bubble("ĐANG CHỌN", Color(1.0, 0.96, 0.8), UI.GOLD)
 		elif host["state"] == "RESTING":

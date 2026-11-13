@@ -33,6 +33,7 @@ python3 -m http.server 8060 --directory build/web
 - Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
+- Nhân vật minh họa theo mẫu A: chủ quán nhìn bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa, khách và tám nhân viên giao lưu có tư thế đứng/ngồi hát. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi; trang phục nhân viên giao lưu theo bảng đã duyệt.
 
 Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 
@@ -65,7 +66,7 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 ## Hạn chế hiện tại
 
 - Chưa có: lưu/tải, âm thanh, nhân viên phục vụ, giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm, phá sản.
-- Nhân vật vẫn dùng SVG ban đầu; nội thất mới là minh họa nhìn từ trên xuống. Hoạt ảnh mới là nhún nhảy và lật hướng.
+- Nhân vật có ảnh minh họa đứng/ngồi và chủ quán có bốn hướng; chuyển động kết hợp nhún/nghiêng nhẹ, chưa có hoạt ảnh đi bộ vẽ từng khung hình. Hai ảnh phục vụ đã chuẩn bị, chờ hệ thống nhân viên.
 - Cân bằng mới ở mức sơ bộ.
 
 ## Cấu trúc
@@ -76,6 +77,7 @@ scripts/core/    Trạng thái, đồng hồ, bộ điều phối mô phỏng
 scripts/systems/ Phòng, khách, kinh tế, Lan can, phục vụ (gọi món/sự cố)
 scripts/ui/      Màn mặt bằng, nhân vật, bảng điều khiển
 assets/sprites/  Hình SVG nguyên bản
+assets/characters/ Atlas nhân vật minh họa nền trong suốt
 tests/           Kiểm thử headless và kịch bản tự chơi qua giao diện
 docs/            Thiết kế, công việc, kiểm thử
 ```
