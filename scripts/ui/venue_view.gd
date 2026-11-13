@@ -531,9 +531,14 @@ func _sync_groups() -> void:
 		actor.set_highlight(group_id == selected_group)
 		actor.singing = not waiting and not actor.is_moving()
 		actor.pose = "standing" if waiting else "seated"
+		actor.mood = "neutral"
 		if waiting:
 			var left: int = maxi(0, group["patience"] - group["wait_minutes"])
 			actor.patience_ratio = float(left) / float(maxi(1, group["patience"]))
+			if actor.patience_ratio <= 0.2:
+				actor.mood = "angry"
+			elif actor.patience_ratio <= 0.5:
+				actor.mood = "impatient"
 			if group_id == selected_group:
 				actor.set_bubble("ĐANG CHỌN", Color(1.0, 0.96, 0.8), UI.GOLD)
 			elif left <= 5:
@@ -542,6 +547,7 @@ func _sync_groups() -> void:
 				actor.set_bubble("")
 		else:
 			actor.patience_ratio = -1.0
+			actor.mood = "angry" if group["satisfaction"] < 55 else "happy"
 			actor.set_bubble("Gọi Lan can!" if group["host_request"] == "PENDING" else "", Color(1.0, 0.9, 0.97), UI.PINK)
 
 	for group_id in _group_actors.keys():
@@ -550,8 +556,10 @@ func _sync_groups() -> void:
 		var actor = _group_actors[group_id]
 		_group_actors.erase(group_id)
 		if actor.place_key.begins_with("queue"):
+			actor.mood = "angry"
 			actor.set_bubble("Thôi về!", Color(1.0, 0.85, 0.85), UI.BAD)
 		else:
+			actor.mood = "happy"
 			actor.set_bubble("Cảm ơn nha!", Color(0.88, 1.0, 0.9), UI.GOOD)
 		actor.patience_ratio = -1.0
 		actor.set_clickable(false)
@@ -590,6 +598,7 @@ func _sync_hosts() -> void:
 		actor.set_highlight(host_id == selected_host)
 		actor.singing = host["state"] == "SERVING" and not actor.is_moving()
 		actor.pose = "seated"
+		actor.mood = "tired" if host["state"] == "RESTING" else ("happy" if host["state"] == "SERVING" else "neutral")
 		if host_id == selected_host:
 			actor.set_bubble("ĐANG CHỌN", Color(1.0, 0.96, 0.8), UI.GOLD)
 		elif host["state"] == "RESTING":

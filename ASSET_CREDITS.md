@@ -8,7 +8,7 @@
 
 Chưa có âm thanh hoặc nhạc bên ngoài. Hình nhân vật và đồ vật là thiết kế riêng, không lấy từ game hay nguồn nào khác.
 
-Còn thiếu: âm thanh giao diện, tiếng khách đến, tiếng thanh toán, nhạc nền, hoạt ảnh đi bộ nhiều khung hình.
+Còn thiếu: âm thanh giao diện, tiếng khách đến, tiếng thanh toán, nhạc nền.
 
 ## Giao diện nhìn từ trên xuống
 
@@ -24,4 +24,10 @@ Còn thiếu: âm thanh giao diện, tiếng khách đến, tiếng thanh toán,
 
 - `assets/characters/*.webp`: minh họa gốc tạo bằng OpenAI ImageGen cho dự án từ các bảng nhân vật đã duyệt, lưu WebP không mất dữ liệu với nền trong suốt. Gồm chủ quán, hai phục vụ, bảo vệ, tám nhân viên giao lưu trưởng thành và 18 kiểu khách.
 - Bảy atlas chứa 60 vùng ảnh: đứng, ngồi hát, chủ quán nhìn bốn hướng và dọn phòng. `scripts/ui/character_art.gd` xác định vùng cắt và tái sử dụng cùng diện mạo trong cảnh chơi và thẻ tuyển dụng.
-- Chuyển động hiện tại là đổi tư thế/hướng kết hợp nhún và nghiêng nhẹ; chưa phải hoạt ảnh đi bộ vẽ từng khung hình. Hai ảnh phục vụ được chuẩn bị cho hệ thống nhân viên sau này; không thêm cơ chế phục vụ tự động.
+- Hai ảnh phục vụ được chuẩn bị cho hệ thống nhân viên sau này; không thêm cơ chế phục vụ tự động.
+
+## Hoạt ảnh và biểu cảm
+
+- `assets/characters/motion/*.webp`: minh họa gốc tạo bằng OpenAI ImageGen từ bộ nhân vật đã duyệt, lưu WebP không mất dữ liệu, nền trong suốt. Có 120 khung bước đi (chủ quán bốn hướng, tám nhân viên giao lưu và 18 kiểu khách) cùng 78 hình biểu cảm.
+- `scripts/ui/character_motion.gd` quản lý các khung; `tools/index_character_motion.py` chỉ phân tích alpha để tìm toàn bộ nhân vật, không thay đổi điểm ảnh. Công cụ cần Pillow, NumPy và SciPy khi lập lại chỉ mục, game không cần các thư viện này.
+- Bước đi theo quãng đường di chuyển; tạm dừng cũng dừng hoạt ảnh. Các khung cùng hàng giữ chung kích thước và mốc chân. Biểu cảm gắn với kiên nhẫn, mức hài lòng, hát và nghỉ trong trạng thái mô phỏng hiện có.

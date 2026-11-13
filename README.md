@@ -33,7 +33,7 @@ python3 -m http.server 8060 --directory build/web
 - Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
-- Nhân vật minh họa theo mẫu A: chủ quán nhìn bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa, khách và tám nhân viên giao lưu có tư thế đứng/ngồi hát. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi; trang phục nhân viên giao lưu theo bảng đã duyệt.
+- Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và tám nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi; trang phục nhân viên giao lưu theo bảng đã duyệt.
 
 Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 
@@ -66,7 +66,6 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 ## Hạn chế hiện tại
 
 - Chưa có: lưu/tải, âm thanh, nhân viên phục vụ, giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm, phá sản.
-- Nhân vật có ảnh minh họa đứng/ngồi và chủ quán có bốn hướng; chuyển động kết hợp nhún/nghiêng nhẹ, chưa có hoạt ảnh đi bộ vẽ từng khung hình. Hai ảnh phục vụ đã chuẩn bị, chờ hệ thống nhân viên.
 - Cân bằng mới ở mức sơ bộ.
 
 ## Cấu trúc

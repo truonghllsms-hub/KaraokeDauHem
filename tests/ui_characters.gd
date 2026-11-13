@@ -1,6 +1,7 @@
 extends SceneTree
 ## Integration checks for the approved illustrated characters and real room flow.
 const Art = preload("res://scripts/ui/character_art.gd")
+const Motion = preload("res://scripts/ui/character_motion.gd")
 var errors: int = 0
 var game
 var out_dir: String = "user://characters"
@@ -50,12 +51,12 @@ func _run() -> void:
 	check(game.sim.assign_host("host_1", "room_01") == "", "Assign host to a genuine customer request")
 	game.venue.advance_actors(0.1)
 	var host_actor = game.venue._host_actors["host_1"]
-	check(host_actor.is_moving() and host_actor._sprites[0].texture == Art.texture("lancan_1"), "Host stands up and walks to the assigned room")
+	check(host_actor.is_moving() and host_actor._sprites[0].texture.get_meta("animation", "") == "walk", "Host stands up and walks to the assigned room")
 	for i in 80:
 		game.venue.advance_actors(0.1)
-	check(host_actor.singing and host_actor._sprites[0].texture == Art.texture("lancan_1", "seated"), "Host sits down and sings beside the guests")
+	check(host_actor.singing and host_actor._sprites[0].texture in [Art.texture("lancan_1", "seated"), Motion.expression_texture("lancan_1", "cheer")], "Host sits down and sings beside the guests")
 	var sprite: Sprite2D = host_actor._sprites[0]
-	check(is_equal_approx(sprite.texture.get_height() * sprite.scale.y, 104.0) and is_zero_approx(sprite.offset.y + sprite.texture.get_height() * 0.5), "Pose scaling preserves the foot anchor and readable room size")
+	check(absf(sprite.texture.get_height() * sprite.scale.y - 104.0) < 1.0 and is_zero_approx(sprite.offset.y + sprite.texture.get_height() * 0.5), "Pose scaling preserves the foot anchor and readable room size")
 	game._refresh()
 	await shot("01_characters_in_game")
 	game._show_lancan()
@@ -63,6 +64,23 @@ func _run() -> void:
 	var portraits: Array = game._overlay.find_children("*", "TextureRect", true, false)
 	check(portraits.size() == 8 and portraits[0].texture == Art.texture("lancan_1"), "All eight recruitment portraits match the in-game characters")
 	game._close_overlay()
+	group["satisfaction"] = 40
+	game.venue.advance_actors(0.0)
+	check(actor.mood == "angry" and actor._sprites[0].texture == Motion.expression_texture("friend_m", "angry_seated"), "Dissatisfied guests frown while seated, without changing gameplay")
+	group["satisfaction"] = 75
+	var waiting = game.sim.customers.add_group("friends", 3, 120, game.sim.clock.minute)
+	for i in 80:
+		game.venue.advance_actors(0.1)
+	waiting["wait_minutes"] = int(waiting["patience"] * 0.75)
+	game.venue.advance_actors(0.0)
+	var waiting_actor = game.venue._group_actors[waiting["id"]]
+	check(waiting_actor.mood == "impatient" and waiting_actor._sprites[0].texture == Motion.expression_texture("friend_m", "impatient"), "Waiting guests cross their arms and frown as patience falls")
+	var resting = game.sim.hosts.get_host("host_3")
+	resting["state"] = "RESTING"
+	resting["rest_end"] = game.sim.clock.minute + 10
+	game.venue.advance_actors(0.0)
+	check(game.venue._host_actors["host_3"]._sprites[0].texture == Motion.expression_texture("lancan_3", "tired"), "Resting hosts show a tired face and lowered microphone")
+	await shot("03_emotions")
 	actor.walk_to([Vector2(510, 800)])
 	actor.advance(0.1)
 	var left: float = INF
@@ -75,7 +93,17 @@ func _run() -> void:
 	var owner = game.venue._owner
 	owner.walk_to([owner.position - Vector2(0, 100)])
 	owner.advance(0.01)
-	check(owner._sprites[0].texture == Art.texture("owner", "standing", "back"), "Owner faces backwards when walking up")
+	check(owner._sprites[0].texture == Motion.walk_texture("owner", int(owner._walk_distance / 26.0), "back"), "Owner faces backwards when walking up")
+	var frames: Dictionary = {}
+	for i in 30:
+		owner.walk_to([owner.position - Vector2(0, 100)])
+		owner.advance(0.025)
+		frames[owner._sprites[0].texture] = true
+	check(frames.size() == 4, "Walking cycles through four actual leg and arm drawings")
+	var before: Texture2D = owner._sprites[0].texture
+	var before_position: Vector2 = owner.position
+	owner.advance(0.0)
+	check(owner._sprites[0].texture == before and owner.position == before_position, "Pausing freezes both movement and walk frames")
 	owner.walk_to([])
 	owner.pose = "cleaning"
 	owner.advance(0.0)
