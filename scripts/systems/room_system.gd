@@ -28,6 +28,7 @@ func setup_new_game() -> void:
 			"group_id": 0,
 			"host_id": "",
 			"request": {},
+			"dirty_since": 0,
 			"session_start": 0,
 			"session_end": 0,
 			"session_price": 0,

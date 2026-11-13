@@ -34,5 +34,12 @@ var next_request_id: int = 1
 var purchase_counter: int = 0
 var last_bill: Dictionary = {}
 
+## Nhân viên phục vụ đang làm ở quán và các phòng người chơi muốn ưu tiên.
+var staff: Array = []
+var staff_priority: Array = []
+## Khách quen đã ghi nhận.
+var regulars: Array = []
+var next_regular_id: int = 1
+
 var messages: Array = []
 var rng_seed: int = 0

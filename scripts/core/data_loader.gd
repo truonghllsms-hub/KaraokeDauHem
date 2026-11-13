@@ -75,7 +75,33 @@ const BALANCE_KEYS: Array = [
 	"goal_max",
 	"goal_unserved_max",
 	"goal_reputation_bonus",
+	"staff_hire_cost",
+	"staff_max",
+	"staff_delay_clean",
+	"staff_delay_order",
+	"staff_delay_mic",
+	"staff_travel_minutes",
+	"staff_deliver_minutes",
+	"staff_fix_minutes",
+	"staff_energy_clean",
+	"staff_energy_deliver",
+	"staff_energy_fix",
+	"staff_tired_below",
+	"staff_tired_slowdown_percent",
+	"staff_rest_below",
+	"staff_rest_minutes",
+	"staff_rest_recovery",
+	"regular_min_satisfaction",
+	"regular_max",
+	"regular_return_chance",
+	"regular_patience_bonus_percent",
+	"regular_favorite_room_bonus",
+	"regular_favorite_product_chance",
+	"regular_favorite_product_bonus",
+	"regular_keep_satisfaction",
+	"regular_lost_below",
 ]
+const STAFF_KEYS: Array = ["id", "name", "role", "speed", "wage", "starter", "about"]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
 const UPGRADE_KEYS: Array = ["id", "name", "cost", "max_level", "effect"]
 const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage"]
@@ -89,6 +115,17 @@ static func load_all() -> Dictionary:
 	var balance = _read("res://data/balance.json", errors)
 	var hosts = _read("res://data/hosts.json", errors)
 	var products = _read("res://data/products.json", errors)
+	var staff = _read("res://data/staff.json", errors)
+	var regulars = _read("res://data/regulars.json", errors)
+	if staff is Array:
+		for member in staff:
+			_require(member, STAFF_KEYS, "staff.json", errors)
+	elif staff != null:
+		errors.append("staff.json: phải là một danh sách.")
+	if regulars is Dictionary:
+		_require(regulars, ["become_chance", "names", "greetings"], "regulars.json", errors)
+	elif regulars != null:
+		errors.append("regulars.json: phải là một đối tượng.")
 	var upgrades = _read("res://data/upgrades.json", errors)
 	if products is Array:
 		for product in products:
@@ -130,7 +167,7 @@ static func load_all() -> Dictionary:
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 
-	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades}
+	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars}
 
 
 static func _read(path: String, errors: Array):
@@ -146,6 +183,10 @@ static func _read(path: String, errors: Array):
 
 
 ## JSON của Godot đọc mọi số thành float; đổi các số nguyên về int.
+static func normalize(value):
+	return _normalize(value)
+
+
 static func _normalize(value):
 	if typeof(value) == TYPE_FLOAT:
 		if value == floor(value):

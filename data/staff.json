@@ -1,0 +1,29 @@
+[
+  {
+    "id": "staff_1",
+    "name": "Tí",
+    "role": "waiter",
+    "speed": 100,
+    "wage": 300000,
+    "starter": true,
+    "about": "Nhanh nhẹn vừa phải, làm lâu năm ở quán."
+  },
+  {
+    "id": "staff_2",
+    "name": "Mận",
+    "role": "waiter",
+    "speed": 125,
+    "wage": 380000,
+    "starter": false,
+    "about": "Tay chân lẹ, bưng bê thoăn thoắt."
+  },
+  {
+    "id": "staff_3",
+    "name": "Sáu Lúa",
+    "role": "waiter",
+    "speed": 80,
+    "wage": 240000,
+    "starter": false,
+    "about": "Chậm mà chắc, lương mềm."
+  }
+]

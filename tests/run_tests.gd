@@ -6,6 +6,7 @@ const DataLoader = preload("res://scripts/core/data_loader.gd")
 const Simulation = preload("res://scripts/core/simulation.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
+const SaveManager = preload("res://scripts/core/save_manager.gd")
 
 var _failures: int = 0
 var _checks: int = 0
@@ -25,6 +26,9 @@ func _init() -> void:
 		test_lancan()
 		test_service()
 		test_yard_and_goals()
+		test_staff()
+		test_regulars()
+		test_save_load()
 		test_full_nights()
 	print("\n%d kiểm tra, %d lỗi." % [_checks, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -43,6 +47,7 @@ func new_sim(p_seed: int = 1, spawning: bool = false):
 	var sim = Simulation.new(_data, p_seed)
 	sim.customers.spawning_enabled = spawning
 	sim.service.enabled = spawning
+	sim.staff.enabled = spawning
 	return sim
 
 
@@ -412,6 +417,351 @@ func test_yard_and_goals() -> void:
 	check(not second["goal_met"], "Không đủ số nhóm: trượt mục tiêu")
 	check(second["profit"] == second["room_revenue"] - second["wages"] - second["operating"] - second["compensation"], "Lợi nhuận = thu - lương - vận hành - đền xe")
 	check(sim.economy.ledger_matches_balance(), "Số dư khớp sổ")
+
+
+func open_request(sim, room_id: String, request: Dictionary, timeout: int) -> void:
+	if request["kind"] == "ORDER":
+		sim.state.stock[request["product_id"]] -= request["quantity"]
+	request["text"] = ""
+	sim.service._open(sim.rooms.get_room(room_id), request, sim.clock.minute, timeout)
+
+
+func test_staff() -> void:
+	print("Nhân viên phục vụ")
+	var balance: Dictionary = _data["balance"]
+	var sim = new_sim()
+	sim.staff.enabled = true
+	check(sim.state.staff.size() == 1 and sim.state.staff[0]["name"] == "Tí", "Quán có sẵn một nhân viên phục vụ")
+	var ti: Dictionary = sim.state.staff[0]
+	sim.open_doors()
+
+	# Tự dọn phòng: chờ 2 phút, đi 2 phút, dọn 8 phút.
+	var first = sim.customers.add_group("couple", 2, 45, 0)
+	sim.assign_group(first["id"], "room_01")
+	step(sim, 45)
+	var room1: Dictionary = sim.rooms.get_room("room_01")
+	check(room1["state"] == "DIRTY" and ti["task"].is_empty(), "Khách vừa về: phòng bẩn, nhân viên chưa nhận việc (nhường chủ quán)")
+	step(sim, balance["staff_delay_clean"])
+	check(ti["task"].get("kind", "") == "CLEAN" and ti["task"]["room_id"] == "room_01", "Sau 2 phút: nhân viên nhận việc dọn")
+	step(sim, balance["staff_travel_minutes"])
+	check(room1["state"] == "CLEANING", "Tới nơi: phòng chuyển sang đang dọn")
+	check(sim.clean_room("room_01") != "", "Chủ quán không dọn trùng phòng nhân viên đang dọn")
+	step(sim, balance["clean_minutes"])
+	check(room1["state"] == "AVAILABLE" and ti["task"].is_empty() and ti["tasks_done"] == 1, "Dọn xong: phòng sẵn sàng, nhân viên rảnh")
+	check(ti["energy"] == 100 - balance["staff_energy_clean"], "Dọn phòng tốn năng lượng")
+
+	# Giao món: món vào hóa đơn đúng một lần, tồn kho đúng.
+	var party = sim.customers.add_group("company", 6, 90, sim.clock.minute)
+	sim.assign_group(party["id"], "room_02")
+	var room2: Dictionary = sim.rooms.get_room("room_02")
+	var stock: int = sim.state.stock["nuoc_ngot"]
+	open_request(sim, "room_02", {"kind": "ORDER", "product_id": "nuoc_ngot", "quantity": 6, "price": 150000}, 14)
+	step(sim, balance["staff_delay_order"])
+	check(ti["task"].get("kind", "") == "DELIVER" and ti["task"]["request_id"] == room2["request"]["id"], "Sau 3 phút: nhân viên nhận đơn gọi món")
+	step(sim, balance["staff_deliver_minutes"])
+	check(room2["request"].is_empty() and ti["task"].is_empty(), "Giao xong: đóng yêu cầu, nhân viên rảnh")
+	check(party["bill_items"].size() == 1 and party["bill_items"][0]["amount"] == 150000 and sim.state.stock["nuoc_ngot"] == stock - 6, "Món vào hóa đơn một lần, tồn kho giảm đúng 6")
+
+	# Chủ quán giao trước: nhân viên bỏ việc, không giao trùng, không kẹt.
+	open_request(sim, "room_02", {"kind": "ORDER", "product_id": "da", "quantity": 1, "price": 15000}, 14)
+	step(sim, balance["staff_delay_order"] + 1)
+	check(ti["task"].get("kind", "") == "DELIVER", "Nhân viên đang đi lấy món")
+	check(sim.deliver_order("room_02") == "", "Chủ quán giao trước")
+	step(sim, 1)
+	check(ti["task"].is_empty() and party["bill_items"].size() == 2, "Việc đã có người lo: nhân viên rảnh ngay, hóa đơn không bị ghi trùng")
+	step(sim, 6)
+	check(party["bill_items"].size() == 2 and ti["tasks_done"] == 2, "Không phát sinh giao món ma")
+
+	# Thứ tự ưu tiên: micro trước, món sau; mỗi người một việc.
+	open_request(sim, "room_02", {"kind": "MIC"}, 30)
+	var other = sim.customers.add_group("friends", 3, 90, sim.clock.minute)
+	sim.assign_group(other["id"], "room_01")
+	open_request(sim, "room_01", {"kind": "ORDER", "product_id": "da", "quantity": 1, "price": 15000}, 30)
+	step(sim, 3)
+	check(ti["task"].get("kind", "") == "FIX" and not room1["request"].is_empty(), "Hai việc cùng lúc: lo micro trước, đơn món chờ")
+	check(sim.check_invariants().is_empty(), "Bất biến ổn khi đang có việc")
+	step(sim, balance["staff_fix_minutes"])
+	check(room2["request"].is_empty() and ti["task"].get("kind", "") == "DELIVER", "Đổi micro xong thì nhận tiếp đơn món")
+	step(sim, balance["staff_deliver_minutes"])
+	check(room1["request"].is_empty() and other["bill_items"].size() == 1, "Đơn món còn lại cũng được giao")
+
+	# Khách về giữa chừng: việc bị hủy, hàng trả kho.
+	open_request(sim, "room_01", {"kind": "ORDER", "product_id": "trai_cay", "quantity": 1, "price": 150000}, 30)
+	var fruit: int = sim.state.stock["trai_cay"]
+	step(sim, 3)
+	check(ti["task"].get("kind", "") == "DELIVER", "Nhân viên nhận đơn trái cây")
+	room1["session_end"] = sim.clock.minute + 1
+	step(sim, 2)
+	check(ti["task"].is_empty() and sim.state.stock["trai_cay"] == fruit + 1, "Khách về trước khi giao: hủy việc, trả hàng về kho")
+
+	# Ưu tiên do người chơi chọn: nhận ngay, không chờ nhịp.
+	check(sim.prioritize_job("room_03").contains("không có việc"), "Phòng không có việc: không ưu tiên được")
+	check(room1["state"] == "DIRTY" and sim.prioritize_job("room_01") == "", "Người chơi ưu tiên phòng bẩn")
+	step(sim, 1)
+	check(ti["task"].get("kind", "") == "CLEAN" and sim.state.staff_priority.is_empty(), "Phòng được ưu tiên: nhân viên nhận ngay")
+	check(sim.prioritize_job("room_01").contains("đã có nhân viên"), "Phòng đã có người lo: không ưu tiên lại")
+	step(sim, 10)
+
+	# Mệt thì chậm, kiệt sức thì nghỉ.
+	ti["energy"] = 30
+	check(sim.staff._duration(ti, 4) == 6, "Năng lượng thấp: làm chậm gấp rưỡi")
+	ti["energy"] = 15
+	step(sim, 1)
+	check(ti["task"].get("kind", "") == "REST", "Kiệt sức: tự xin nghỉ")
+	open_request(sim, "room_02", {"kind": "MIC"}, 40)
+	step(sim, balance["staff_rest_minutes"] - 1)
+	check(ti["task"].get("kind", "") == "REST" and not room2["request"].is_empty(), "Đang nghỉ thì không nhận việc")
+	step(sim, 1)
+	check(ti["energy"] == 15 + balance["staff_rest_recovery"], "Nghỉ xong: hồi năng lượng")
+
+	# Tuyển thêm: phí, giới hạn, hai người hai việc, lương cuối đêm.
+	var money: int = sim.state.money
+	check(sim.hire_staff("staff_2") == "" and sim.state.money == money - balance["staff_hire_cost"], "Tuyển Mận: trừ 800.000đ")
+	check(sim.hire_staff("staff_2") != "" and sim.state.money == money - balance["staff_hire_cost"], "Không tuyển trùng, không trừ tiền lần hai")
+	check(sim.hire_staff("staff_3") == "" and sim.staff.candidates().is_empty(), "Tuyển người thứ ba, hết ứng viên")
+	sim.economy.record("TEST", -sim.state.money, "drain_staff")
+	check(sim.state.staff.size() == 3 and sim.hire_staff("staff_1") != "", "Đủ ba người thì không tuyển thêm")
+	sim.economy.record("TEST", 5000000, "refill_staff")
+	open_request(sim, "room_02", {"kind": "ORDER", "product_id": "da", "quantity": 1, "price": 15000}, 40) if room2["request"].is_empty() else null
+	step(sim, 4)
+	var busy_rooms: Dictionary = {}
+	for member in sim.state.staff:
+		if not member["task"].is_empty() and member["task"]["kind"] != "REST":
+			check(not busy_rooms.has(member["task"]["room_id"]), "%s không nhận trùng việc của người khác" % member["name"])
+			busy_rooms[member["task"]["room_id"]] = true
+	check(sim.check_invariants().is_empty(), "Bất biến ổn với ba nhân viên")
+	step(sim, 400)
+	var summary: Dictionary = sim.state.history[0]
+	check(summary["wages"] == 300000 + 380000 + 240000, "Cuối đêm trả lương đủ ba người")
+	var all_idle: bool = true
+	for member in sim.state.staff:
+		all_idle = all_idle and member["task"].is_empty() and member["energy"] == 100
+	check(all_idle and sim.economy.ledger_matches_balance(), "Kết ca: không ai còn việc dở, năng lượng hồi đầy, sổ khớp")
+
+
+func test_regulars() -> void:
+	print("Khách quen")
+	var balance: Dictionary = _data["balance"]
+	var chances: Dictionary = _data["regulars"]["become_chance"]
+	var saved_chance: int = chances["bolero_regular"]
+	var saved_return: int = balance["regular_return_chance"]
+	var saved_favorite: int = balance["regular_favorite_product_chance"]
+	var saved_theft: int = balance["theft_chance_permille"]
+	balance["theft_chance_permille"] = 0
+	chances["bolero_regular"] = 100
+	balance["regular_return_chance"] = 100
+	balance["regular_favorite_product_chance"] = 100
+
+	var sim = new_sim()
+	sim.open_doors()
+	var so_so = sim.customers.add_group("bolero_regular", 3, 45, 0)
+	sim.assign_group(so_so["id"], "room_02")
+	so_so["satisfaction"] = 70
+	var birthday = sim.customers.add_group("birthday", 4, 45, 0)
+	sim.assign_group(birthday["id"], "room_01")
+	birthday["satisfaction"] = 100
+	step(sim, 45)
+	check(sim.state.regulars.is_empty(), "Hài lòng dưới 80 hoặc nhóm sinh nhật: chưa thành khách quen")
+
+	sim.clean_room("room_01")
+	step(sim, 8)
+	var happy = sim.customers.add_group("bolero_regular", 3, 45, sim.clock.minute)
+	sim.assign_group(happy["id"], "room_01")
+	open_request(sim, "room_01", {"kind": "ORDER", "product_id": "nuoc_ngot", "quantity": 3, "price": 75000}, 14)
+	sim.deliver_order("room_01")
+	happy["satisfaction"] = 90
+	step(sim, 45)
+	check(sim.state.regulars.size() == 1, "Nhóm rất hài lòng thành khách quen")
+	var regular: Dictionary = sim.state.regulars[0]
+	check(regular["favorite_room_id"] == "room_01" and regular["favorite_product_id"] == "nuoc_ngot", "Ghi nhớ phòng đã ngồi và món đã gọi")
+	check(_data["regulars"]["names"]["bolero_regular"].has(regular["name"]) and regular["visits"] == 1, "Khách quen có tên riêng, tính là lần ghé đầu")
+	check(not sim.regulars._free_names("bolero_regular").has(regular["name"]), "Tên đã dùng không cấp cho khách quen khác")
+	step(sim, 400)
+
+	# Đêm sau: khách quen ghé lại, mỗi đêm một lần.
+	sim.next_day()
+	sim.open_doors()
+	sim.customers.spawning_enabled = true
+	step(sim, balance["first_arrival_minute"])
+	var visitor = sim.customers.waiting_groups()[0]
+	check(visitor["regular_id"] == regular["id"] and visitor["type_name"].contains("khách quen"), "Khách quen quay lại, tên hiện trên nhóm")
+	check(visitor["trait"].contains("Phòng 01") and visitor["trait"].contains("nước ngọt"), "Đặc điểm ghi rõ phòng quen và món quen")
+	check(visitor["favorite_room_id"] == "room_01" and regular["last_visit_day"] == 2, "Nhóm mang thông tin sở thích, đã ghi nhận lượt ghé đêm nay")
+	step(sim, 60)
+	var repeat_visits: int = 0
+	for group in sim.state.groups:
+		if group["regular_id"] == regular["id"]:
+			repeat_visits += 1
+	check(repeat_visits <= 1, "Một khách quen chỉ ghé một lần mỗi đêm")
+	sim.customers.spawning_enabled = false
+
+	if sim.customers.get_group(visitor["id"]) == null:
+		visitor = sim.customers.add_group("bolero_regular", 3, 45, sim.clock.minute)
+		sim.regulars.apply_to_group(visitor, regular)
+	for room in sim.state.rooms:
+		if room["state"] == "DIRTY":
+			sim.rooms.finish_cleaning(room)
+	visitor["wait_minutes"] = 0
+	var before: int = visitor["satisfaction"]
+	check(sim.assign_group(visitor["id"], "room_01") == "", "Xếp khách quen vào phòng quen")
+	check(visitor["satisfaction"] == before + balance["regular_favorite_room_bonus"] and visitor["tags"].has("phong_quen"), "Đúng phòng quen: +5 hài lòng")
+	var room1: Dictionary = sim.rooms.get_room("room_01")
+	sim.service._open_order(room1, visitor, sim.clock.minute)
+	check(room1["request"]["product_id"] == "nuoc_ngot", "Khách quen gọi món quen")
+	before = visitor["satisfaction"]
+	sim.deliver_order("room_01")
+	check(visitor["satisfaction"] == before + balance["order_bonus"] + balance["fast_service_bonus"] + balance["regular_favorite_product_bonus"], "Giao đúng món quen: thêm hài lòng")
+	room1["session_end"] = sim.clock.minute + 1
+	step(sim, 1)
+	check(regular["visits"] == 2 and sim.state.regulars.size() == 1, "Phục vụ tốt: tăng số lần ghé, không tạo khách quen trùng")
+	check(sim.check_invariants().is_empty(), "Bất biến ổn")
+
+	# Phục vụ tệ: mất khách quen.
+	sim.rooms.finish_cleaning(room1)
+	var upset = sim.customers.add_group("bolero_regular", 3, 45, sim.clock.minute)
+	sim.regulars.apply_to_group(upset, regular)
+	sim.assign_group(upset["id"], "room_01")
+	upset["satisfaction"] = 20
+	room1["session_end"] = sim.clock.minute + 1
+	step(sim, 1)
+	check(sim.state.regulars.is_empty(), "Hài lòng dưới 40: khách quen bỏ quán")
+
+	chances["bolero_regular"] = saved_chance
+	balance["regular_return_chance"] = saved_return
+	balance["regular_favorite_product_chance"] = saved_favorite
+	balance["theft_chance_permille"] = saved_theft
+
+
+## Bot chơi một phút bằng các hàm công khai của Simulation.
+func bot_minute(sim) -> void:
+	for room in sim.state.rooms:
+		if room["state"] == "DIRTY":
+			sim.clean_room(room["id"])
+		if not room["request"].is_empty():
+			match room["request"]["kind"]:
+				"HOT":
+					sim.answer_request(room["id"], "ac")
+				"EXTEND":
+					sim.answer_request(room["id"], "decline")
+	for group in sim.customers.waiting_groups():
+		for room in sim.state.rooms:
+			if sim.assign_group(group["id"], room["id"]) == "":
+				break
+	sim.step_minute()
+
+
+func bot_night(sim) -> void:
+	sim.open_doors()
+	var guard: int = 0
+	while sim.state.phase == "OPEN" and guard < 1000:
+		guard += 1
+		bot_minute(sim)
+
+
+func state_text(sim) -> String:
+	var snapshot: Dictionary = SaveManager.make_snapshot(sim.state, sim.rng)
+	return JSON.stringify(snapshot["state"]) + snapshot["rng_state"]
+
+
+func test_save_load() -> void:
+	print("Lưu và tải")
+	var path: String = "user://test_save_%d.json" % Time.get_ticks_usec()
+	var backup: String = SaveManager.backup_path(path)
+	check(not SaveManager.has_save(path) and SaveManager.read_save(_data, path)["error"] == "Chưa có bản lưu.", "Chưa có bản lưu: báo rõ")
+
+	var sim = new_sim(11, true)
+	sim.hire_host("host_1")
+	sim.hire_staff("staff_2")
+	sim.buy_upgrade("spare_mics")
+	sim.open_doors()
+	for i in 30:
+		bot_minute(sim)
+	check(sim.save_game(path).contains("Chỉ lưu được") and not FileAccess.file_exists(path), "Giữa ca: từ chối lưu")
+	while sim.state.phase == "OPEN":
+		bot_minute(sim)
+	var saved_events: Array = []
+	sim.game_saved.connect(func(saved_path: String, error: String) -> void: saved_events.append([saved_path, error]))
+	check(sim.save_game(path) == "" and FileAccess.file_exists(path), "Sau tổng kết: lưu thành công")
+	check(saved_events == [[path, ""]], "Phát tín hiệu game_saved không lỗi")
+	check(not FileAccess.file_exists(SaveManager.temp_path(path)) and not FileAccess.file_exists(backup), "Không để lại tệp tạm; lần đầu chưa có bản sao lưu")
+
+	var loaded: Dictionary = Simulation.create_from_save(_data, path)
+	check(loaded["ok"] and not loaded["used_backup"], "Tải lại thành công từ tệp chính")
+	var copy = loaded["sim"]
+	check(state_text(copy) == state_text(sim), "Trạng thái sau khi tải giống hệt lúc lưu (tiền, kho, phòng, nhân viên, khách quen, ngẫu nhiên)")
+	check(copy.state.money == sim.state.money and copy.economy.ledger_matches_balance(), "Tiền và sổ giao dịch khớp sau khi tải")
+	check(copy.state.stock == sim.state.stock and str(copy.state.stock.keys()) == str(sim.state.stock.keys()), "Tồn kho giống hệt sau khi tải, giữ cả thứ tự mặt hàng")
+	check(copy.state.staff.size() == 2 and copy.state.hosts.size() == 1 and copy.service.upgrade_level("spare_mics") == 1, "Nhân viên, Lan can và nâng cấp được giữ")
+	check(copy.state.phase == "SUMMARY" and copy.clock.minute == Clock.NIGHT_MINUTES and copy.last_summary()["day"] == 1, "Tải về đúng mốc tổng kết đêm 1")
+	check(copy.check_invariants().is_empty(), "Bất biến ổn sau khi tải")
+
+	# Chơi tiếp từ bản tải phải cho đúng diễn biến như chơi liền mạch.
+	check(sim.next_day() == "" and copy.next_day() == "", "Cả hai sang đêm 2")
+	bot_night(sim)
+	bot_night(copy)
+	check(JSON.stringify(sim.state.history[1]) == JSON.stringify(copy.state.history[1]), "Đêm 2 từ bản tải giống hệt đêm 2 chơi liền mạch")
+	check(state_text(copy) == state_text(sim), "Sau đêm 2: tiền, kho, công việc, khách quen vẫn trùng khớp")
+
+	# Lần lưu thứ hai tạo bản sao lưu; tệp chính hỏng thì dùng bản sao lưu, không xóa gì.
+	check(sim.save_game(path) == "" and FileAccess.file_exists(backup), "Lưu lần hai: bản cũ thành bản sao lưu")
+	var good_main: String = FileAccess.get_file_as_string(path)
+	var garbage: String = "{ hỏng giữa chừng"
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(garbage)
+	file.close()
+	var recovered: Dictionary = Simulation.create_from_save(_data, path)
+	check(recovered["ok"] and recovered["used_backup"] and recovered["notice"] != "", "Tệp chính hỏng: tải từ bản sao lưu và có thông báo")
+	check(recovered["sim"].state.day == 1 and recovered["sim"].check_invariants().is_empty(), "Bản sao lưu là mốc cuối đêm 1, nhất quán")
+	check(FileAccess.get_file_as_string(path) == garbage, "Không tự xóa hay ghi đè tệp hỏng")
+	file = FileAccess.open(backup, FileAccess.WRITE)
+	file.store_string("")
+	file.close()
+	var broken: Dictionary = Simulation.create_from_save(_data, path)
+	check(not broken["ok"] and broken["sim"] == null and broken["error"].contains("Không tải được"), "Cả hai tệp hỏng: báo lỗi dễ hiểu")
+	check(FileAccess.file_exists(path) and FileAccess.file_exists(backup), "Hai tệp hỏng vẫn còn nguyên để người chơi tự xử lý")
+
+	# Kiểm tra dữ liệu bản lưu.
+	var snapshot: Dictionary = DataLoader.normalize(JSON.parse_string(good_main))
+	check(SaveManager.validate(snapshot, _data) == "", "Bản lưu tốt qua kiểm tra")
+	var newer: Dictionary = snapshot.duplicate(true)
+	newer["schema_version"] = SaveManager.SCHEMA_VERSION + 1
+	check(SaveManager.validate(newer, _data).contains("mới hơn"), "Chặn bản lưu của phiên bản mới hơn")
+	var older: Dictionary = snapshot.duplicate(true)
+	older["schema_version"] = 0
+	check(SaveManager.validate(older, _data).contains("cũ"), "Chặn bản lưu phiên bản cũ không tương thích")
+	var rich: Dictionary = snapshot.duplicate(true)
+	rich["state"]["money"] += 1000000
+	check(SaveManager.validate(rich, _data).contains("không khớp sổ"), "Sửa tiền trong tệp: bị phát hiện")
+	var no_stock: Dictionary = snapshot.duplicate(true)
+	no_stock["state"]["stock"]["da"] = -3
+	check(SaveManager.validate(no_stock, _data).contains("Tồn kho"), "Tồn kho âm trong tệp: bị từ chối")
+	var missing: Dictionary = snapshot.duplicate(true)
+	missing["state"].erase("regulars")
+	check(SaveManager.validate(missing, _data).contains("thiếu trường"), "Thiếu trường: bị từ chối")
+	var ghost: Dictionary = snapshot.duplicate(true)
+	ghost["state"]["rooms"][0]["id"] = "room_99"
+	check(SaveManager.validate(ghost, _data).contains("phòng không tồn tại"), "Phòng lạ: bị từ chối")
+	var midshift: Dictionary = snapshot.duplicate(true)
+	midshift["state"]["phase"] = "OPEN"
+	check(SaveManager.validate(midshift, _data) != "", "Bản lưu giữa ca: bị từ chối")
+	var fresh = new_sim(5)
+	var money: int = fresh.state.money
+	check(fresh.restore(rich) != "" and fresh.state.money == money and fresh.state.day == 1, "Tải thất bại không làm bẩn ván đang chơi")
+
+	# Tự lưu sau tổng kết và lưu tay lúc chuẩn bị.
+	var auto_path: String = path + ".auto"
+	var auto = new_sim(3, true)
+	auto.autosave_path = auto_path
+	check(auto.save_game(auto_path) == "", "Lưu tay ở giai đoạn chuẩn bị")
+	var prep: Dictionary = Simulation.create_from_save(_data, auto_path)
+	check(prep["ok"] and prep["sim"].state.phase == "PREP" and prep["sim"].clock.minute == 0 and prep["sim"].open_doors() == "", "Tải bản lưu lúc chuẩn bị rồi mở cửa được")
+	bot_night(auto)
+	var after: Dictionary = Simulation.create_from_save(_data, auto_path)
+	check(after["ok"] and after["sim"].state.phase == "SUMMARY" and after["sim"].state.money == auto.state.money, "Tự lưu sau tổng kết đêm")
+
+	for leftover in [path, backup, auto_path, SaveManager.backup_path(auto_path)]:
+		if FileAccess.file_exists(leftover):
+			DirAccess.remove_absolute(leftover)
 
 
 ## Chơi tự động nhiều đêm với seed cố định, kiểm tra bất biến ở từng phút.

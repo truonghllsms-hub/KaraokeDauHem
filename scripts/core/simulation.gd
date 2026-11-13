@@ -6,6 +6,8 @@ extends RefCounted
 signal message(text: String, kind: String)
 signal night_ended(summary: Dictionary)
 signal bill_paid(bill: Dictionary)
+## Phát sau mỗi lần lưu (tự động hoặc thủ công). error rỗng là lưu thành công.
+signal game_saved(path: String, error: String)
 
 const GameState = preload("res://scripts/core/game_state.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
@@ -15,6 +17,9 @@ const RoomSystem = preload("res://scripts/systems/room_system.gd")
 const CustomerSystem = preload("res://scripts/systems/customer_system.gd")
 const HospitalitySystem = preload("res://scripts/systems/hospitality_system.gd")
 const ServiceSystem = preload("res://scripts/systems/service_system.gd")
+const StaffSystem = preload("res://scripts/systems/staff_system.gd")
+const RegularSystem = preload("res://scripts/systems/regular_system.gd")
+const SaveManager = preload("res://scripts/core/save_manager.gd")
 
 const MAX_MESSAGES: int = 60
 ## Các loại giao dịch tính vào lợi nhuận vận hành của một đêm.
@@ -29,6 +34,7 @@ const COMMENTS: Array = [
 	["nong", "Phòng nóng như cái lò."],
 	["gia_cao", "Giá hơi chát so với túi tiền tụi mình."],
 	["lancan_lo", "Gọi Lan can mà chẳng thấy ai."],
+	["phong_quen", "Vẫn phòng quen, vẫn dễ thương như mọi lần."],
 	["giao_nhanh", "Gọi đá có liền, ưng cái bụng!"],
 	["lancan", "Bạn Lan can khuấy động vui hết nấc."],
 	["hat_them", "Được hát thêm nửa tiếng, quán dễ thương ghê."],
@@ -43,6 +49,10 @@ var rooms
 var customers
 var hosts
 var service
+var staff
+var regulars
+## Đặt đường dẫn (ví dụ SaveManager.DEFAULT_PATH) để tự lưu sau mỗi lần tổng kết đêm. Rỗng là tắt.
+var autosave_path: String = ""
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -63,6 +73,10 @@ func _init(p_data: Dictionary, p_seed: int) -> void:
 	state.reputation = balance["starting_reputation"]
 	rooms.setup_new_game()
 	service.setup_new_game()
+	staff = StaffSystem.new(state, data, economy, rooms, service, Callable(self, "notify"))
+	staff.setup_new_game()
+	regulars = RegularSystem.new(state, data, rng, Callable(self, "notify"))
+	customers.regulars = regulars
 	economy.record("OPENING", balance["starting_money"], "new_game", "Vốn ban đầu")
 	_begin_day()
 
@@ -108,6 +122,7 @@ func step_minute() -> void:
 	# Lan can chạy trước thanh toán, để phiên kết thúc cùng phút vẫn kịp vào hóa đơn.
 	hosts.tick(now)
 	service.tick(now)
+	staff.tick(now)
 
 	for room in state.rooms:
 		if room["state"] == "OCCUPIED" and now >= room["session_end"]:
@@ -165,7 +180,7 @@ func _close_night() -> void:
 			rooms.finish_cleaning(room)
 
 	var day_key: String = "day:%d" % state.day
-	economy.record("WAGES", -balance["staff_wage_per_night"], day_key, "Lương nhân viên phục vụ")
+	staff.end_night(state.day)
 	hosts.end_night(state.day)
 	if state.night["guard_on_duty"]:
 		economy.record("WAGES", -balance["guard_wage"], day_key + ":guard", "Lương bảo vệ")
@@ -204,6 +219,8 @@ func _close_night() -> void:
 	state.history.append(summary)
 	state.phase = "SUMMARY"
 	notify("Hết giờ, quán đóng cửa. Tổng kết đêm %d." % state.day, "info")
+	if autosave_path != "":
+		save_game(autosave_path)
 	night_ended.emit(summary)
 
 
@@ -287,6 +304,67 @@ func set_guard(hired: bool) -> String:
 	else:
 		notify("Cho bảo vệ nghỉ từ đêm sau. Sân xe không ai trông.", "info")
 	return ""
+
+
+func hire_staff(staff_id: String) -> String:
+	return staff.hire(staff_id)
+
+
+## Đánh dấu một phòng để nhân viên rảnh kế tiếp lo ngay (dọn, giao món hoặc đổi micro).
+func prioritize_job(room_id: String) -> String:
+	return staff.prioritize(room_id)
+
+
+## Bảng tổng kết của đêm gần nhất ({} nếu chưa có đêm nào).
+func last_summary() -> Dictionary:
+	return {} if state.history.is_empty() else state.history[state.history.size() - 1]
+
+
+# ---------------------------------------------------------------- Lưu và tải
+
+## Lưu ở mốc chuẩn bị hoặc sau tổng kết. Trả về "" nếu thành công.
+func save_game(path: String = SaveManager.DEFAULT_PATH) -> String:
+	var error: String = ""
+	if not SaveManager.SAVEABLE_PHASES.has(state.phase):
+		error = "Chỉ lưu được trước khi mở cửa hoặc sau tổng kết đêm."
+	else:
+		error = SaveManager.write_snapshot(SaveManager.make_snapshot(state, rng), path)
+	game_saved.emit(path, error)
+	return error
+
+
+## Nạp một bản chụp đã qua SaveManager.validate vào bộ mô phỏng này. Trả về "" nếu thành công.
+func restore(snapshot: Dictionary) -> String:
+	var error: String = SaveManager.validate(snapshot, data)
+	if error != "":
+		return error
+	var saved: Dictionary = snapshot["state"]
+	for field in SaveManager.STATE_FIELDS:
+		var value = saved[field]
+		state.set(field, value.duplicate(true) if (value is Array or value is Dictionary) else value)
+	state.rng_seed = int(str(snapshot["rng_seed"]))
+	rng.seed = state.rng_seed
+	rng.state = int(str(snapshot["rng_state"]))
+	state.messages = []
+	clock.reset()
+	if state.phase == "SUMMARY":
+		clock.minute = Clock.NIGHT_MINUTES
+	var problems: Array = check_invariants()
+	if not problems.is_empty():
+		return "Bản lưu không nhất quán: " + problems[0]
+	return ""
+
+
+## Tạo bộ mô phỏng từ bản lưu. Trả về {"ok", "sim", "error", "used_backup", "notice"}.
+static func create_from_save(p_data: Dictionary, path: String = SaveManager.DEFAULT_PATH) -> Dictionary:
+	var loaded: Dictionary = SaveManager.read_save(p_data, path)
+	if not loaded["ok"]:
+		return {"ok": false, "sim": null, "error": loaded["error"], "used_backup": false, "notice": ""}
+	var sim = new(p_data, 0)
+	var error: String = sim.restore(loaded["snapshot"])
+	if error != "":
+		return {"ok": false, "sim": null, "error": error, "used_backup": loaded["used_backup"], "notice": ""}
+	return {"ok": true, "sim": sim, "error": "", "used_backup": loaded["used_backup"], "notice": loaded["notice"]}
 
 
 func theft_risk_active() -> bool:
@@ -379,6 +457,7 @@ func _checkout(room: Dictionary, now: int) -> void:
 		total -= discount
 	var room_name: String = room["name"]
 	rooms.end_session(room)
+	room["dirty_since"] = now
 	group["state"] = "LEAVING"
 	customers.remove_group(group)
 
@@ -401,6 +480,10 @@ func _checkout(room: Dictionary, now: int) -> void:
 	state.reputation = clampi(state.reputation + change, 0, 100)
 	state.night["served"] += 1
 	state.night["satisfaction_sum"] += satisfaction
+	var ordered_product_id: String = ""
+	for item in items:
+		ordered_product_id = item.get("product_id", ordered_product_id)
+	regulars.on_checkout(group, room["id"], satisfaction, ordered_product_id, state.day)
 	var comment: String = _comment_for(group, satisfaction)
 	state.night["comments"].append({"who": group["type_name"], "text": comment, "satisfaction": satisfaction})
 
@@ -445,6 +528,10 @@ func _rate_seating(group: Dictionary, room: Dictionary) -> void:
 	elif price * 10 <= budget * 8:
 		group["tags"].append("gia_mem")
 		_change_satisfaction(group, balance["price_bargain_bonus"], "Giá phòng dễ chịu")
+
+	if group.get("favorite_room_id", "") == room["id"]:
+		group["tags"].append("phong_quen")
+		_change_satisfaction(group, balance["regular_favorite_room_bonus"], "Được ngồi đúng phòng quen")
 
 	var sound_bonus: int = (room["sound"] - 1) * balance["sound_bonus_per_level"]
 	if sound_bonus > 0:
@@ -492,6 +579,19 @@ func check_invariants() -> Array:
 			problems.append("Nhóm %d ghi là đang hát nhưng không ở phòng nào." % group["id"])
 		if group["state"] != "IN_ROOM" and group["state"] != "WAITING":
 			problems.append("Nhóm %d đã rời quán nhưng chưa bị xóa." % group["id"])
+	var claimed: Dictionary = {}
+	for member in state.staff:
+		var task: Dictionary = member["task"]
+		if task.is_empty() or task["kind"] == "REST":
+			continue
+		if rooms.get_room(task["room_id"]) == null:
+			problems.append("%s nhận việc ở phòng không tồn tại." % member["name"])
+		elif claimed.has(task["room_id"]):
+			problems.append("Hai nhân viên cùng nhận việc ở %s." % task["room_id"])
+		claimed[task["room_id"]] = true
+	for regular in state.regulars:
+		if rooms.get_room(regular["favorite_room_id"]) == null or service.get_product(regular["favorite_product_id"]) == null:
+			problems.append("Khách quen %s có sở thích không hợp lệ." % regular["name"])
 	for product_id in state.stock:
 		if state.stock[product_id] < 0:
 			problems.append("Tồn kho âm: %s." % product_id)

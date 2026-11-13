@@ -141,6 +141,10 @@ func _open_order(room: Dictionary, group: Dictionary, now: int) -> void:
 	var balance: Dictionary = _data["balance"]
 	var products: Array = _data["products"]
 	var product: Dictionary = products[_rng.randi_range(0, products.size() - 1)]
+	# Khách quen thường gọi món quen.
+	var favorite_id: String = group.get("favorite_product_id", "")
+	if favorite_id != "" and _rng.randi_range(1, 100) <= balance["regular_favorite_product_chance"]:
+		product = get_product(favorite_id)
 	var quantity: int = group["size"] if product["per_person"] else _rng.randi_range(1, 2)
 	var in_stock: int = _state.stock[product["id"]]
 	if in_stock <= 0:
@@ -201,9 +205,11 @@ func deliver_order(room: Dictionary, now: int) -> String:
 	var group = _customers.get_group(room["group_id"])
 	var product = get_product(request["product_id"])
 	room["request"] = {}
-	group["bill_items"].append({"type": "ORDER", "amount": request["price"], "note": "%d %s %s" % [request["quantity"], product["unit"], product["name"]]})
+	group["bill_items"].append({"type": "ORDER", "amount": request["price"], "note": "%d %s %s" % [request["quantity"], product["unit"], product["name"]], "product_id": product["id"]})
 	var bonus: int = balance["order_bonus"]
 	var reason: String = "%s nhận món" % room["name"]
+	if group.get("favorite_product_id", "") == product["id"]:
+		bonus += balance["regular_favorite_product_bonus"]
 	if now - request["opened"] <= balance["fast_service_minutes"]:
 		bonus += balance["fast_service_bonus"]
 		reason = "%s nhận món rất nhanh" % room["name"]
