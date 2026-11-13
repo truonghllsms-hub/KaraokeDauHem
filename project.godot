@@ -12,8 +12,8 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=900
+window/size/viewport_height=1200
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -25,4 +25,4 @@ theme/custom_font="res://assets/fonts/DejaVuSans.ttf"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-environment/defaults/default_clear_color=Color(0.078, 0.063, 0.122, 1)
+environment/defaults/default_clear_color=Color(0.84, 0.83, 0.73, 1)

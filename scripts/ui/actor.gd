@@ -52,7 +52,7 @@ func setup(texture_names: Array, badge_text: String = "") -> void:
 	add_child(_button)
 
 	_badge = UI.label(badge_text, 12, UI.TEXT, true)
-	_badge.add_theme_stylebox_override("normal", UI.box(Color(0.1, 0.08, 0.16, 0.9), UI.GOLD, 1, 3))
+	_badge.add_theme_stylebox_override("normal", UI.box(UI.PANEL, UI.GOLD, 1, 3))
 	_badge.position = Vector2(24, -20)
 	_badge.visible = badge_text != ""
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -108,7 +108,7 @@ func _draw() -> void:
 			color = UI.BAD
 		elif patience_ratio <= 0.5:
 			color = UI.GOLD
-		draw_rect(Rect2(origin - Vector2(2, 2), Vector2(width + 4, 11)), Color(0.1, 0.08, 0.16, 0.95))
+		draw_rect(Rect2(origin - Vector2(2, 2), Vector2(width + 4, 11)), UI.PANEL_DARK)
 		draw_rect(Rect2(origin, Vector2(width * clampf(patience_ratio, 0.0, 1.0), 7)), color)
 
 

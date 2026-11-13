@@ -8,7 +8,7 @@ Trạng thái: **bản dựng sớm, chơi được trọn nhiều đêm**. Xem 
 
 ## Yêu cầu
 
-- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, thiết kế 1280 × 720.
+- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, giao diện thiết kế dọc 900 × 1200, tự co giãn trên máy tính và điện thoại.
 
 ## Cách chạy
 
@@ -26,6 +26,14 @@ python3 -m http.server 8060 --directory build/web
 
 Đẩy bản web lên Vercel: `python3 tools/deploy_vercel.py` (cần biến `VERCEL_TOKEN`).
 
+## Giao diện mới
+
+- Bản đồ cuộn dọc: hai dãy đối diện, ba phòng mỗi bên; Phòng 01–02 gần sảnh mở sẵn, Phòng 03–06 mở khóa dần.
+- Cuộn chuột hoặc vuốt trong mặt bằng để đi lên/xuống; nút **Sảnh ↓** trở về khu tiếp khách. Thanh thông tin và năm nút quản lý luôn đứng yên.
+- Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
+- **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
+- Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
+
 ## Điều khiển
 
 | Thao tác | Cách làm |
@@ -35,8 +43,8 @@ python3 -m http.server 8060 --directory build/web
 | Giao món, đổi micro | Bấm phòng có nhãn vàng (gọi món) hoặc đỏ (micro hỏng): chủ quán đi làm |
 | Phòng nóng, xin hát thêm | Bấm phòng có nhãn cam/xanh: hiện lựa chọn |
 | Dọn phòng | Bấm phòng bẩn |
-| Lan can | Nút "Lan can" để tuyển; khi khách gọi: bấm nhân viên → bấm phòng |
-| Kho hàng, Bảo vệ, Nâng cấp | Các nút ở thanh dưới |
+| Lan can | Nút "Nhân sự" → "Giao lưu âm nhạc" để tuyển; khi khách gọi: bấm nhân viên → bấm phòng |
+| Kho hàng, Bảo vệ, Nâng cấp | Kho và Nâng cấp ở thanh dưới; Bảo vệ trong Nhân sự |
 | Mở phòng mới, chỉnh giá | Bấm phòng → bảng Chi tiết (chỉnh giá chỉ trước giờ mở cửa) |
 
 Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việc nào trước là phần chơi chính.
@@ -55,7 +63,7 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 ## Hạn chế hiện tại
 
 - Chưa có: lưu/tải, âm thanh, nhân viên phục vụ, giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm, phá sản.
-- Hình là SVG sinh bằng mã (`tools/make_sprites.py`); hoạt ảnh mới là nhún nhảy và lật hướng.
+- Nhân vật vẫn dùng SVG ban đầu; nội thất mới là minh họa nhìn từ trên xuống. Hoạt ảnh mới là nhún nhảy và lật hướng.
 - Cân bằng mới ở mức sơ bộ.
 
 ## Cấu trúc

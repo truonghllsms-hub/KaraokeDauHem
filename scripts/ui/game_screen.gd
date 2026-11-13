@@ -31,6 +31,13 @@ var _price_row: HBoxContainer
 var _log: RichTextLabel
 var _overlay: Control = null
 var _overlay_kind: String = ""
+var _map_scroll: ScrollContainer
+var _map_stage: Control
+var _goal_label: Label
+var _task_label: Label
+var _notice_label: Label
+var _last_notice: String = ""
+
 
 
 func _ready() -> void:
@@ -51,7 +58,7 @@ func _ready() -> void:
 	sim.message.connect(_on_message)
 	sim.night_ended.connect(_on_night_ended)
 	sim.bill_paid.connect(_on_bill_paid)
-	_on_message("Chào chủ quán! Mục tiêu đêm nay: %s. Bấm \"MỞ CỬA ĐÓN KHÁCH\" để bắt đầu. (Seed: %d)" % [sim.goal_text(), game_seed], "info")
+	_on_message("Chào chủ quán! Mục tiêu đêm nay: %s. Bấm \"MỞ CỬA ĐÓN KHÁCH\" để bắt đầu." % sim.goal_text(), "info")
 	_refresh()
 
 
@@ -86,67 +93,118 @@ func _build_ui() -> void:
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 10)
+		margin.add_theme_constant_override("margin_" + side, 12)
 	add_child(margin)
-
 	var root: VBoxContainer = VBoxContainer.new()
 	root.add_theme_constant_override("separation", 8)
 	margin.add_child(root)
-
 	root.add_child(_build_top_bar())
-
-	var middle: HBoxContainer = HBoxContainer.new()
-	middle.add_theme_constant_override("separation", 10)
-	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(middle)
-	var holder: CenterContainer = CenterContainer.new()
-	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	middle.add_child(holder)
+	var goal: PanelContainer = UI.panel(Color("#e7ebc5"), UI.PURPLE)
+	root.add_child(goal)
+	var goal_row: HBoxContainer = HBoxContainer.new()
+	goal.add_child(goal_row)
+	_goal_label = UI.label("", 16, UI.TEXT, true)
+	_goal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	goal_row.add_child(_goal_label)
+	var lobby: Button = UI.button("Sảnh ↓", 14, UI.PURPLE)
+	lobby.pressed.connect(scroll_to_lobby)
+	goal_row.add_child(lobby)
+	_map_scroll = ScrollContainer.new()
+	_map_scroll.name = "VenueScroll"
+	_map_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_map_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_map_scroll.follow_focus = false
+	root.add_child(_map_scroll)
+	_map_stage = Control.new()
+	_map_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_map_stage.mouse_filter = Control.MOUSE_FILTER_PASS
+	_map_scroll.add_child(_map_stage)
 	venue = VenueView.new()
 	venue.setup(sim)
 	venue.report.connect(_report)
 	venue.hint.connect(func(text: String) -> void: _set_notice(text, "info"))
 	venue.choice_requested.connect(_show_choice)
-	holder.add_child(venue)
-	middle.add_child(_build_side_panel())
-
+	venue.inspect_requested.connect(func(_id: String) -> void: _show_venue_panel())
+	_map_stage.add_child(venue)
+	_map_scroll.resized.connect(_fit_map)
+	# Backing labels retain the inspector, journal and bill without occupying the map.
+	var backing: Control = _build_side_panel()
+	backing.visible = false
+	add_child(backing)
+	var notice_panel: PanelContainer = UI.panel(UI.PANEL_DARK, UI.BORDER)
+	root.add_child(notice_panel)
+	var notice_box: VBoxContainer = VBoxContainer.new()
+	notice_panel.add_child(notice_box)
+	_task_label = UI.label("", 14, UI.PURPLE, true)
+	notice_box.add_child(_task_label)
+	_notice_label = UI.label("Bấm MỞ CỬA ở sảnh để đón khách.", 16, UI.TEXT)
+	_notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_notice_label.custom_minimum_size.y = 22
+	notice_box.add_child(_notice_label)
 	root.add_child(_build_bottom_bar())
+	call_deferred("_fit_map")
+	call_deferred("_show_starting_rooms")
+
+
+func _fit_map() -> void:
+	if not is_instance_valid(_map_scroll) or not is_instance_valid(venue):
+		return
+	var available: float = maxf(100, _map_scroll.size.x - 22)
+	var factor: float = minf(1.15, available / VenueView.VIEW_SIZE.x)
+	venue.scale = Vector2.ONE * factor
+	venue.position.x = maxf(0, (available - VenueView.VIEW_SIZE.x * factor) * 0.5)
+	_map_stage.custom_minimum_size = Vector2(0, VenueView.VIEW_SIZE.y * factor)
+
+
+func _show_starting_rooms() -> void:
+	if is_instance_valid(_map_scroll):
+		_map_scroll.scroll_vertical = int(740 * venue.scale.y)
+
+
+func scroll_to_lobby() -> void:
+	if is_instance_valid(_map_scroll):
+		_map_scroll.scroll_vertical = int(_map_stage.custom_minimum_size.y)
 
 
 func _build_top_bar() -> Control:
-	var bar: PanelContainer = UI.panel(UI.PANEL_DARK, UI.BORDER)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 18)
-	bar.add_child(row)
-
-	_lbl_day = UI.label("", 20, UI.PINK, true)
-	_lbl_time = UI.label("", 24, UI.GOLD, true)
-	_lbl_money = UI.label("", 20, UI.TEXT, true)
-	_lbl_rep = UI.label("", 18, UI.PURPLE)
-	_lbl_status = UI.label("", 16, UI.MUTED)
-	_lbl_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lbl_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	for node in [_lbl_day, _lbl_time, _lbl_money, _lbl_rep, _lbl_status]:
-		row.add_child(node)
-
-	var speeds: HBoxContainer = HBoxContainer.new()
-	speeds.add_theme_constant_override("separation", 6)
-	row.add_child(speeds)
-	_btn_pause = UI.button("Tạm dừng", 15, UI.GOLD)
-	_btn_pause.tooltip_text = "Phím Space"
-	_btn_pause.custom_minimum_size = Vector2(104, 0)
+	var panel: PanelContainer = UI.panel()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var heading: HBoxContainer = HBoxContainer.new()
+	box.add_child(heading)
+	var title: Label = UI.label("KARAOKE ĐẦU HẺM", 23, UI.PURPLE, true)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading.add_child(title)
+	_lbl_status = UI.label("", 13, UI.MUTED)
+	heading.add_child(_lbl_status)
+	var menu: Button = UI.button("Menu", 14, UI.PURPLE)
+	menu.pressed.connect(_show_menu)
+	heading.add_child(menu)
+	var stats: HBoxContainer = HBoxContainer.new()
+	stats.add_theme_constant_override("separation", 18)
+	box.add_child(stats)
+	_lbl_money = UI.label("", 22, UI.PURPLE, true)
+	_lbl_money.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_lbl_rep = UI.label("", 18, UI.GOLD, true)
+	_lbl_day = UI.label("", 17, UI.TEXT, true)
+	_lbl_time = UI.label("", 19, UI.TEXT, true)
+	for node in [_lbl_money, _lbl_rep, _lbl_day, _lbl_time]:
+		stats.add_child(node)
+	var controls: HBoxContainer = HBoxContainer.new()
+	controls.add_theme_constant_override("separation", 6)
+	stats.add_child(controls)
+	_btn_pause = UI.button("Dừng", 14, UI.PURPLE)
+	_btn_pause.tooltip_text = "Space: tạm dừng hoặc tiếp tục"
 	_btn_pause.pressed.connect(func() -> void: sim.clock.toggle_pause())
-	speeds.add_child(_btn_pause)
-	var keys: Dictionary = {1: "1", 2: "2", 4: "3"}
+	controls.add_child(_btn_pause)
 	for speed in [1, 2, 4]:
-		var button: Button = UI.button("%dx" % speed, 15)
+		var button: Button = UI.button("%dx" % speed, 14)
 		button.toggle_mode = true
-		button.tooltip_text = "Phím %s" % keys[speed]
-		button.custom_minimum_size = Vector2(48, 0)
 		button.pressed.connect(func() -> void: sim.clock.set_speed(speed))
-		speeds.add_child(button)
+		controls.add_child(button)
 		_speed_buttons[speed] = button
-	return bar
+	return panel
 
 
 func _build_side_panel() -> Control:
@@ -207,22 +265,62 @@ func _build_side_panel() -> Control:
 
 func _build_bottom_bar() -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 7)
 	var entries: Array = [
-		["Kho hàng", UI.GOLD, "Xem tồn kho và nhập thêm nước, đá, trái cây.", _show_stock],
-		["Bảo vệ", UI.INFO, "Thuê bảo vệ trông xe ngoài sân.", _show_guard],
-		["Lan can", UI.PINK, "Tuyển và xem nhân viên giao lưu âm nhạc.", _show_lancan],
-		["Nâng cấp", UI.PURPLE, "Mua thiết bị cho quán.", _show_upgrades],
-		["Sổ thu chi", UI.GOLD, "Xem các giao dịch gần nhất.", _show_ledger],
-		["Menu (Esc)", UI.PURPLE, "", _show_menu],
+		["Quán", "shop", _show_venue_panel],
+		["Nhân sự", "staff", _show_staff],
+		["Kho", "stock", _show_stock],
+		["Nâng cấp", "upgrade", _show_upgrades],
+		["Thu chi", "ledger", _show_ledger],
 	]
 	for entry in entries:
-		var button: Button = UI.button(entry[0], 15, entry[1])
-		button.tooltip_text = entry[2]
+		var button: Button = UI.button(entry[0], 17, UI.PURPLE)
+		button.name = "Nav_" + entry[1]
+		button.icon = load("res://assets/topdown/icon_%s.svg" % entry[1])
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width", 40)
+		button.custom_minimum_size = Vector2(0, 90)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(entry[3])
+		button.pressed.connect(entry[2])
 		row.add_child(button)
 	return row
+
+
+func _show_staff() -> void:
+	_show_overlay("ledger", "NHÂN SỰ", "Nhân viên giao lưu và bảo vệ được quản lý tại đây. Khu sofa ở sảnh là chỗ nhân viên ngồi chờ.", [
+		["Giao lưu âm nhạc", _show_lancan],
+		["Bảo vệ", _show_guard],
+		["Đóng", _close_overlay],
+	])
+
+
+func _show_venue_panel() -> void:
+	_refresh_detail()
+	var buttons: Array = []
+	if _btn_unlock.visible:
+		buttons.append([_btn_unlock.text, func() -> void:
+			var reason: String = sim.unlock_room(venue.selected_room)
+			_show_venue_panel()
+			_report(reason)])
+	if _price_row.visible:
+		buttons.append(["Giảm giá giờ", func() -> void:
+			_report(sim.change_price(venue.selected_room, -1))
+			_show_venue_panel()])
+		buttons.append(["Tăng giá giờ", func() -> void:
+			_report(sim.change_price(venue.selected_room, 1))
+			_show_venue_panel()])
+	buttons.append(["Nhật ký", _show_journal])
+	buttons.append(["Đóng", _close_overlay])
+	_show_overlay("ledger", "QUẢN LÝ QUÁN", _lbl_detail.text + "\n\nHÓA ĐƠN VỪA THU\n" + _lbl_bill.text, buttons)
+
+
+func _show_journal() -> void:
+	var lines: Array = []
+	for entry in sim.state.messages:
+		lines.append("%s  %s" % [Clock.time_text(entry["minute"]), entry["text"]])
+	_show_overlay("ledger", "NHẬT KÝ QUÁN", "\n".join(lines), [["Đóng", _close_overlay]])
 
 
 # ---------------------------------------------------------------- Cập nhật hiển thị
@@ -231,8 +329,8 @@ func _refresh() -> void:
 	var state = sim.state
 	_lbl_day.text = "Đêm %d" % state.day
 	_lbl_time.text = Clock.time_text(sim.clock.minute)
-	_lbl_money.text = "Tiền: " + Money.format(state.money)
-	_lbl_rep.text = "Danh tiếng: %d/100" % state.reputation
+	_lbl_money.text = Money.format(state.money)
+	_lbl_rep.text = "★ %d/100" % state.reputation
 
 	match state.phase:
 		"PREP":
@@ -241,10 +339,12 @@ func _refresh() -> void:
 			_lbl_status.text = "Đã đóng cửa"
 		_:
 			_lbl_status.text = "TẠM DỪNG" if sim.clock.paused else "Đang mở cửa · %dx" % sim.clock.speed
-	_btn_pause.text = "Tiếp tục" if sim.clock.paused else "Tạm dừng"
+	_btn_pause.text = "Chạy" if sim.clock.paused else "Dừng"
 	for speed in _speed_buttons:
 		_speed_buttons[speed].set_pressed_no_signal(sim.clock.speed == speed)
 
+	_goal_label.text = "Phục vụ %d nhóm · %d/%d hoàn thành" % [state.night["goal_served"], state.night["served"], state.night["goal_served"]]
+	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Cuộn lên để xem các phòng phía trên" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
 
 
@@ -299,6 +399,10 @@ func _report(reason: String) -> void:
 
 func _set_notice(text: String, kind: String) -> void:
 	venue.set_toast(text, KIND_COLOR.get(kind, UI.TEXT))
+	_last_notice = text
+	if is_instance_valid(_notice_label):
+		_notice_label.text = text
+		_notice_label.add_theme_color_override("font_color", KIND_COLOR.get(kind, UI.TEXT))
 
 
 func _on_message(text: String, kind: String) -> void:
@@ -475,14 +579,14 @@ func _show_lancan() -> void:
 		Money.format(balance["lancan_fee"]), balance["lancan_minutes"], sim.state.hosts.size(), balance["lancan_max_staff"], Money.format(balance["lancan_hire_cost"]),
 	]
 	var grid: GridContainer = GridContainer.new()
-	grid.columns = 4
+	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	for def in sim.data["hosts"]:
 		var host_id: String = def["id"]
 		var hired = sim.hosts.get_host(host_id)
 		var card: PanelContainer = UI.panel(UI.PANEL, UI.GOLD if hired != null else UI.BORDER)
-		card.custom_minimum_size = Vector2(176, 0)
+		card.custom_minimum_size = Vector2(320, 0)
 		var box: VBoxContainer = VBoxContainer.new()
 		box.add_theme_constant_override("separation", 2)
 		card.add_child(box)
@@ -520,7 +624,7 @@ func _show_lancan() -> void:
 				_report(reason))
 			box.add_child(hire)
 		grid.add_child(card)
-	_show_overlay("ledger", "LAN CAN", intro, [["Đóng", _close_overlay]], grid)
+	_show_overlay("ledger", "NHÂN VIÊN GIAO LƯU", intro, [["Đóng", _close_overlay]], grid)
 
 
 func _show_menu() -> void:
@@ -541,26 +645,35 @@ func _show_overlay(kind: String, title: String, body: String, buttons: Array, ex
 	_overlay.z_index = 50
 	add_child(_overlay)
 
+	var inset: MarginContainer = MarginContainer.new()
+	inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		inset.add_theme_constant_override("margin_" + side, 28)
+	_overlay.add_child(inset)
+	var scroller: ScrollContainer = ScrollContainer.new()
+	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	inset.add_child(scroller)
 	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(center)
-	var panel: PanelContainer = UI.panel(UI.PANEL_DARK, UI.PINK)
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroller.add_child(center)
+	var panel: PanelContainer = UI.panel(UI.PANEL, UI.BORDER)
+	panel.custom_minimum_size.x = minf(820, get_viewport_rect().size.x - 80)
 	center.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 16)
 	panel.add_child(column)
-
-	column.add_child(UI.label(title, 22, UI.PINK, true))
-	var body_label: Label = UI.label(body, 15, UI.TEXT)
+	column.add_child(UI.label(title, 24, UI.PURPLE, true))
+	var body_label: Label = UI.label(body, 16, UI.TEXT)
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.custom_minimum_size = Vector2(760, 0)
+	body_label.custom_minimum_size = Vector2(minf(760, get_viewport_rect().size.x - 125), 0)
 	column.add_child(body_label)
 	if extra != null:
 		column.add_child(extra)
 
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.alignment = BoxContainer.ALIGNMENT_END
+	var row: HFlowContainer = HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 10)
+	row.add_theme_constant_override("v_separation", 10)
 	column.add_child(row)
 	for entry in buttons:
 		var button: Button = UI.button(entry[0], 17, UI.GOLD)
