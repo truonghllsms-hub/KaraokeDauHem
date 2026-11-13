@@ -34,7 +34,7 @@ python3 -m http.server 8060 --directory build/web
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
 - Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
-- Mỗi khách có chỗ ngồi riêng trên sofa chữ L. Khách và nhân viên ở hai dãy đều quay về TV; khi gọi nhiều người, mỗi nhân viên được ghép với một khách và ngồi cạnh khách đó. Nhóm đông được thu nhỏ vừa chỗ ngồi, không còn gộp ba hình đại diện.
+- Mỗi nhóm có tối đa 5 khách. Phòng rộng hơn với 5 cặp chỗ ngồi cố định trên sofa: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
 
 Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 

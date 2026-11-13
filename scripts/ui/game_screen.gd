@@ -182,7 +182,7 @@ func _build_ui() -> void:
 	_map_scroll.follow_focus = false
 	_reference_frame.add_child(_map_scroll)
 	_map_stage = Control.new()
-	_map_stage.custom_minimum_size = Vector2(1024, 1828)
+	_map_stage.custom_minimum_size = VenueView.VIEW_SIZE
 	_map_stage.mouse_filter = Control.MOUSE_FILTER_PASS
 	_map_scroll.add_child(_map_stage)
 	venue = VenueView.new()
@@ -199,7 +199,7 @@ func _build_ui() -> void:
 	_reference_scroll.position = Vector2(987, 174)
 	_reference_scroll.size = Vector2(34, 790)
 	_reference_scroll.custom_minimum_size.x = 34
-	_reference_scroll.max_value = 564
+	_reference_scroll.max_value = VenueView.VIEW_SIZE.y - 1264
 	_reference_scroll.page = 0
 	var track: StyleBoxFlat = UI.box(Color("#f6e4b5"), UI.TEXT, 2, 2)
 	var handle: StyleBoxFlat = UI.box(UI.PURPLE, UI.TEXT, 2, 2)
@@ -254,8 +254,8 @@ func _fit_map() -> void:
 
 func _show_starting_rooms() -> void:
 	if is_instance_valid(_map_scroll):
-		_map_scroll.scroll_vertical = 564
-		_reference_scroll.set_value_no_signal(564)
+		_map_scroll.scroll_vertical = int(VenueView.ROOM_ROWS[2])
+		_reference_scroll.set_value_no_signal(VenueView.ROOM_ROWS[2])
 
 
 func scroll_to_lobby() -> void:

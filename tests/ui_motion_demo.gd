@@ -19,7 +19,7 @@ func _run() -> void:
 		sim.hire_host(id)
 	sim.set_guard(true)
 	sim.open_doors()
-	var first = sim.customers.add_group("middle_aged_men", 3, 120, sim.clock.minute)
+	var first = sim.customers.add_group("middle_aged_men", 5, 120, sim.clock.minute)
 	var second = sim.customers.add_group("aunties", 3, 120, sim.clock.minute)
 	var queue = sim.customers.add_group("young_men", 4, 120, sim.clock.minute)
 	for group in [first, second]:

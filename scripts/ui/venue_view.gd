@@ -12,27 +12,28 @@ const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
+const ROOM_ART: Array = [preload("res://assets/topdown/room_green_spacious.webp"), preload("res://assets/topdown/room_purple_spacious.webp")]
 const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
-const VIEW_SIZE: Vector2 = Vector2(1024, 1828)
+const VIEW_SIZE: Vector2 = Vector2(1024, 2809)
 const ROOM_W: float = 434.0
-const ROOM_H: float = 408.0
+const ROOM_H: float = 735.0
 const ROOM_COLS: Array = [24.0, 559.0]
-const ROOM_ROWS: Array = [0.0, 410.0, 820.0]
+const ROOM_ROWS: Array = [0.0, 737.0, 1474.0]
 const CORRIDOR_X: float = 510.0
-const LOBBY_Y: float = 1228.0
-const YARD_Y: float = 1624.0
-const JUNCTION: Vector2 = Vector2(510, 1270)
-const GATE: Vector2 = Vector2(510, 1624)
-const OWNER_HOME: Vector2 = Vector2(200, 1350)
-const PICKUP: Vector2 = Vector2(350, 1415)
-const HOST_SLOTS: Array = [Vector2(700, 1360), Vector2(780, 1360), Vector2(860, 1360), Vector2(900, 1420), Vector2(900, 1480), Vector2(900, 1540)]
-const QUEUE_SLOTS: Array = [Vector2(340, 1500), Vector2(370, 1550), Vector2(660, 1500), Vector2(690, 1550)]
-const STREET: Vector2 = Vector2(510, 1870)
-const BIKE_SLOTS: Array = [Vector2(140, 1770), Vector2(220, 1770), Vector2(720, 1770), Vector2(300, 1770), Vector2(800, 1770), Vector2(380, 1770)]
-const GUARD_POS: Vector2 = Vector2(926, 1750)
+const LOBBY_Y: float = 2209.0
+const YARD_Y: float = 2605.0
+const JUNCTION: Vector2 = Vector2(510, 2251)
+const GATE: Vector2 = Vector2(510, 2605)
+const OWNER_HOME: Vector2 = Vector2(200, 2331)
+const PICKUP: Vector2 = Vector2(350, 2396)
+const HOST_SLOTS: Array = [Vector2(700, 2341), Vector2(780, 2341), Vector2(860, 2341), Vector2(900, 2401), Vector2(900, 2461), Vector2(900, 2521)]
+const QUEUE_SLOTS: Array = [Vector2(340, 2481), Vector2(370, 2531), Vector2(660, 2481), Vector2(690, 2531)]
+const STREET: Vector2 = Vector2(510, 2851)
+const BIKE_SLOTS: Array = [Vector2(140, 2751), Vector2(220, 2751), Vector2(720, 2751), Vector2(300, 2751), Vector2(800, 2751), Vector2(380, 2751)]
+const GUARD_POS: Vector2 = Vector2(926, 2731)
 const MAX_TASKS: int = 5
 
 const STATE_TEXT: Dictionary = {
@@ -93,7 +94,7 @@ func setup(p_sim) -> void:
 	_yard_texture = load("res://assets/topdown/yard.svg")
 	for i in sim.state.rooms.size():
 		_build_room(sim.state.rooms[i], i)
-	_lbl_yard = _add_label("", 13, UI.TEXT, Rect2(610, 1778, 350, 26), true)
+	_lbl_yard = _add_label("", 13, UI.TEXT, Rect2(610, 2759, 350, 26), true)
 	_lbl_yard.visible = false
 	_actors = Node2D.new()
 	_actors.y_sort_enabled = true
@@ -125,15 +126,15 @@ func setup(p_sim) -> void:
 	_owner.set_clickable(false)
 	_actors.add_child(_owner)
 
-	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 1515, 830, 48), true)
+	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 2496, 830, 48), true)
 	_lbl_toast.clip_text = true
 	_lbl_toast.visible = false
 	_lbl_toast.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 5))
-	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 1450, 290, 32), true)
+	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 2431, 290, 32), true)
 	_lbl_tasks.visible = false
 
 	_btn_open = UI.button("MỞ CỬA ĐÓN KHÁCH", 18, UI.PINK)
-	_btn_open.position = Vector2(345, 1510)
+	_btn_open.position = Vector2(345, 2491)
 	_btn_open.visible = false
 	_btn_open.size = Vector2(290, 56)
 	_btn_open.pressed.connect(func() -> void: report.emit(sim.open_doors()))
@@ -190,7 +191,13 @@ func _build_room(room: Dictionary, index: int) -> void:
 
 	var furniture: Node2D = Node2D.new()
 	add_child(furniture)
-	var sprite: TextureRect = ReferenceSkin.image(_active_source(index), rect)
+	var sprite: TextureRect = TextureRect.new()
+	sprite.texture = ROOM_ART[index % 2]
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.stretch_mode = TextureRect.STRETCH_SCALE
+	sprite.position = rect.position
+	sprite.size = rect.size
+	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	furniture.add_child(sprite)
 	furniture.visible = false
 	var badge_x: float = 177.0 if index % 2 == 0 else 137.0
@@ -244,7 +251,7 @@ func _active_source(index: int) -> Rect2:
 
 func _seat_position(room_id: String) -> Vector2:
 	var rect: Rect2 = _rect_of(room_id)
-	return rect.position + Vector2(145 if rect.position.x < CORRIDOR_X else 220, 370)
+	return rect.position + Vector2(145 if rect.position.x < CORRIDOR_X else 220, ROOM_H - 38)
 
 
 func _seating(room_id: String) -> Dictionary:
@@ -263,7 +270,7 @@ func _host_position(room_id: String, host_id: String = "") -> Vector2:
 
 func _work_position(room_id: String) -> Vector2:
 	var rect: Rect2 = _rect_of(room_id)
-	return rect.position + Vector2(330 if rect.position.x < CORRIDOR_X else 80, 356)
+	return rect.position + Vector2(330 if rect.position.x < CORRIDOR_X else 80, ROOM_H - 52)
 
 
 func _zone(point: Vector2) -> int:
@@ -277,8 +284,8 @@ func _zone(point: Vector2) -> int:
 
 
 func _door(point: Vector2) -> Vector2:
-	var row: int = clampi(int(point.y / 410.0), 0, 2)
-	return Vector2(CORRIDOR_X, ROOM_ROWS[row] + 358)
+	var row: int = clampi(int(point.y / 737.0), 0, 2)
+	return Vector2(CORRIDOR_X, ROOM_ROWS[row] + ROOM_H - 50)
 
 
 func _route(from: Vector2, to: Vector2) -> Array:
@@ -290,7 +297,7 @@ func _route(from: Vector2, to: Vector2) -> Array:
 		points.append(_door(from))
 	elif start >= 2:
 		# Counter workspace exits on the right, clear of its front edge.
-		if from.x < 340 and from.y < 1400:
+		if from.x < 340 and from.y < 2381:
 			points.append(Vector2(360, from.y))
 		points.append(Vector2(CORRIDOR_X, from.y))
 	if finish == 0:
@@ -298,7 +305,7 @@ func _route(from: Vector2, to: Vector2) -> Array:
 		points.append(Vector2(to.x, _door(to).y + 25))
 	else:
 		points.append(Vector2(CORRIDOR_X, to.y))
-	if finish >= 2 and to.x < 340 and to.y < 1400:
+	if finish >= 2 and to.x < 340 and to.y < 2381:
 		points.append(Vector2(360, to.y))
 	points.append(to)
 	return points
@@ -543,10 +550,8 @@ func _sync_groups() -> void:
 		actor.pose = "standing" if waiting else "seated"
 		actor.seated_faces_left = not waiting and _rect_of(group["room_id"]).position.x > CORRIDOR_X
 		actor.seated_offsets = []
-		actor.seated_scale = 1.0
 		if not waiting:
 			var plan: Dictionary = _seating(group["room_id"])
-			actor.seated_scale = plan["scale"]
 			for point in plan["guests"]:
 				actor.seated_offsets.append(point - target)
 		actor.mood = "neutral"
@@ -617,7 +622,6 @@ func _sync_hosts() -> void:
 		actor.singing = host["state"] == "SERVING" and not actor.is_moving()
 		actor.pose = "seated"
 		actor.seated_faces_left = key == "lounge" or _rect_of(host["room_id"]).position.x > CORRIDOR_X
-		actor.seated_scale = _seating(host["room_id"])["scale"] if key != "lounge" else 1.0
 		actor.mood = "tired" if host["state"] == "RESTING" else ("happy" if host["state"] == "SERVING" else "neutral")
 		if host_id == selected_host:
 			actor.set_bubble("ĐANG CHỌN", Color(1.0, 0.96, 0.8), UI.GOLD)
@@ -704,14 +708,14 @@ func _refresh_rooms() -> void:
 		if selected_host != "" and room_state == "OCCUPIED":
 			tip = "Bấm để cử nhân viên Lan can đang chọn vào phòng này."
 
-		var initial_art: bool = (ui["index"] < 2 and room_state == "AVAILABLE") or (ui["index"] >= 2 and locked)
+		var initial_art: bool = locked
 		ui["furniture"].visible = not initial_art
-		ui["title"].visible = ui["index"] >= 2 and (not locked or ui["index"] >= 4)
+		ui["title"].visible = true
 		var badge_x: float = 177.0 if ui["index"] % 2 == 0 else 137.0
 		ui["title"].position = _rect_of(room["id"]).position + Vector2(badge_x + 6, 54 if locked else 15)
 		ui["title"].size = Vector2(116, 68 if locked else 44)
 		ui["title"].text = "P%02d" % (ui["index"] + 1)
-		ui["status"].visible = not locked and room_state != "AVAILABLE"
+		ui["status"].visible = not locked
 		ui["status"].text = STATE_TEXT[room_state].trim_prefix("[").trim_suffix("]")
 		ui["status"].add_theme_color_override("font_color", Color("#fff2cb"))
 		if locked and choosing == null:
@@ -747,13 +751,10 @@ func _draw() -> void:
 	if sim == null:
 		return
 	draw_rect(Rect2(Vector2.ZERO, VIEW_SIZE), Color("#dfcea8"))
-	# Extend the same corridor and locked-room art upward for P05/P06.
-	for y in range(0, 565, 48):
+	for y in range(0, int(LOBBY_Y), 48):
 		draw_texture_rect_region(ReferenceSkin.ATLAS, Rect2(458, y, 101, 48), Rect2(458, 160, 101, 48))
-	for index in 4:
-		var room_index: int = index + 2
-		var rect: Rect2 = _room_rect(room_index)
-		var source: Rect2 = Rect2(24, 140, 434, 256) if room_index % 2 == 0 else Rect2(559, 140, 421, 256)
+	for index in 6:
+		var rect: Rect2 = _room_rect(index)
+		var source: Rect2 = Rect2(24, 140, 434, 256) if index % 2 == 0 else Rect2(559, 140, 421, 256)
 		draw_texture_rect_region(ReferenceSkin.ATLAS, rect, source)
-	# Pixel-aligned approved lower map: default view reproduces the reference exactly.
-	draw_texture_rect_region(ReferenceSkin.ATLAS, Rect2(0, 564, 984, 1264), Rect2(0, 140, 984, 1264))
+	draw_texture_rect_region(ReferenceSkin.ATLAS, Rect2(0, LOBBY_Y, 984, 600), Rect2(0, 804, 984, 600))

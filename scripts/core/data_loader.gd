@@ -125,6 +125,8 @@ static func load_all() -> Dictionary:
 				errors.append("customers.json: cần ít nhất một nhóm khách.")
 			for t in types:
 				_require(t, TYPE_KEYS, "customers.json", errors)
+				if t.get("size_min", 0) < 1 or t.get("size_max", 6) > 5 or t.get("size_min", 0) > t.get("size_max", 0):
+					errors.append("customers.json: mỗi nhóm phải có từ 1 đến 5 khách.")
 				if t.get("composition", "") not in ["men", "women", "mixed", "couple", "family"]:
 					errors.append("customers.json: thành phần nhóm khách không hợp lệ.")
 	elif customers != null:

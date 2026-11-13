@@ -9,6 +9,7 @@ var data: Dictionary
 func _init() -> void:
 	data = Loader.load_all()
 	check(data["errors"].is_empty(), "Party data validates")
+	group_limit()
 	policy()
 	multi_service()
 	partial_and_cancel()
@@ -42,8 +43,23 @@ func request(group, gender: String, count: int) -> void:
 func fees(group) -> int:
 	return group["bill_items"].filter(func(item): return item["type"] == "LANCAN_FEE").size()
 
+func group_limit() -> void:
+	var sim = new_sim(123)
+	for room in sim.state.rooms:
+		room["state"] = "AVAILABLE"
+		# Even a future room upgrade cannot allow a group larger than five.
+		room["capacity"] = 30
+	var valid: bool = true
+	for i in 500:
+		sim.customers._spawn_random(0)
+		for group in sim.state.groups.duplicate():
+			valid = valid and group["size"] >= 1 and group["size"] <= 5 and group["sprites"].size() == group["size"]
+			sim.customers.remove_group(group)
+	check(valid, "Random spawning stays at five customers even with oversized room capacity")
+
 func policy() -> void:
 	var sim = new_sim()
+	check(sim.customers.add_group("friends", 6, 90, 0) == null and sim.customers.add_group("friends", 0, 90, 0) == null and sim.state.groups.is_empty(), "Reject oversized and empty groups without changing state")
 	var male: int = 0
 	var female: int = 0
 	var women_ok: bool = true
@@ -139,17 +155,17 @@ func partial_and_cancel() -> void:
 func seating() -> void:
 	var valid: bool = true
 	for right in [false, true]:
-		var rect: Rect2 = Rect2(559 if right else 24, 820, 421 if right else 434, 408)
-		for guests in range(1, 16):
-			for companions in range(0, mini(guests, 6) + 1):
+		var rect: Rect2 = Rect2(559 if right else 24, 820, 421 if right else 434, 735)
+		for guests in range(1, 6):
+			for companions in range(0, guests + 1):
 				var plan: Dictionary = Seats.build(rect, guests, companions)
-				valid = valid and plan["guests"].size() == guests and plan["hosts"].size() == companions
+				valid = valid and plan["scale"] == 1.0 and plan["guests"].size() == guests and plan["hosts"].size() == companions
 				var points: Array = plan["guests"] + plan["hosts"]
-				var body: Vector2 = Vector2(88, 108) * plan["scale"] * 0.98
+				var body: Vector2 = Vector2(88, 108)
 				for i in points.size():
 					valid = valid and rect.has_point(points[i])
 					var first: Rect2 = Rect2(points[i] - Vector2(body.x * 0.5, body.y), body)
 					for j in range(i + 1, points.size()):
 						var second: Rect2 = Rect2(points[j] - Vector2(body.x * 0.5, body.y), body)
 						valid = valid and not first.intersects(second)
-	check(valid, "All sofa layouts up to 15 guests and 6 companions have separate seats inside both room columns")
+	check(valid, "All sofa layouts up to 5 guests and 5 companions at fixed character size have separate seats inside both room columns")

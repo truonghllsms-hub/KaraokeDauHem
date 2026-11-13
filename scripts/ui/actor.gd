@@ -24,7 +24,6 @@ var singing: bool = false
 var pose: String = "standing"
 var seated_faces_left: bool = false
 var seated_offsets: Array = []
-var seated_scale: float = 1.0
 var mood: String = "neutral"
 var _facing: String = "front"
 var _look_left: bool = false
@@ -46,7 +45,7 @@ var _button: Button
 
 func setup(texture_names: Array, badge_text: String = "") -> void:
 	y_sort_enabled = true
-	var count: int = clampi(texture_names.size(), 1, 15)
+	var count: int = clampi(texture_names.size(), 1, 5)
 	var offsets: Array = _walking_offsets(count)
 	for i in count:
 		var sprite: Sprite2D = Sprite2D.new()
@@ -118,8 +117,7 @@ func set_bubble(text: String, background: Color = Color(1, 1, 1, 0.95), border: 
 
 func set_highlight(on: bool) -> void:
 	_highlight = on
-	var target: float = 1.1 if on else 1.0
-	scale = Vector2(target, target)
+	scale = Vector2.ONE
 
 
 ## Viền sáng dưới chân khi được chọn và thanh kiên nhẫn trên đầu (xanh -> vàng -> đỏ).
@@ -127,7 +125,7 @@ func _draw() -> void:
 	# Bóng tiếp đất giữ bước chân và vị trí sofa rõ khi thân người chuyển động.
 	for sprite in _sprites:
 		draw_set_transform(sprite.position + Vector2(0, 1), 0, Vector2(1, 0.22))
-		draw_circle(Vector2.ZERO, 18 * (seated_scale if pose == "seated" else 1.0), Color(0.16, 0.10, 0.06, 0.16))
+		draw_circle(Vector2.ZERO, 18, Color(0.16, 0.10, 0.06, 0.16))
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	if _highlight:
 		var pulse: float = 0.75 + 0.25 * sin(_time * 6.0)
@@ -200,15 +198,14 @@ func _update_appearance() -> void:
 			texture = Motion.expression_texture(person, expression)
 		if texture == null:
 			texture = CharacterArt.texture(person, active_pose, _facing)
-		var size_factor: float = seated_scale if pose == "seated" else 1.0
-		var key: String = str(texture.get_instance_id()) + ":" + str(size_factor)
+		var key: String = str(texture.get_instance_id())
 		if _appearance_keys[i] == key:
 			continue
 		_appearance_keys[i] = key
 		var sprite: Sprite2D = _sprites[i]
 		sprite.texture = texture
 		var art_height: float = sprite.texture.get_height()
-		var ratio: float = CharacterArt.height(person, active_pose) * size_factor / art_height
+		var ratio: float = CharacterArt.height(person, active_pose) / art_height
 		sprite.scale = Vector2(ratio, ratio)
 		sprite.offset = Vector2(0, -art_height * 0.5)
 		sprite.set_meta("base_scale", ratio)
@@ -273,8 +270,7 @@ func advance(delta: float) -> void:
 		elif pose == "cleaning":
 			tilt = sin(_time * 7.0) * 0.07
 		var ratio: float = _sprites[i].get_meta("base_scale")
-		var breath: float = 1.0 if is_moving() else 1.0 + sin(_time * 1.8 + i) * 0.008
-		_sprites[i].scale = Vector2(ratio, ratio * breath)
+		_sprites[i].scale = Vector2(ratio, ratio)
 		if is_moving():
 			_sprites[i].flip_h = _look_left and _people[i] != "owner"
 		else:

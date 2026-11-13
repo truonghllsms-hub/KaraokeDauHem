@@ -2,7 +2,7 @@
   {
     "id": "room_01",
     "name": "Phòng 01",
-    "capacity": 6,
+    "capacity": 5,
     "price_per_hour": 250000,
     "unlock_cost": 0,
     "unlocked": true,
@@ -12,7 +12,7 @@
   {
     "id": "room_02",
     "name": "Phòng 02",
-    "capacity": 8,
+    "capacity": 5,
     "price_per_hour": 350000,
     "unlock_cost": 0,
     "unlocked": true,
@@ -22,7 +22,7 @@
   {
     "id": "room_03",
     "name": "Phòng 03",
-    "capacity": 6,
+    "capacity": 5,
     "price_per_hour": 260000,
     "unlock_cost": 4000000,
     "unlocked": false,
@@ -32,7 +32,7 @@
   {
     "id": "room_04",
     "name": "Phòng 04",
-    "capacity": 10,
+    "capacity": 5,
     "price_per_hour": 420000,
     "unlock_cost": 6000000,
     "unlocked": false,
@@ -42,7 +42,7 @@
   {
     "id": "room_05",
     "name": "Phòng 05",
-    "capacity": 12,
+    "capacity": 5,
     "price_per_hour": 500000,
     "unlock_cost": 9000000,
     "unlocked": false,
@@ -52,7 +52,7 @@
   {
     "id": "room_06",
     "name": "Phòng VIP",
-    "capacity": 15,
+    "capacity": 5,
     "price_per_hour": 700000,
     "unlock_cost": 14000000,
     "unlocked": false,

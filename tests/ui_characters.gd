@@ -72,7 +72,7 @@ func _run() -> void:
 		game.venue.advance_actors(0.1)
 	check(host_actor.singing and host_actor._sprites[0].texture in [Art.texture("lancan_1", "seated"), Motion.expression_texture("lancan_1", "cheer")], "Host sits down and sings beside the guests")
 	var sprite: Sprite2D = host_actor._sprites[0]
-	check(absf(sprite.texture.get_height() * sprite.scale.y - 104.0 * host_actor.seated_scale) < 1.0 and is_zero_approx(sprite.offset.y + sprite.texture.get_height() * 0.5), "Pose scaling preserves the foot anchor and readable room size")
+	check(absf(sprite.texture.get_height() * sprite.scale.y - 104.0) < 1.0 and is_zero_approx(sprite.offset.y + sprite.texture.get_height() * 0.5), "Pose scaling preserves the foot anchor and readable room size")
 	var paired_ok: bool = true
 	for room_id in ["room_01", "room_02"]:
 		var plan: Dictionary = game.venue._seating(room_id)

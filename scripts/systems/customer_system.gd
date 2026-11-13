@@ -2,6 +2,8 @@ extends RefCounted
 ## Sinh nhóm khách, quản lý hàng chờ và mức kiên nhẫn.
 ## Vòng đời: WAITING -> IN_ROOM -> CHECKOUT -> LEAVING, hoặc LEFT_UNSERVED nếu bỏ về.
 
+const MAX_GROUP_SIZE: int = 5
+
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
 ## Tắt để kiểm thử từng kịch bản mà không có khách ngẫu nhiên.
@@ -51,7 +53,7 @@ func music_name(music_id: String) -> String:
 ## Tạo một nhóm và đưa vào hàng chờ. Dùng chung cho sinh khách tự động, debug và kiểm thử.
 func add_group(type_id: String, size: int, planned_minutes: int, now: int, music: String = "") -> Variant:
 	var t = get_type(type_id)
-	if t == null:
+	if t == null or size < 1 or size > MAX_GROUP_SIZE:
 		return null
 	if music == "":
 		music = _pick_weighted(t["music"])
@@ -158,7 +160,7 @@ func _leave_unserved(group: Dictionary, text: String, reputation_penalty: int) -
 
 func _spawn_random(now: int) -> void:
 	var balance: Dictionary = _data["balance"]
-	var capacity: int = _rooms.max_unlocked_capacity()
+	var capacity: int = mini(MAX_GROUP_SIZE, _rooms.max_unlocked_capacity())
 
 	# Chỉ sinh nhóm mà quán có phòng đủ chứa và còn kịp hát trước giờ đóng cửa.
 	var weights: Dictionary = {}

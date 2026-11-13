@@ -495,6 +495,8 @@ func check_invariants() -> Array:
 		elif host["room_id"] != "":
 			problems.append("%s đã xong việc nhưng còn giữ phòng." % host["name"])
 	for group in state.groups:
+		if group["size"] < 1 or group["size"] > 5:
+			problems.append("Nhóm khách phải có từ 1 đến 5 người.")
 		if group["state"] == "IN_ROOM" and not seen_groups.has(group["id"]):
 			problems.append("Nhóm %d ghi là đang hát nhưng không ở phòng nào." % group["id"])
 		if group["state"] != "IN_ROOM" and group["state"] != "WAITING":

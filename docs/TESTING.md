@@ -79,3 +79,12 @@ godot --path . --resolution 1024x1536 --rendering-driver opengl3 --audio-driver 
 `ui_reference.gd` so sánh toàn bộ điểm ảnh màn hình chuẩn bị với `assets/reference/approved_ui.png`, rồi kiểm tra số tiền sau nhập kho, mở khóa phòng, giờ mô phỏng, tốc độ và nút Nhân sự. Ảnh nền là atlas đồ họa; các vùng bấm và số liệu vẫn là thành phần hoạt động trong game. Kiểm thử này chạy ở đúng tỷ lệ thiết kế 1024×1536; trên màn hình khác game giữ tỷ lệ và có lề.
 
 Mở cửa bằng nút tạm dừng trên thanh trên cùng hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trên trái mở menu; phím tắt cũ vẫn dùng được. Không có nút nổi giữa sảnh hoặc dải công việc bổ sung ngoài mẫu.
+
+## Giới hạn nhóm và kích thước nhân vật
+
+- `tests/party_rules.gd`: 35 kiểm tra, gồm 500 lượt sinh nhóm trong phòng tăng sức chứa, từ chối nhóm quá 5 khách và kiểm tra mọi bố trí 1–5 khách cùng 0–5 nhân viên ở cả hai dãy. Khung người cố định 88×108, không chồng lấn.
+- `tests/ui_fixed_sizes.gd`: dựng 5 khách và 5 nhân viên trong một phòng, xác nhận kích thước thực của sprite và kích thước khi chọn nhóm. Khách ngồi cao 94 px, nhân viên ngồi cao 104 px, không đổi theo số người.
+- `tests/ui_reference.gd`: giữ nguyên điểm ảnh HUD và thanh điều hướng; camera hiển thị phòng cao 735 px và hỗ trợ cuộn.
+- `tests/ui_characters.gd`: hoạt ảnh đi lại, hát, biểu cảm và hướng TV của hai dãy.
+
+Chạy các kiểm tra giao diện ở độ phân giải thiết kế 1024×1536 với renderer OpenGL và audio Dummy. `ui_fixed_sizes.gd` ghi ảnh kiểm tra vào `/workspace/work/five-guests-fixed.png`.

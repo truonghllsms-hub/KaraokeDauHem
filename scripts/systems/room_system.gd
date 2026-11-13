@@ -73,6 +73,8 @@ func check_assign(room: Dictionary, group: Dictionary, now: int, night_minutes: 
 			return "%s đang dọn, chờ một chút." % room["name"]
 		"BROKEN":
 			return "%s đang hỏng thiết bị." % room["name"]
+	if group["size"] < 1 or group["size"] > 5:
+		return "Mỗi nhóm chỉ nhận tối đa 5 khách."
 	if group["size"] > room["capacity"]:
 		return "%s chỉ chứa %d người, nhóm có %d người." % [room["name"], room["capacity"], group["size"]]
 	if now + group["planned_minutes"] > night_minutes:
