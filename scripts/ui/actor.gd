@@ -22,6 +22,9 @@ var speed: float = 190.0
 var place_key: String = ""
 var singing: bool = false
 var pose: String = "standing"
+var seated_faces_left: bool = false
+var seated_offsets: Array = []
+var seated_scale: float = 1.0
 var mood: String = "neutral"
 var _facing: String = "front"
 var _look_left: bool = false
@@ -42,8 +45,9 @@ var _button: Button
 
 
 func setup(texture_names: Array, badge_text: String = "") -> void:
-	var count: int = clampi(texture_names.size(), 1, 3)
-	var offsets: Array = WALK_OFFSETS[count - 1]
+	y_sort_enabled = true
+	var count: int = clampi(texture_names.size(), 1, 15)
+	var offsets: Array = _walking_offsets(count)
 	for i in count:
 		var sprite: Sprite2D = Sprite2D.new()
 		_people.append(str(texture_names[i]))
@@ -77,6 +81,18 @@ func setup(texture_names: Array, badge_text: String = "") -> void:
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.visible = false
 	add_child(_bubble)
+	_bubble.z_index = 5
+	_badge.z_index = 5
+
+
+func _walking_offsets(count: int) -> Array:
+	if count <= 3:
+		return WALK_OFFSETS[count - 1]
+	var points: Array = []
+	var rows: int = ceili(float(count) / 3.0)
+	for i in count:
+		points.append(Vector2((i % 3 - 1) * 18, floori(float(i) / 3.0) * 22 - (rows - 1) * 11))
+	return points
 
 
 func set_clickable(clickable: bool) -> void:
@@ -110,8 +126,8 @@ func set_highlight(on: bool) -> void:
 func _draw() -> void:
 	# Bóng tiếp đất giữ bước chân và vị trí sofa rõ khi thân người chuyển động.
 	for sprite in _sprites:
-		draw_set_transform(Vector2(sprite.position.x, 1), 0, Vector2(1, 0.22))
-		draw_circle(Vector2.ZERO, 18, Color(0.16, 0.10, 0.06, 0.16))
+		draw_set_transform(sprite.position + Vector2(0, 1), 0, Vector2(1, 0.22))
+		draw_circle(Vector2.ZERO, 18 * (seated_scale if pose == "seated" else 1.0), Color(0.16, 0.10, 0.06, 0.16))
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	if _highlight:
 		var pulse: float = 0.75 + 0.25 * sin(_time * 6.0)
@@ -184,14 +200,15 @@ func _update_appearance() -> void:
 			texture = Motion.expression_texture(person, expression)
 		if texture == null:
 			texture = CharacterArt.texture(person, active_pose, _facing)
-		var key: String = str(texture.get_instance_id())
+		var size_factor: float = seated_scale if pose == "seated" else 1.0
+		var key: String = str(texture.get_instance_id()) + ":" + str(size_factor)
 		if _appearance_keys[i] == key:
 			continue
 		_appearance_keys[i] = key
 		var sprite: Sprite2D = _sprites[i]
 		sprite.texture = texture
 		var art_height: float = sprite.texture.get_height()
-		var ratio: float = CharacterArt.height(person, active_pose) / art_height
+		var ratio: float = CharacterArt.height(person, active_pose) * size_factor / art_height
 		sprite.scale = Vector2(ratio, ratio)
 		sprite.offset = Vector2(0, -art_height * 0.5)
 		sprite.set_meta("base_scale", ratio)
@@ -225,7 +242,14 @@ func advance(delta: float) -> void:
 
 	_walk_distance += travelled
 	_update_appearance()
-	var offsets: Array = OFFSETS[_sprites.size() - 1] if pose == "seated" and not is_moving() else WALK_OFFSETS[_sprites.size() - 1]
+	var offsets: Array = _walking_offsets(_sprites.size())
+	if pose == "seated" and not is_moving():
+		if seated_offsets.size() == _sprites.size():
+			offsets = seated_offsets
+		elif _sprites.size() <= 3:
+			offsets = OFFSETS[_sprites.size() - 1]
+	if _badge != null:
+		_badge.visible = _badge.text != "" and (pose != "seated" or is_moving())
 	var compact: bool = pose != "seated" or is_moving()
 	var spread: float = 1.0
 	if compact and _sprites.size() > 1:
@@ -251,6 +275,9 @@ func advance(delta: float) -> void:
 		var ratio: float = _sprites[i].get_meta("base_scale")
 		var breath: float = 1.0 if is_moving() else 1.0 + sin(_time * 1.8 + i) * 0.008
 		_sprites[i].scale = Vector2(ratio, ratio * breath)
-		_sprites[i].flip_h = _look_left and is_moving() and _people[i] != "owner"
+		if is_moving():
+			_sprites[i].flip_h = _look_left and _people[i] != "owner"
+		else:
+			_sprites[i].flip_h = pose == "seated" and seated_faces_left
 		_sprites[i].position = base + Vector2(0, bob)
 		_sprites[i].rotation = tilt

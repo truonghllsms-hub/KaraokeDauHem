@@ -27,7 +27,7 @@
   "price_min": 100000,
   "price_max": 1000000,
   "lancan_hire_cost": 1500000,
-  "lancan_max_staff": 3,
+  "lancan_max_staff": 6,
   "lancan_fee": 200000,
   "lancan_minutes": 30,
   "lancan_request_delay": 5,
@@ -74,5 +74,6 @@
   "goal_base": 3,
   "goal_max": 10,
   "goal_unserved_max": 5,
-  "goal_reputation_bonus": 2
+  "goal_reputation_bonus": 2,
+  "lancan_men_request_male_percent": 10
 }

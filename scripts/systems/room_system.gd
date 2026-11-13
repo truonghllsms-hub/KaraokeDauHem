@@ -27,6 +27,7 @@ func setup_new_game() -> void:
 			"durability": 100,
 			"group_id": 0,
 			"host_id": "",
+			"host_ids": [],
 			"request": {},
 			"session_start": 0,
 			"session_end": 0,
@@ -91,6 +92,7 @@ func end_session(room: Dictionary) -> void:
 	room["state"] = "DIRTY"
 	room["group_id"] = 0
 	room["host_id"] = ""
+	room["host_ids"] = []
 	room["request"] = {}
 	room["cleanliness"] = 40
 

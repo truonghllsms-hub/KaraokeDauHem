@@ -28,6 +28,7 @@ const BALANCE_KEYS: Array = [
 	"price_max",
 	"lancan_hire_cost",
 	"lancan_max_staff",
+	"lancan_men_request_male_percent",
 	"lancan_fee",
 	"lancan_minutes",
 	"lancan_request_delay",
@@ -78,7 +79,7 @@ const BALANCE_KEYS: Array = [
 ]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
 const UPGRADE_KEYS: Array = ["id", "name", "cost", "max_level", "effect"]
-const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage"]
+const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage", "gender"]
 
 
 ## Trả về {"errors": Array[String], "rooms": Array, "customers": Dictionary, "balance": Dictionary, "hosts": Array}.
@@ -103,6 +104,8 @@ static func load_all() -> Dictionary:
 	if hosts is Array:
 		for host in hosts:
 			_require(host, HOST_KEYS, "hosts.json", errors)
+			if host.get("gender", "") not in ["male", "female"]:
+				errors.append("hosts.json: giới tính nhân viên không hợp lệ.")
 	elif hosts != null:
 		errors.append("hosts.json: phải là một danh sách.")
 
@@ -115,18 +118,22 @@ static func load_all() -> Dictionary:
 		errors.append("rooms.json: phải là một danh sách.")
 
 	if customers is Dictionary:
-		_require(customers, ["music_names", "types"], "customers.json", errors)
+		_require(customers, ["music_names", "types", "sprite_genders"], "customers.json", errors)
 		var types = customers.get("types", [])
 		if types is Array:
 			if types.is_empty():
 				errors.append("customers.json: cần ít nhất một nhóm khách.")
 			for t in types:
 				_require(t, TYPE_KEYS, "customers.json", errors)
+				if t.get("composition", "") not in ["men", "women", "mixed", "couple", "family"]:
+					errors.append("customers.json: thành phần nhóm khách không hợp lệ.")
 	elif customers != null:
 		errors.append("customers.json: phải là một đối tượng.")
 
 	if balance is Dictionary:
 		_require(balance, BALANCE_KEYS, "balance.json", errors)
+		if balance.get("lancan_men_request_male_percent", -1) < 0 or balance.get("lancan_men_request_male_percent", 101) > 100:
+			errors.append("balance.json: tỷ lệ gọi nhân viên nam phải từ 0 đến 100.")
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 

@@ -3,6 +3,8 @@ extends RefCounted
 ## cùng một ID dùng cho ảnh tuyển dụng, đứng, ngồi và các hướng chủ quán.
 
 const SHEETS: Dictionary = {
+	"new_men": preload("res://assets/characters/new_men_base.webp"),
+	"new_men_seated": preload("res://assets/characters/new_men_seated.webp"),
 	"staff": preload("res://assets/characters/staff.webp"),
 	"hosts": preload("res://assets/characters/hosts.webp"),
 	"hosts_seated": preload("res://assets/characters/hosts_seated.webp"),
@@ -13,6 +15,8 @@ const SHEETS: Dictionary = {
 }
 
 const REGIONS: Dictionary = {
+	"new_men": [Rect2(119, 15, 241, 424), Rect2(503, 11, 226, 429), Rect2(898, 14, 185, 423), Rect2(168, 448, 184, 377), Rect2(539, 454, 180, 371), Rect2(910, 448, 181, 376), Rect2(168, 838, 179, 401), Rect2(535, 837, 185, 403), Rect2(910, 837, 179, 403)],
+	"new_men_seated": [Rect2(63, 15, 327, 429), Rect2(457, 12, 331, 431), Rect2(911, 17, 290, 427), Rect2(105, 441, 260, 391), Rect2(504, 449, 269, 387), Rect2(908, 445, 260, 391), Rect2(69, 834, 298, 408), Rect2(474, 838, 303, 406), Rect2(878, 837, 302, 405)],
 	"staff": [Rect2(134, 26, 188, 406), Rect2(573, 26, 186, 404), Rect2(1020, 26, 181, 407), Rect2(1457, 26, 182, 408), Rect2(117, 463, 252, 413), Rect2(565, 460, 238, 416), Rect2(988, 470, 247, 402), Rect2(1443, 477, 221, 397)],
 	"hosts": [Rect2(86, 41, 240, 467), Rect2(484, 41, 192, 466), Rect2(844, 36, 228, 470), Rect2(1206, 44, 226, 461), Rect2(115, 526, 206, 470), Rect2(439, 527, 243, 472), Rect2(865, 530, 184, 468), Rect2(1234, 527, 217, 474)],
 	"hosts_seated": [Rect2(87, 23, 235, 489), Rect2(457, 21, 224, 491), Rect2(822, 19, 228, 493), Rect2(1223, 28, 236, 484), Rect2(80, 512, 251, 508), Rect2(468, 512, 235, 509), Rect2(852, 512, 203, 510), Rect2(1210, 512, 255, 510)],
@@ -23,6 +27,15 @@ const REGIONS: Dictionary = {
 }
 
 const PEOPLE: Dictionary = {
+	"lancan_9": ["new_men", 0],
+	"lancan_10": ["new_men", 1],
+	"lancan_11": ["new_men", 2],
+	"middle_m_1": ["new_men", 3],
+	"middle_m_2": ["new_men", 4],
+	"middle_m_3": ["new_men", 5],
+	"young_m_1": ["new_men", 6],
+	"young_m_2": ["new_men", 7],
+	"young_m_3": ["new_men", 8],
 	"owner": ["staff", 0],
 	"owner_back": ["staff", 1],
 	"owner_left": ["staff", 2],

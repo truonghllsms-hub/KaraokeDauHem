@@ -33,7 +33,8 @@ python3 -m http.server 8060 --directory build/web
 - Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
-- Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và tám nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi; trang phục nhân viên giao lưu theo bảng đã duyệt.
+- Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
+- Mỗi khách có chỗ ngồi riêng trên sofa chữ L. Khách và nhân viên ở hai dãy đều quay về TV; khi gọi nhiều người, mỗi nhân viên được ghép với một khách và ngồi cạnh khách đó. Nhóm đông được thu nhỏ vừa chỗ ngồi, không còn gộp ba hình đại diện.
 
 Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 
@@ -55,11 +56,13 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 ## Tính năng hiện có
 
 - Sáu phòng hát (mở sẵn 2), sảnh lễ tân, góc Lan can, sân có bãi xe, chỗ chờ và chốt bảo vệ.
-- Chín nhóm khách có đặc điểm ảnh hưởng thật (số lần gọi món, hay xin hát thêm, kỹ micro, ngân sách).
+- Mười một nhóm khách có đặc điểm ảnh hưởng thật (số lần gọi món, hay xin hát thêm, kỹ micro, ngân sách), gồm thêm hội nam trung niên và hội nam trẻ trâu trưởng thành, mỗi hội có ba diện mạo mới.
 - Trong lúc khách hát: gọi món (6 mặt hàng, có tồn kho), micro trục trặc, phòng nóng, xin hát thêm 30 phút.
 - Hóa đơn minh bạch: tiền phòng theo phút, từng món, phí Lan can, giảm giá xin lỗi; làm tròn 1.000đ.
 - Mất xe từ đêm 2 nếu không thuê bảo vệ: đền tiền và mất danh tiếng.
-- Lan can: 8 nhân viên giao lưu âm nhạc, tuyển tối đa 3.
+- Lan can: 11 nhân viên giao lưu (7 nữ, 4 nam), tuyển tối đa 6; ba mẫu nam mới cởi trần sáu múi, mặc quần dài.
+- Hội toàn nam gọi nữ trong khoảng 90% trường hợp, 10% gọi nam; hội toàn nữ gọi nam. Cặp đôi và gia đình không gọi. Nhóm hỗn hợp có thể gọi nhân viên bất kỳ.
+- Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá sáu người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
 - Mỗi đêm có mục tiêu; tổng kết có thu chi, lời nhận xét của khách và ba món đầu tư.
 - Ba nâng cấp: dàn loa, micro dự phòng, xe đẩy phục vụ.
 

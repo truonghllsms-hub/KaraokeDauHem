@@ -15,6 +15,8 @@ LAYOUT = {
     "guests_a_walk": (4, 9), "guests_b_walk": (4, 9),
     "guests_a_emotions": (3, 9), "guests_b_emotions": (3, 9),
     "hosts_a_emotions": (3, 4), "hosts_b_emotions": (3, 4),
+    "new_men_walk": (4, 9), "new_hosts_emotions": (3, 3),
+    "middle_men_emotions": (3, 3), "young_men_emotions": (3, 3),
 }
 
 
@@ -83,4 +85,4 @@ if __name__ == "__main__":
     constants = "const REGIONS: Dictionary = {\n" + "\n".join(regions) + "\n}\n\n"
     constants += "const CANVAS_SIZES: Dictionary = {\n" + "\n".join(canvases) + "\n}\n\n"
     target.write_text(source[:start] + constants + source[end:])
-    print("Indexed 198 complete animation and expression figures")
+    print("Indexed", sum(c * r for c, r in LAYOUT.values()), "complete animation and expression figures")

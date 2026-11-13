@@ -465,6 +465,9 @@ func _refresh_detail() -> void:
 			]
 			for item in occupant["bill_items"]:
 				text += "\n  %s: %s" % [item["note"], Money.format(item["amount"])]
+			if sim.hosts.can_request(occupant) and (occupant["wants_host"] or occupant["host_request"] != "NONE"):
+				var preference: String = {"male": "nam", "female": "nữ", "any": "giao lưu"}[occupant["host_gender"]]
+				text += "\n\nGọi %d nhân viên %s · đã cử %d · đang phục vụ %d\nPhí %s/người/%d phút." % [occupant["host_requested_count"], preference, occupant["host_assigned_count"], room["host_ids"].size(), Money.format(sim.data["balance"]["lancan_fee"]), sim.data["balance"]["lancan_minutes"]]
 			if occupant["discount_percent"] > 0:
 				text += "\n  Giảm %d%% tiền phòng (xin lỗi khách)" % occupant["discount_percent"]
 		show_unlock = room["state"] == "LOCKED"
@@ -665,7 +668,7 @@ func _show_ledger() -> void:
 func _show_lancan() -> void:
 	var balance: Dictionary = sim.data["balance"]
 	var slots_left: int = balance["lancan_max_staff"] - sim.state.hosts.size()
-	var intro: String = "\"Điểm tựa cho những giọng ca chênh vênh.\" Nhân viên giao lưu âm nhạc: song ca, làm MC, khuấy động sinh nhật. Khách tự gọi mới phục vụ; phí %s cho %d phút báo trước, thu vào hóa đơn; tip là của riêng nhân viên.\nĐang làm %d/%d vị trí · Phí tuyển %s/người." % [
+	var intro: String = "Giao lưu âm nhạc, song ca và hoạt náo. Phí %s/người/%d phút, cộng riêng từng người vào hóa đơn; tip thuộc nhân viên. Nhóm gọi bao nhiêu người sẽ hiện trên phòng. Hội nam thường gọi nữ, đôi khi gọi nam; hội nữ gọi nam. Cặp đôi và gia đình không gọi.\nĐang làm %d/%d vị trí · Phí tuyển %s/người." % [
 		Money.format(balance["lancan_fee"]), balance["lancan_minutes"], sim.state.hosts.size(), balance["lancan_max_staff"], Money.format(balance["lancan_hire_cost"]),
 	]
 	var grid: GridContainer = GridContainer.new()
@@ -687,7 +690,7 @@ func _show_lancan() -> void:
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		portrait.custom_minimum_size = Vector2(0, 184)
 		box.add_child(portrait)
-		var name_label: Label = UI.label(def["name"], 24, UI.PINK, true)
+		var name_label: Label = UI.label(def["name"] + (" · Nam" if def["gender"] == "male" else " · Nữ"), 24, UI.PINK, true)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(name_label)
 		var about: Label = UI.label(def["personality"], 18, UI.MUTED)

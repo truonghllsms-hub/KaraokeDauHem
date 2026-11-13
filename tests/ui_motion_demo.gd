@@ -11,34 +11,45 @@ func _run() -> void:
 	await process_frame
 	var sim = game.sim
 	var venue = game.venue
-	sim.clock.toggle_pause()
+	game.set_process(false)
+	venue.set_process(false)
 	sim.customers.spawning_enabled = false
 	sim.service.enabled = false
-	sim.hire_host("host_1")
-	sim.hire_host("host_3")
+	for id in ["host_1", "host_3", "host_5", "host_9", "host_10", "host_11"]:
+		sim.hire_host(id)
 	sim.set_guard(true)
 	sim.open_doors()
-	var first = sim.customers.add_group("friends", 3, 120, sim.clock.minute)
-	var second = sim.customers.add_group("birthday", 3, 120, sim.clock.minute)
-	var queue = sim.customers.add_group("bolero_regular", 3, 120, sim.clock.minute)
+	var first = sim.customers.add_group("middle_aged_men", 3, 120, sim.clock.minute)
+	var second = sim.customers.add_group("aunties", 3, 120, sim.clock.minute)
+	var queue = sim.customers.add_group("young_men", 4, 120, sim.clock.minute)
+	for group in [first, second]:
+		group["wants_host"] = true
+		group["host_requested_count"] = 3
+		group["host_request"] = "PENDING"
+	first["host_gender"] = "female"
+	second["host_gender"] = "male"
 	sim.assign_group(first["id"], "room_01")
 	sim.assign_group(second["id"], "room_02")
-	first["host_request"] = "PENDING"
-	sim.assign_host("host_1", "room_01")
+	for id in ["host_1", "host_3", "host_5"]:
+		sim.assign_host(id, "room_01")
+	for id in ["host_9", "host_10", "host_11"]:
+		sim.assign_host(id, "room_02")
 	venue._owner.walk_to(venue._route(venue.OWNER_HOME, venue._work_position("room_01")))
 	for frame in 180:
 		if frame == 55:
 			venue._owner.walk_to(venue._route(venue._owner.position, venue.OWNER_HOME))
 		if frame == 90:
-			queue["wait_minutes"] = int(queue["patience"] * 0.75)
+			queue["arrived_at"] = sim.clock.minute - int(queue["patience"] * 0.75)
 		if frame == 105:
 			var host = sim.hosts.get_host("host_3")
-			host["state"] = "RESTING"
-			host["rest_end"] = sim.clock.minute + 10
+			host["energy"] = 30
+			sim.hosts._complete(host, sim.clock.minute)
 		if frame == 140:
-			queue["wait_minutes"] = queue["patience"] - 1
+			queue["arrived_at"] = sim.clock.minute - queue["patience"] + 1
 			first["satisfaction"] = 40
+		sim.advance(1.0 / 15.0)
 		venue.advance_actors(1.0 / 15.0)
 		game._refresh()
 		await process_frame
+	assert(sim.check_invariants().is_empty())
 	quit(0)

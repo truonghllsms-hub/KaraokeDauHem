@@ -4,6 +4,10 @@ extends RefCounted
 const Art = preload("res://scripts/ui/character_art.gd")
 
 const SHEETS: Dictionary = {
+	"new_men_walk": preload("res://assets/characters/motion/new_men_walk.webp"),
+	"new_hosts_emotions": preload("res://assets/characters/motion/new_hosts_emotions.webp"),
+	"middle_men_emotions": preload("res://assets/characters/motion/middle_men_emotions.webp"),
+	"young_men_emotions": preload("res://assets/characters/motion/young_men_emotions.webp"),
 	"owner_walk": preload("res://assets/characters/motion/owner_walk.webp"),
 	"hosts_walk": preload("res://assets/characters/motion/hosts_walk.webp"),
 	"guests_a_walk": preload("res://assets/characters/motion/guests_a_walk.webp"),
@@ -23,6 +27,10 @@ const REGIONS: Dictionary = {
 	"guests_b_emotions": [Rect2(158, 9, 100, 189), Rect2(461, 8, 100, 190), Rect2(754, 10, 111, 188), Rect2(152, 206, 103, 191), Rect2(449, 207, 112, 190), Rect2(745, 211, 112, 184), Rect2(155, 405, 101, 189), Rect2(452, 405, 110, 189), Rect2(744, 408, 112, 185), Rect2(158, 598, 98, 184), Rect2(460, 598, 106, 184), Rect2(753, 601, 110, 180), Rect2(148, 788, 107, 181), Rect2(451, 788, 111, 181), Rect2(743, 792, 116, 177), Rect2(159, 971, 97, 165), Rect2(457, 971, 108, 165), Rect2(753, 975, 117, 162), Rect2(156, 1139, 98, 157), Rect2(455, 1140, 102, 156), Rect2(754, 1147, 108, 151), Rect2(165, 1296, 87, 143), Rect2(457, 1296, 97, 143), Rect2(756, 1302, 103, 137), Rect2(161, 1440, 86, 94), Rect2(459, 1440, 87, 94), Rect2(750, 1441, 101, 94)],
 	"hosts_a_emotions": [Rect2(94, 8, 189, 361), Rect2(425, 8, 245, 361), Rect2(776, 13, 182, 356), Rect2(98, 372, 188, 353), Rect2(415, 369, 259, 356), Rect2(779, 382, 183, 343), Rect2(104, 724, 189, 370), Rect2(424, 725, 260, 369), Rect2(783, 728, 178, 365), Rect2(112, 1093, 188, 351), Rect2(429, 1095, 237, 351), Rect2(777, 1099, 192, 348)],
 	"hosts_b_emotions": [Rect2(100, 11, 186, 353), Rect2(432, 13, 239, 351), Rect2(781, 11, 173, 353), Rect2(117, 370, 183, 354), Rect2(443, 366, 231, 357), Rect2(807, 377, 164, 347), Rect2(128, 733, 162, 352), Rect2(442, 731, 239, 355), Rect2(808, 738, 154, 349), Rect2(112, 1090, 192, 358), Rect2(428, 1087, 253, 361), Rect2(781, 1109, 192, 339)],
+	"new_men_walk": [Rect2(85, 6, 126, 188), Rect2(338, 5, 108, 190), Rect2(570, 6, 129, 189), Rect2(834, 6, 93, 189), Rect2(85, 197, 126, 189), Rect2(338, 197, 108, 189), Rect2(570, 197, 129, 189), Rect2(833, 197, 94, 190), Rect2(112, 388, 113, 190), Rect2(354, 389, 90, 189), Rect2(596, 389, 109, 189), Rect2(839, 389, 87, 189), Rect2(116, 579, 98, 169), Rect2(357, 578, 84, 170), Rect2(599, 579, 95, 169), Rect2(836, 579, 86, 169), Rect2(112, 749, 105, 161), Rect2(350, 749, 89, 161), Rect2(595, 749, 104, 161), Rect2(836, 749, 85, 161), Rect2(110, 908, 106, 167), Rect2(350, 907, 87, 168), Rect2(595, 908, 105, 167), Rect2(833, 908, 87, 167), Rect2(114, 1075, 104, 160), Rect2(355, 1075, 75, 160), Rect2(598, 1075, 102, 161), Rect2(841, 1077, 76, 159), Rect2(111, 1237, 108, 161), Rect2(353, 1237, 81, 161), Rect2(595, 1237, 106, 161), Rect2(837, 1237, 80, 161), Rect2(115, 1398, 98, 138), Rect2(355, 1399, 76, 137), Rect2(595, 1399, 99, 137), Rect2(837, 1399, 79, 137)],
+	"new_hosts_emotions": [Rect2(112, 10, 230, 403), Rect2(457, 9, 303, 404), Rect2(933, 35, 232, 378), Rect2(131, 426, 224, 406), Rect2(452, 420, 325, 412), Rect2(935, 453, 245, 379), Rect2(129, 846, 238, 396), Rect2(452, 842, 323, 400), Rect2(933, 860, 245, 382)],
+	"middle_men_emotions": [Rect2(150, 20, 178, 396), Rect2(537, 21, 167, 394), Rect2(904, 59, 211, 355), Rect2(148, 435, 184, 396), Rect2(536, 434, 167, 397), Rect2(899, 461, 216, 367), Rect2(155, 842, 174, 399), Rect2(541, 841, 163, 399), Rect2(895, 877, 221, 361)],
+	"young_men_emotions": [Rect2(179, 15, 153, 406), Rect2(557, 16, 151, 404), Rect2(916, 51, 188, 370), Rect2(179, 433, 159, 402), Rect2(563, 432, 146, 403), Rect2(913, 466, 194, 370), Rect2(179, 842, 160, 394), Rect2(558, 842, 150, 396), Rect2(906, 881, 210, 357)],
 }
 
 const CANVAS_SIZES: Dictionary = {
@@ -34,6 +42,10 @@ const CANVAS_SIZES: Dictionary = {
 	"guests_b_emotions": [Vector2(111, 190), Vector2(112, 191), Vector2(112, 189), Vector2(110, 184), Vector2(116, 181), Vector2(117, 165), Vector2(108, 157), Vector2(103, 143), Vector2(101, 94)],
 	"hosts_a_emotions": [Vector2(245, 361), Vector2(259, 356), Vector2(260, 370), Vector2(237, 351)],
 	"hosts_b_emotions": [Vector2(239, 353), Vector2(231, 357), Vector2(239, 355), Vector2(253, 361)],
+	"new_men_walk": [Vector2(129, 190), Vector2(129, 190), Vector2(113, 190), Vector2(98, 170), Vector2(105, 161), Vector2(106, 168), Vector2(104, 161), Vector2(108, 161), Vector2(99, 138)],
+	"new_hosts_emotions": [Vector2(303, 404), Vector2(325, 412), Vector2(323, 400)],
+	"middle_men_emotions": [Vector2(211, 396), Vector2(216, 397), Vector2(221, 399)],
+	"young_men_emotions": [Vector2(188, 406), Vector2(194, 403), Vector2(210, 396)],
 }
 
 static var _cache: Dictionary = {}
@@ -56,7 +68,15 @@ static func expression_texture(person: String, expression: String) -> Texture2D:
 	var sheet: String = entry[0]
 	var row: int = entry[1]
 	var col: int = 0
-	if sheet == "hosts":
+	if sheet == "new_men":
+		if row < 3:
+			sheet = "new_hosts_emotions"
+			col = {"blink": 0, "cheer": 1, "tired": 2}.get(expression, -1)
+		else:
+			sheet = "middle_men_emotions" if row < 6 else "young_men_emotions"
+			row = row - 3 if row < 6 else row - 6
+			col = {"blink": 0, "impatient": 1, "angry_seated": 2}.get(expression, -1)
+	elif sheet == "hosts":
 		sheet = "hosts_a_emotions" if row < 4 else "hosts_b_emotions"
 		row = row % 4
 		col = {"blink": 0, "cheer": 1, "tired": 2}.get(expression, -1)

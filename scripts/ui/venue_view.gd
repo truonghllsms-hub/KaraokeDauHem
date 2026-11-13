@@ -12,6 +12,7 @@ const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
+const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
@@ -27,7 +28,7 @@ const JUNCTION: Vector2 = Vector2(510, 1270)
 const GATE: Vector2 = Vector2(510, 1624)
 const OWNER_HOME: Vector2 = Vector2(200, 1350)
 const PICKUP: Vector2 = Vector2(350, 1415)
-const HOST_SLOTS: Array = [Vector2(710, 1360), Vector2(795, 1360), Vector2(875, 1360)]
+const HOST_SLOTS: Array = [Vector2(700, 1360), Vector2(780, 1360), Vector2(860, 1360), Vector2(900, 1420), Vector2(900, 1480), Vector2(900, 1540)]
 const QUEUE_SLOTS: Array = [Vector2(340, 1500), Vector2(370, 1550), Vector2(660, 1500), Vector2(690, 1550)]
 const STREET: Vector2 = Vector2(510, 1870)
 const BIKE_SLOTS: Array = [Vector2(140, 1770), Vector2(220, 1770), Vector2(720, 1770), Vector2(300, 1770), Vector2(800, 1770), Vector2(380, 1770)]
@@ -246,9 +247,18 @@ func _seat_position(room_id: String) -> Vector2:
 	return rect.position + Vector2(145 if rect.position.x < CORRIDOR_X else 220, 370)
 
 
-func _host_position(room_id: String) -> Vector2:
-	var rect: Rect2 = _rect_of(room_id)
-	return rect.position + Vector2(246 if rect.position.x < CORRIDOR_X else 345, 370)
+func _seating(room_id: String) -> Dictionary:
+	var room = sim.rooms.get_room(room_id)
+	var group = sim.customers.get_group(room["group_id"])
+	var reserved: int = group["host_requested_count"] if sim.hosts.can_request(group) and (group["wants_host"] or group["host_request"] != "NONE") else 0
+	return SeatingPlan.build(_rect_of(room_id), group["size"], mini(group["size"], reserved))
+
+
+func _host_position(room_id: String, host_id: String = "") -> Vector2:
+	var plan: Dictionary = _seating(room_id)
+	var host = sim.hosts.get_host(host_id)
+	var index: int = host.get("guest_index", 0) if host != null else 0
+	return plan["hosts"][index] if index < plan["hosts"].size() else _seat_position(room_id)
 
 
 func _work_position(room_id: String) -> Vector2:
@@ -504,7 +514,7 @@ func _sync_groups() -> void:
 		if actor == null:
 			actor = Actor.new()
 			var names: Array = []
-			for i in mini(group["size"], 3):
+			for i in group["size"]:
 				names.append(group["sprites"][i % group["sprites"].size()])
 			actor.setup(names, "×%d" % group["size"])
 			actor.position = STREET
@@ -531,6 +541,14 @@ func _sync_groups() -> void:
 		actor.set_highlight(group_id == selected_group)
 		actor.singing = not waiting and not actor.is_moving()
 		actor.pose = "standing" if waiting else "seated"
+		actor.seated_faces_left = not waiting and _rect_of(group["room_id"]).position.x > CORRIDOR_X
+		actor.seated_offsets = []
+		actor.seated_scale = 1.0
+		if not waiting:
+			var plan: Dictionary = _seating(group["room_id"])
+			actor.seated_scale = plan["scale"]
+			for point in plan["guests"]:
+				actor.seated_offsets.append(point - target)
 		actor.mood = "neutral"
 		if waiting:
 			var left: int = maxi(0, group["patience"] - group["wait_minutes"])
@@ -548,7 +566,7 @@ func _sync_groups() -> void:
 		else:
 			actor.patience_ratio = -1.0
 			actor.mood = "angry" if group["satisfaction"] < 55 else "happy"
-			actor.set_bubble("Gọi Lan can!" if group["host_request"] == "PENDING" else "", Color(1.0, 0.9, 0.97), UI.PINK)
+			actor.set_bubble(sim.hosts.request_label(group), Color(1.0, 0.9, 0.97), UI.PINK)
 
 	for group_id in _group_actors.keys():
 		if alive.has(group_id):
@@ -589,15 +607,17 @@ func _sync_hosts() -> void:
 			_actors.add_child(actor)
 			_host_actors[host_id] = actor
 
-		var key: String = host["room_id"] if host["state"] == "SERVING" else "lounge"
+		var key: String = "%s:%d" % [host["room_id"], host.get("guest_index", 0)] if host["state"] == "SERVING" else "lounge"
 		if actor.place_key != key:
 			actor.place_key = key
-			var target: Vector2 = _host_position(host["room_id"]) if key != "lounge" else HOST_SLOTS[i % HOST_SLOTS.size()]
+			var target: Vector2 = _host_position(host["room_id"], host_id) if key != "lounge" else HOST_SLOTS[i % HOST_SLOTS.size()]
 			actor.walk_to(_route(actor.position, target))
 		actor.set_clickable(host["state"] != "SERVING")
 		actor.set_highlight(host_id == selected_host)
 		actor.singing = host["state"] == "SERVING" and not actor.is_moving()
 		actor.pose = "seated"
+		actor.seated_faces_left = key == "lounge" or _rect_of(host["room_id"]).position.x > CORRIDOR_X
+		actor.seated_scale = _seating(host["room_id"])["scale"] if key != "lounge" else 1.0
 		actor.mood = "tired" if host["state"] == "RESTING" else ("happy" if host["state"] == "SERVING" else "neutral")
 		if host_id == selected_host:
 			actor.set_bubble("ĐANG CHỌN", Color(1.0, 0.96, 0.8), UI.GOLD)
