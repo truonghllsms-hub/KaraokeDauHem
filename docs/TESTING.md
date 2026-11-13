@@ -69,3 +69,13 @@ Kết quả cho đợt thiết kế lại (13/11/2026, Godot 4.5.1):
 - `ui_redesign.gd`: 15 điều kiện, 0 lỗi.
 - `ui_smoke.gd`: chơi hai đêm qua giao diện, 0 lỗi; giao món, đổi micro, gia hạn, hóa đơn và thuê bảo vệ vẫn hoạt động.
 - Chromium: kiểm tra màn hình 600×1000 và 1280×800, chọn Chơi mới, cuộn bản đồ bằng chuột, mở phòng khóa và mở Nhân sự bằng chuột. Thiết bị di động thật chưa được kiểm tra.
+
+## Kiểm tra khớp mẫu đã duyệt
+
+```bash
+godot --path . --resolution 1024x1536 --rendering-driver opengl3 --audio-driver Dummy --script res://tests/ui_reference.gd
+```
+
+`ui_reference.gd` so sánh toàn bộ điểm ảnh màn hình chuẩn bị với `assets/reference/approved_ui.png`, rồi kiểm tra số tiền sau nhập kho, mở khóa phòng, giờ mô phỏng, tốc độ và nút Nhân sự. Ảnh nền là atlas đồ họa; các vùng bấm và số liệu vẫn là thành phần hoạt động trong game. Kiểm thử này chạy ở đúng tỷ lệ thiết kế 1024×1536; trên màn hình khác game giữ tỷ lệ và có lề.
+
+Mở cửa bằng nút tạm dừng trên thanh trên cùng hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trên trái mở menu; phím tắt cũ vẫn dùng được. Không có nút nổi giữa sảnh hoặc dải công việc bổ sung ngoài mẫu.

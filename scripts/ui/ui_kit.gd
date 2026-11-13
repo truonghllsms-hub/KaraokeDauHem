@@ -14,7 +14,7 @@ const GOOD: Color = Color("#58743e")
 const BAD: Color = Color("#b4553c")
 const INFO: Color = Color("#427d7a")
 
-const BOLD_FONT = preload("res://assets/fonts/DejaVuSans-Bold.ttf")
+const BOLD_FONT = preload("res://assets/fonts/Baloo2-Bold.tres")
 
 
 static func box(bg: Color, border: Color, border_width: int = 2, margin: int = 12) -> StyleBoxFlat:

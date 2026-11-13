@@ -8,7 +8,7 @@ Trạng thái: **bản dựng sớm, chơi được trọn nhiều đêm**. Xem 
 
 ## Yêu cầu
 
-- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, giao diện thiết kế dọc 900 × 1200, tự co giãn trên máy tính và điện thoại.
+- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, giao diện thiết kế dọc 1024 × 1536 theo đúng mẫu đã duyệt; giữ tỷ lệ trên màn hình khác.
 
 ## Cách chạy
 
@@ -29,10 +29,12 @@ python3 -m http.server 8060 --directory build/web
 ## Giao diện mới
 
 - Bản đồ cuộn dọc: hai dãy đối diện, ba phòng mỗi bên; Phòng 01–02 gần sảnh mở sẵn, Phòng 03–06 mở khóa dần.
-- Cuộn chuột hoặc vuốt trong mặt bằng để đi lên/xuống; nút **Sảnh ↓** trở về khu tiếp khách. Thanh thông tin và năm nút quản lý luôn đứng yên.
+- Cuộn chuột hoặc vuốt trong mặt bằng để đi lên/xuống; vị trí bắt đầu nhìn xuống sảnh theo mẫu đã duyệt. Thanh thông tin và năm nút quản lý luôn đứng yên.
 - Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
+
+Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 
 ## Điều khiển
 

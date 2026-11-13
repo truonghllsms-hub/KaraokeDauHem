@@ -14,3 +14,8 @@ Còn thiếu: âm thanh giao diện, tiếng khách đến, tiếng thanh toán,
 
 - `assets/topdown/room_painted.webp` và `lobby_painted.webp`: minh họa gốc tạo bằng OpenAI ImageGen cho dự án, chuyển sang WebP để giảm dung lượng bản web. Không chứa chữ giao diện hoặc nhân vật; trạng thái phòng do Godot hiển thị.
 - Các SVG trong `assets/topdown/`: hình vector gốc cho bãi xe, xe máy, ghế nhựa, bảo vệ ngồi và biểu tượng điều hướng. `tools/make_topdown_assets.py` tạo các hình trang trí cơ bản; hai ảnh minh họa và `guard_seated.svg` được giữ riêng.
+
+## Mẫu giao diện đã duyệt
+
+- `assets/reference/approved_ui.png`: ảnh giao diện gốc đã được chủ dự án chọn và chỉnh trong cuộc trò chuyện. Game dùng ảnh này làm atlas cho các thành phần hiển thị, với vùng bấm, trạng thái và số liệu do Godot quản lý.
+- `assets/fonts/Baloo2.ttf`: Baloo 2 (Google Fonts), giấy phép SIL Open Font License trong `Baloo2-OFL.txt`. Giao diện dùng biến thể đậm cho chữ và số động.
