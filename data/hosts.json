@@ -1,0 +1,82 @@
+[
+  {
+    "id": "host_1",
+    "name": "Ngọc Lan",
+    "sprite": "lancan_1",
+    "personality": "Hoạt ngôn, kể chuyện có duyên",
+    "talk": 4,
+    "duet": 2,
+    "music": "nhac_tre",
+    "wage": 250000
+  },
+  {
+    "id": "host_2",
+    "name": "Thu Cúc",
+    "sprite": "lancan_2",
+    "personality": "Dịu dàng, giọng bolero ngọt",
+    "talk": 2,
+    "duet": 4,
+    "music": "bolero",
+    "wage": 250000
+  },
+  {
+    "id": "host_3",
+    "name": "Bảo Trâm",
+    "sprite": "lancan_3",
+    "personality": "Cá tính, khuấy động cực sung",
+    "talk": 3,
+    "duet": 3,
+    "music": "remix",
+    "wage": 300000
+  },
+  {
+    "id": "host_4",
+    "name": "Mỹ Duyên",
+    "sprite": "lancan_4",
+    "personality": "Nền nã áo dài, chuyên bolero trữ tình",
+    "talk": 3,
+    "duet": 5,
+    "music": "bolero",
+    "wage": 350000
+  },
+  {
+    "id": "host_5",
+    "name": "Kim Chi",
+    "sprite": "lancan_5",
+    "personality": "Tràn năng lượng, quẩy remix không biết mệt",
+    "talk": 4,
+    "duet": 3,
+    "music": "remix",
+    "wage": 300000
+  },
+  {
+    "id": "host_6",
+    "name": "Hoàng Yến",
+    "sprite": "lancan_6",
+    "personality": "Sang trọng, giọng ballad truyền cảm",
+    "talk": 3,
+    "duet": 4,
+    "music": "nhac_tre",
+    "wage": 350000
+  },
+  {
+    "id": "host_7",
+    "name": "Thảo Vy",
+    "sprite": "lancan_7",
+    "personality": "Lém lỉnh, làm MC bắt trend cực nhanh",
+    "talk": 5,
+    "duet": 2,
+    "music": "remix",
+    "wage": 300000
+  },
+  {
+    "id": "host_8",
+    "name": "Quốc Bảo",
+    "sprite": "lancan_8",
+    "personality": "Nam ca sĩ phòng trà, lịch thiệp",
+    "talk": 4,
+    "duet": 4,
+    "music": "bolero",
+    "wage": 350000
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "da",
+    "name": "đá",
+    "unit": "xô",
+    "cost": 5000,
+    "price": 15000,
+    "per_person": false,
+    "pack_size": 10,
+    "start_stock": 10,
+    "call": "Em ơi thêm đá!"
+  },
+  {
+    "id": "nuoc_suoi",
+    "name": "nước suối",
+    "unit": "chai",
+    "cost": 5000,
+    "price": 15000,
+    "per_person": true,
+    "pack_size": 24,
+    "start_stock": 24,
+    "call": "Cho mỗi người một chai nước suối nha em."
+  },
+  {
+    "id": "nuoc_ngot",
+    "name": "nước ngọt",
+    "unit": "lon",
+    "cost": 8000,
+    "price": 25000,
+    "per_person": true,
+    "pack_size": 24,
+    "start_stock": 24,
+    "call": "Em ơi cho nước ngọt, mỗi người một lon!"
+  },
+  {
+    "id": "trai_cay",
+    "name": "trái cây",
+    "unit": "đĩa",
+    "cost": 60000,
+    "price": 150000,
+    "per_person": false,
+    "pack_size": 4,
+    "start_stock": 4,
+    "call": "Cho phòng anh một đĩa trái cây."
+  },
+  {
+    "id": "huong_duong",
+    "name": "hướng dương",
+    "unit": "đĩa",
+    "cost": 10000,
+    "price": 30000,
+    "per_person": false,
+    "pack_size": 10,
+    "start_stock": 10,
+    "call": "Có hướng dương không em, cho một đĩa."
+  },
+  {
+    "id": "khan_lanh",
+    "name": "khăn lạnh",
+    "unit": "cái",
+    "cost": 2000,
+    "price": 5000,
+    "per_person": true,
+    "pack_size": 30,
+    "start_stock": 30,
+    "call": "Em ơi cho xin khăn lạnh!"
+  }
+]

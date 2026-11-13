@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Tệp cấu hình dự án Godot 4.
+
+config_version=5
+
+[application]
+
+config/name="Karaoke Đầu Hẻm"
+config/description="Game quản lý quán karaoke đầu hẻm."
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/DejaVuSans.ttf"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.078, 0.063, 0.122, 1)

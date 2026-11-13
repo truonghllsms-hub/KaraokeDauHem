@@ -1,0 +1,23 @@
+[
+  {
+    "id": "sound",
+    "name": "Dàn loa mới",
+    "cost": 4000000,
+    "max_level": 2,
+    "effect": "Mọi nhóm khách +5 hài lòng khi vào phòng (mỗi cấp)."
+  },
+  {
+    "id": "spare_mics",
+    "name": "Micro dự phòng",
+    "cost": 1500000,
+    "max_level": 1,
+    "effect": "Giảm hơn một nửa số lần micro trục trặc."
+  },
+  {
+    "id": "cart",
+    "name": "Xe đẩy phục vụ",
+    "cost": 2000000,
+    "max_level": 1,
+    "effect": "Khách chịu chờ món lâu hơn 6 phút."
+  }
+]

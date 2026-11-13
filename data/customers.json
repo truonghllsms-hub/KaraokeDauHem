@@ -1,0 +1,268 @@
+{
+  "music_names": {
+    "bolero": "Bolero",
+    "nhac_tre": "Nhạc trẻ",
+    "remix": "Remix"
+  },
+  "types": [
+    {
+      "id": "friends",
+      "name": "Bạn bè",
+      "weight": 4,
+      "size_min": 2,
+      "size_max": 6,
+      "budget_per_hour": 260000,
+      "patience_min": 18,
+      "patience_max": 30,
+      "music": {
+        "nhac_tre": 5,
+        "remix": 3,
+        "bolero": 1
+      },
+      "greetings": [
+        "Chị ơi còn phòng không, tụi em hát xíu thôi!",
+        "Cho tụi em phòng nào rẻ rẻ nha chị."
+      ],
+      "lancan_chance": 15,
+      "sprites": [
+        "friend_m",
+        "friend_f"
+      ],
+      "trait": "Hay xin hát thêm, gọi ít món.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 55,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "birthday",
+      "name": "Sinh nhật",
+      "weight": 2,
+      "size_min": 4,
+      "size_max": 10,
+      "budget_per_hour": 380000,
+      "patience_min": 20,
+      "patience_max": 32,
+      "music": {
+        "nhac_tre": 4,
+        "remix": 4,
+        "bolero": 1
+      },
+      "greetings": [
+        "Nay sinh nhật bạn em, cho phòng nào đẹp đẹp nha!",
+        "Tụi em có mang bánh kem, quán cho gửi tủ lạnh được không ạ?"
+      ],
+      "lancan_chance": 45,
+      "sprites": [
+        "birthday_f",
+        "birthday_m"
+      ],
+      "trait": "Thích không khí: gọi trái cây, nước ngọt và hay mời Lan can.",
+      "orders_min": 2,
+      "orders_max": 3,
+      "extend_chance": 35,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "company",
+      "name": "Liên hoan công ty",
+      "weight": 2,
+      "size_min": 6,
+      "size_max": 12,
+      "budget_per_hour": 550000,
+      "patience_min": 12,
+      "patience_max": 22,
+      "music": {
+        "nhac_tre": 3,
+        "remix": 3,
+        "bolero": 3
+      },
+      "greetings": [
+        "Bên anh đi liên hoan, có phòng lớn không em?",
+        "Sếp sắp tới rồi, em xếp phòng nhanh giúp anh nha."
+      ],
+      "lancan_chance": 50,
+      "sprites": [
+        "office_m",
+        "office_f"
+      ],
+      "trait": "Đông người, gọi nhiều món, ghét chờ.",
+      "orders_min": 2,
+      "orders_max": 3,
+      "extend_chance": 20,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "bolero_regular",
+      "name": "Khách quen bolero",
+      "weight": 2,
+      "size_min": 2,
+      "size_max": 5,
+      "budget_per_hour": 300000,
+      "patience_min": 22,
+      "patience_max": 36,
+      "music": {
+        "bolero": 9,
+        "nhac_tre": 1
+      },
+      "greetings": [
+        "Phòng cũ còn trống không con? Loa bên đó hát bolero mới ngọt.",
+        "Cho chú phòng nào micro êm êm nghen."
+      ],
+      "lancan_chance": 35,
+      "sprites": [
+        "uncle",
+        "auntie"
+      ],
+      "trait": "Rất kỹ âm thanh: micro trục trặc là phật lòng gấp đôi.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 30,
+      "mic_penalty_mult": 2
+    },
+    {
+      "id": "drinking",
+      "name": "Hội bạn nhậu",
+      "weight": 2,
+      "size_min": 3,
+      "size_max": 8,
+      "budget_per_hour": 420000,
+      "patience_min": 10,
+      "patience_max": 18,
+      "music": {
+        "bolero": 5,
+        "nhac_tre": 2,
+        "remix": 2
+      },
+      "lancan_chance": 60,
+      "sprites": [
+        "drunk_uncle",
+        "beer_uncle"
+      ],
+      "greetings": [
+        "Mới xong tăng một, cho anh em phòng hát tăng hai!",
+        "Phòng nào loa lớn nhất em? Nay anh hát tặng cả xóm!"
+      ],
+      "trait": "Gọi đá và mồi liên tục, thiếu kiên nhẫn.",
+      "orders_min": 2,
+      "orders_max": 3,
+      "extend_chance": 45,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "aunties",
+      "name": "Hội chị em",
+      "weight": 2,
+      "size_min": 4,
+      "size_max": 9,
+      "budget_per_hour": 300000,
+      "patience_min": 18,
+      "patience_max": 30,
+      "music": {
+        "bolero": 4,
+        "nhac_tre": 3,
+        "remix": 2
+      },
+      "lancan_chance": 30,
+      "sprites": [
+        "auntie_2",
+        "auntie_3",
+        "auntie"
+      ],
+      "greetings": [
+        "Hội chị em tập dưỡng sinh xong ghé hát, có khuyến mãi gì không cưng?",
+        "Cho mấy chị phòng mát mát, hát xong còn về đón cháu."
+      ],
+      "trait": "Vui vẻ, hay xin hát thêm, để ý giá.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 50,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "couple",
+      "name": "Cặp đôi",
+      "weight": 2,
+      "size_min": 2,
+      "size_max": 2,
+      "budget_per_hour": 240000,
+      "patience_min": 14,
+      "patience_max": 24,
+      "music": {
+        "nhac_tre": 6,
+        "bolero": 2
+      },
+      "lancan_chance": 0,
+      "sprites": [
+        "couple_m",
+        "couple_f"
+      ],
+      "greetings": [
+        "Cho tụi em phòng nhỏ hai người thôi ạ.",
+        "Nay kỷ niệm một năm, anh muốn hát tặng bạn gái một bài."
+      ],
+      "trait": "Chỉ cần yên tĩnh: ít gọi món, không dùng Lan can.",
+      "orders_min": 0,
+      "orders_max": 1,
+      "extend_chance": 25,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "family",
+      "name": "Gia đình",
+      "weight": 2,
+      "size_min": 4,
+      "size_max": 8,
+      "budget_per_hour": 340000,
+      "patience_min": 20,
+      "patience_max": 34,
+      "music": {
+        "bolero": 5,
+        "nhac_tre": 3
+      },
+      "lancan_chance": 0,
+      "sprites": [
+        "grandpa",
+        "grandma",
+        "friend_f"
+      ],
+      "greetings": [
+        "Cả nhà mừng thọ ông nội, cho phòng rộng rộng nha con.",
+        "Bà nội muốn hát cải lương, quán có bài không con?"
+      ],
+      "trait": "Dễ tính và kiên nhẫn, không dùng Lan can.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 15,
+      "mic_penalty_mult": 1
+    },
+    {
+      "id": "genz",
+      "name": "Hội Gen Z",
+      "weight": 2,
+      "size_min": 3,
+      "size_max": 6,
+      "budget_per_hour": 320000,
+      "patience_min": 12,
+      "patience_max": 22,
+      "music": {
+        "remix": 6,
+        "nhac_tre": 4
+      },
+      "lancan_chance": 20,
+      "sprites": [
+        "genz_f",
+        "genz_m"
+      ],
+      "greetings": [
+        "Phòng nào đèn đẹp để tụi em quay clip vậy chị?",
+        "Quán có bài mới đang trend chưa chị ơi?"
+      ],
+      "trait": "Thích quay clip: micro hỏng là mất hứng gấp đôi.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 30,
+      "mic_penalty_mult": 2
+    }
+  ]
+}
