@@ -36,6 +36,18 @@ func _run() -> void:
 	await process_frame
 	check(nav.global_position.is_equal_approx(nav_position), "Navigation stays fixed while map scrolls")
 	check(game._map_stage.custom_minimum_size.y > game._map_scroll.size.y, "Full map can scroll, without squeezing six rooms")
+	game._map_scroll.scroll_vertical = 100
+	var touch: InputEventScreenTouch = InputEventScreenTouch.new()
+	touch.position = game._map_scroll.get_global_rect().get_center()
+	touch.pressed = true
+	game._input(touch)
+	var drag: InputEventScreenDrag = InputEventScreenDrag.new()
+	drag.position = touch.position - Vector2(0, 120)
+	drag.relative = Vector2(0, -120)
+	game._input(drag)
+	check(game._map_scroll.scroll_vertical == 220, "Touch drag pans map in viewport coordinates")
+	check(game._overlay == null and game._touch_scrolling, "Panning does not open a room inspector")
+	game._finish_touch_pan()
 	game._show_staff()
 	check(game._overlay != null and not game.sim.clock.is_running(), "Staff management pauses simulation")
 	game._close_overlay()

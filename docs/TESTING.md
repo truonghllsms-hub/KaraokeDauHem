@@ -61,11 +61,11 @@ Chưa xác minh:
 godot --path . --rendering-driver opengl3 --audio-driver Dummy --script res://tests/ui_redesign.gd
 ```
 
-`ui_redesign.gd` kiểm tra 13 điều kiện: sáu vùng phòng không chồng nhau, hai dãy đối diện, chỉ mở sẵn hai phòng, camera ban đầu, vùng cuộn, thanh điều hướng cố định, cửa sổ Nhân sự/Bảo vệ, nút mở khóa và lối ra của quầy. Đây là kiểm tra bố cục; không thay thế việc thử bằng chuột/vuốt trong trình duyệt.
+`ui_redesign.gd` kiểm tra 15 điều kiện: sáu vùng phòng không chồng nhau, hai dãy đối diện, chỉ mở sẵn hai phòng, camera ban đầu, vùng cuộn, thanh điều hướng cố định, cửa sổ Nhân sự/Bảo vệ, nút mở khóa và lối ra của quầy. Đây là kiểm tra bố cục; không thay thế việc thử bằng chuột/vuốt trong trình duyệt.
 
 Kết quả cho đợt thiết kế lại (13/11/2026, Godot 4.5.1):
 
 - `run_tests.gd`: 192 kiểm tra, 0 lỗi.
-- `ui_redesign.gd`: 13 điều kiện, 0 lỗi.
+- `ui_redesign.gd`: 15 điều kiện, 0 lỗi.
 - `ui_smoke.gd`: chơi hai đêm qua giao diện, 0 lỗi; giao món, đổi micro, gia hạn, hóa đơn và thuê bảo vệ vẫn hoạt động.
 - Chromium: kiểm tra màn hình 600×1000 và 1280×800, chọn Chơi mới, cuộn bản đồ bằng chuột, mở phòng khóa và mở Nhân sự bằng chuột. Thiết bị di động thật chưa được kiểm tra.

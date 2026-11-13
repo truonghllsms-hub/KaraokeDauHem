@@ -37,6 +37,9 @@ var _goal_label: Label
 var _task_label: Label
 var _notice_label: Label
 var _last_notice: String = ""
+var _touch_origin: Vector2 = Vector2.ZERO
+var _touch_on_map: bool = false
+var _touch_scrolling: bool = false
 
 
 
@@ -65,6 +68,33 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	sim.advance(delta)
 	_refresh()
+
+
+## Explicit touch panning also supports touch-capable desktop browsers.
+## Once a drag starts, suppress the emulated mouse release so a room is not tapped.
+func _input(event: InputEvent) -> void:
+	if _overlay != null or not is_instance_valid(_map_scroll):
+		return
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_origin = event.position
+			_touch_on_map = _map_scroll.get_global_rect().has_point(event.position)
+			_touch_scrolling = false
+		elif _touch_scrolling:
+			get_viewport().set_input_as_handled()
+			call_deferred("_finish_touch_pan")
+	elif event is InputEventScreenDrag and _touch_on_map:
+		if _touch_scrolling or event.position.distance_to(_touch_origin) > 12:
+			_touch_scrolling = true
+			_map_scroll.scroll_vertical -= int(event.relative.y)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.device == -1 and _touch_scrolling:
+		get_viewport().set_input_as_handled()
+
+
+func _finish_touch_pan() -> void:
+	_touch_on_map = false
+	_touch_scrolling = false
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
