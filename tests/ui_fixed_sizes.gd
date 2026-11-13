@@ -1,6 +1,10 @@
 extends SceneTree
 var errors: int = 0
+var screenshot_path: String = "user://five-guests-fixed.png"
 func _initialize() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if not args.is_empty():
+		screenshot_path = args[0]
 	_run()
 func check(ok: bool, label: String) -> void:
 	print(("OK " if ok else "FAIL ") + label)
@@ -40,7 +44,7 @@ func _run() -> void:
 		check(absf(sprite.texture.get_height() * sprite.scale.y - 104.0) < 0.01 and host.scale == Vector2.ONE, "Companion stays at fixed 104-pixel seated height")
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("/workspace/work/five-guests-fixed.png")
+	root.get_texture().get_image().save_png(screenshot_path)
 	check(sim.check_invariants().is_empty(), "Five-guest party and five companion links remain valid")
 	print("ui_fixed_sizes: %d errors" % errors)
 	quit(0 if errors == 0 else 1)

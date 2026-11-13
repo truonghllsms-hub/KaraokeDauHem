@@ -87,4 +87,4 @@ Mở cửa bằng nút tạm dừng trên thanh trên cùng hoặc **Quán → M
 - `tests/ui_reference.gd`: giữ nguyên điểm ảnh HUD và thanh điều hướng; camera hiển thị phòng cao 735 px và hỗ trợ cuộn.
 - `tests/ui_characters.gd`: hoạt ảnh đi lại, hát, biểu cảm và hướng TV của hai dãy.
 
-Chạy các kiểm tra giao diện ở độ phân giải thiết kế 1024×1536 với renderer OpenGL và audio Dummy. `ui_fixed_sizes.gd` ghi ảnh kiểm tra vào `/workspace/work/five-guests-fixed.png`.
+Chạy các kiểm tra giao diện ở độ phân giải thiết kế 1024×1536 với renderer OpenGL và audio Dummy. `ui_fixed_sizes.gd` ghi ảnh kiểm tra vào `user://five-guests-fixed.png` (hoặc đường dẫn truyền sau `--`).
