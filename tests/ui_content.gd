@@ -77,9 +77,33 @@ func _run() -> void:
 	_check(not _venue._room_ui["room_03"]["dimmer"].visible, "Lắp xong: hiện nội thất")
 	_venue.selected_room = "room_05"
 	_game._refresh_detail()
-	_check(_game._lbl_detail.text.contains("tầng 2") and _game._btn_unlock.disabled, "VIP khi tầng 2 chưa mở: nêu điều kiện, khóa nút lắp")
+	_check(not _game._btn_unlock.disabled and _game._btn_unlock.text == "Lắp thiết bị — 6.000.000đ", "Phòng VIP lắp được ngay khi đủ tiền")
 	_venue.selected_room = ""
+	_game._show_lancan()
+	var lancan_text: String = ""
+	var lancan_buttons_off: bool = true
+	for node in _game._overlay.find_children("*", "Label", true, false):
+		lancan_text += node.text
+	for node in _game._overlay.find_children("*", "Button", true, false):
+		if node.text == "Tuyển":
+			lancan_buttons_off = lancan_buttons_off and node.disabled
+	_check(lancan_text.contains("CHƯA MỞ DỊCH VỤ") and lancan_buttons_off, "Lan can khóa nút tuyển khi chưa lắp đủ 4 phòng tầng 1")
+	_game._close_overlay()
+	_game._show_ledger()
+	var loan_button: Button = null
+	for node in _game._overlay.find_children("*", "Button", true, false):
+		if node.text.begins_with("Vay "):
+			loan_button = node
+	_check(loan_button != null, "Bảng Thu chi có nút vay ngân hàng")
+	money = _sim.state.money
+	loan_button.pressed.emit()
+	_check(_sim.state.loan_principal == 5000000 and _sim.state.money == money + 5000000, "Bấm vay: nhận 5.000.000đ, ghi dư nợ")
+	await _shot("c02b_vay")
+	_game._close_overlay()
+	_game._refresh()
+	_check(_game._debt_button.visible and _game._debt_button.text == "Nợ 5.000.000đ", "Huy hiệu nợ hiện dư nợ")
 	_sim.hire_staff("staff_2")
+	_sim.hire_staff("staff_5")
 
 	_venue._btn_open.pressed.emit()
 	_check(_sim.state.phase == "OPEN", "Bấm nút mở cửa thì quán mở")
@@ -95,7 +119,24 @@ func _run() -> void:
 	_check(_venue._room_ui["room_04"]["center"].text == "Chưa lắp thiết bị", "Phòng chưa lắp thiết bị: lý do đúng khi đang chọn nhóm")
 	await _shot("c03_chon_nhom")
 
-	# Chơi tiếp: bot xếp khách, giao món; nhân viên phục vụ tự lo phần còn lại.
+	# Trộm xe: bấm vào tên trộm để chủ quán chạy ra đuổi.
+	_sim.state.day = 2
+	_sim.assign_group(first["id"], "room_01")
+	_check(_sim.security.spawn(_sim.clock.minute), "Tên trộm xuất hiện ở bãi xe")
+	_tick(2)
+	_check(_venue._thief_actor != null and _venue._thief_actor.visible, "Thấy tên trộm trên bản đồ")
+	await _shot("c03b_trom")
+	_venue._on_thief_pressed()
+	_check(_sim.state.thief["chased_by"] == "owner", "Bấm vào trộm: chủ quán chạy ra đuổi")
+	_tick(_sim.data["balance"]["chase_minutes"])
+	_check(_sim.state.thief["state"] == "CAUGHT" and _sim.state.night["thefts"] == 0, "Đuổi kịp: bắt được trộm, không mất xe")
+	await _shot("c03c_bat_trom")
+	_tick(5)
+	_check(_venue._thief_actor == null, "Tên trộm biến mất sau khi bị bắt")
+	_sim.state.day = 1
+	_sim.security.enabled = false
+
+	# Chơi tiếp: bot xếp khách, giao món; nhân viên tự lo phần còn lại.
 	var lines_seen: int = 0
 	var song_bubble: bool = false
 	var staff_moved: bool = false
@@ -120,7 +161,7 @@ func _run() -> void:
 		for actor in _venue._staff_actors.values():
 			staff_moved = staff_moved or actor.position.distance_to(_venue.STAFF_SLOTS[0]) > 80
 	_check(lines_seen > 0 and song_bubble, "Khách đang hát có bóng câu hát ♪ trên đầu")
-	_check(staff_moved, "Nhân viên phục vụ đi lại trên bản đồ khi có việc")
+	_check(staff_moved, "Nhân viên đi lại trên bản đồ khi có việc")
 	_check(_game._overlay_kind == "summary", "Hết đêm: hiện bảng tổng kết")
 	var summary_text: String = ""
 	for node in _game._overlay.find_children("*", "Label", true, false):
@@ -158,7 +199,7 @@ func _run() -> void:
 	menu.queue_free()
 	await process_frame
 	await _open_game()
-	_check(_sim.state.money == saved_money and _sim.rating_text() == saved_rating and _sim.state.staff.size() == 2, "Tiếp tục: đúng số dư, điểm sao và nhân viên")
+	_check(_sim.state.money == saved_money and _sim.rating_text() == saved_rating and _sim.state.staff.size() == 3 and _sim.state.loan_principal > 0, "Tiếp tục: đúng số dư, điểm sao, nhân viên và dư nợ")
 	_check(_sim.state.phase == "SUMMARY" and _sim.rooms.get_room("room_03")["state"] != "LOCKED", "Tiếp tục về đúng mốc cuối đêm, phòng đã lắp vẫn còn")
 	await process_frame
 	_check(_game._overlay_kind == "summary", "Tiếp tục: mở lại bảng tổng kết để sang đêm mới")

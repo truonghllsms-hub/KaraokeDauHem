@@ -34,6 +34,10 @@ func _run() -> void:
 		coverage = coverage and Art.texture(host["sprite"]) is AtlasTexture
 		coverage = coverage and Art.texture(host["sprite"], "seated") != Art.texture(host["sprite"])
 	check(coverage, "Every customer and recruit has illustrated standing and seated artwork")
+	# Lan can mở khi đã lắp đủ 4 phòng tầng 1.
+	game.sim.equip_room("room_03")
+	game.sim.equip_room("room_04")
+	game.sim.economy.record("TEST", 20000000, "characters_fund")
 	check(game.sim.hire_host("host_1") == "" and game.sim.hire_host("host_3") == "" and game.sim.hire_host("host_5") == "", "Recruit three approved hosts through simulation")
 	for id in ["host_9", "host_10", "host_11"]:
 		check(game.sim.hire_host(id) == "", "Recruit new male host " + id)

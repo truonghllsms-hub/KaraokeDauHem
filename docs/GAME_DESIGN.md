@@ -161,3 +161,42 @@ Kho câu hát tự sáng tác ở `data/lyrics.json` (18 câu người trẻ, 18
 
 ### Lưu và tải
 Lưu ở giai đoạn chuẩn bị hoặc sau tổng kết (tự lưu được). Ghi tệp tạm, đọc lại kiểm tra, rồi thay tệp chính; bản cũ thành `.bak`. Tải: kiểm tra phiên bản, sổ giao dịch khớp số dư, ID phòng, nhân viên và tồn kho hợp lệ; tệp chính hỏng thì dùng `.bak`; không tự xóa tệp hỏng.
+
+## Đợt cân bằng kinh tế (14/11/2026)
+
+### Mở phòng, lượng khách
+- Phòng nào cũng lắp được khi đủ tiền (tầng 2 không cần danh tiếng). Lắp thiết bị chỉ ở giai đoạn chuẩn bị.
+- Lượng khách **không** tăng theo số phòng. Khách đến = mức cơ bản (một nhóm mỗi 12–24 phút) × hệ số sao × hệ số danh tiếng.
+  - Sao: chưa có đánh giá 100%; mỗi nửa sao trên/dưới 3,0 là ±15%; giới hạn 65–145%.
+  - Danh tiếng: 40 điểm là 100%, mỗi điểm ±2%; giới hạn 60–200%.
+- Vì vậy mở phòng chỉ có lời khi quán đã đủ khách để lấp đầy.
+
+### Chi phí mỗi đêm
+Mặt bằng và điện nước cơ bản 2.000.000đ; mỗi phòng thường đã lắp 300.000đ; mỗi phòng VIP 600.000đ; lương từng nhân viên; bảo vệ 350.000đ; lãi vay.
+
+### Vay và phá sản
+- Hạn mức = 10.000.000đ + 50% giá trị thiết bị đã lắp. Chỉ vay hoặc trả khi quán chưa mở cửa hoặc sau tổng kết.
+- Cuối mỗi đêm tự trả lãi 2,5% dư nợ và 10% gốc. Lãi tính vào lợi nhuận, trả gốc thì không.
+- Số dư âm sau quyết toán là cảnh báo; âm 2 đêm liền thì phá sản (hết ván, chơi lại từ đầu).
+
+### Trộm xe
+Từ đêm 2, trung bình khoảng 30% mỗi giờ có một tên trộm đi chậm vào bãi xe: 7 phút đi tới, 4 phút phá khóa. Bấm vào hắn, chủ quán chạy ra (2 phút); tới kịp thì bắt được. Bảo vệ tự đuổi, bắt được 90%. Mất xe: quán đền 1.000.000đ ngay, −3 danh tiếng, nhóm bị mất −40 hài lòng.
+
+### Nhân viên
+Tạp vụ dọn phòng (có sẵn Tí); phục vụ giao món và đổi micro; lễ tân đón khách chờ và xếp vào phòng đắt nhất mà vẫn vừa túi tiền. Mỗi vai trò tối đa 2 người, phí tuyển 600.000đ.
+
+### Lan can
+Chỉ tuyển được khi đã lắp đủ 4 phòng tầng 1. Hợp gu nhạc của nhóm thì tỉ lệ được tip 75% (thường 45%). Quán hưởng 50% tip; phần này ghi vào hóa đơn khi khách trả tiền.
+
+### Đánh giá
+Mỗi nhóm đã thanh toán viết một đánh giá kiểu Google Maps: tên người dùng ngẫu nhiên (họ tên, biệt danh hoặc tên tài khoản), số bài đã đánh giá, câu chữ theo đúng chuyện đã xảy ra. Câu chính không lặp trong 8 đánh giá gần nhất.
+
+### Kết quả chơi thử tự động (`tests/playtest.gd`, 12 đêm, 3–4 diễn biến mỗi kiểu)
+| Kiểu chơi | Kết quả |
+|---|---|
+| Người mới (chậm, hay quên) | Lời 1,2–2,5 triệu đêm đầu, không âm tiền, 6–8 phòng ở đêm 12 |
+| Cẩn thận, không vay | Lời 1,7–2 triệu đêm đầu, 7–8 phòng ở đêm 12 |
+| Vay vừa phải để mở phòng | Mở nhanh hơn, trả hết nợ khoảng đêm 7, giàu hơn người không vay |
+| Vay tối đa, phục vụ tốt | Có lời, nợ lớn kéo dài |
+| Vay tối đa, làm ăn kém | Phá sản đêm 3–5 |
+| Bỏ mặc quán | Phá sản đêm 8–10 |

@@ -1,31 +1,42 @@
 extends RefCounted
-## Nhân viên phục vụ: tự nhận việc dọn phòng, giao món và đổi micro, mỗi người một việc tại một thời điểm.
-## Họ chờ một nhịp ngắn trước khi nhận việc để người chơi (chủ quán) vẫn được ra tay trước; nếu việc đã
-## có người khác lo xong thì nhân viên bỏ việc đó và rảnh ngay, không bị kẹt ở trạng thái bận.
+## Nhân viên theo vai trò, mỗi người một việc tại một thời điểm:
+## - Tạp vụ (janitor): dọn phòng bẩn.
+## - Phục vụ (waiter): giao món, đổi micro.
+## - Lễ tân (receptionist): đón khách đang chờ và xếp vào phòng hợp túi tiền.
+## Họ chờ một nhịp ngắn trước khi nhận việc để chủ quán vẫn được ra tay trước; nếu việc đã có người lo
+## thì bỏ việc đó và rảnh ngay, không bị kẹt ở trạng thái bận.
 ##
 ## member["task"] rỗng là đang rảnh, ngược lại:
-##   {"kind": "CLEAN"|"DELIVER"|"FIX"|"REST", "room_id", "request_id", "phase": "TRAVEL"|"WORK", "start", "end"}
+##   {"kind": "CLEAN"|"DELIVER"|"FIX"|"SEAT"|"REST", "room_id", "request_id", "group_id", "phase": "TRAVEL"|"WORK", "start", "end"}
 
 const Money = preload("res://scripts/core/money.gd")
 
+const ROLE_NAMES: Dictionary = {"janitor": "Tạp vụ", "waiter": "Phục vụ", "receptionist": "Lễ tân"}
+const ROLE_JOBS: Dictionary = {"janitor": ["CLEAN"], "waiter": ["FIX", "DELIVER"], "receptionist": ["SEAT"]}
+
 ## Tắt để kiểm thử từng kịch bản mà không có nhân viên tự làm việc.
 var enabled: bool = true
+## Simulation gán: (group_id, room_id) -> Dictionary như preview_assign; (group_id, room_id) -> String như assign_group.
+var seat_preview: Callable = Callable()
+var seat_assign: Callable = Callable()
 
 var _state
 var _data: Dictionary
 var _economy
 var _rooms
 var _service
+var _customers
 var _notify: Callable
 
 
-func _init(state, data: Dictionary, economy, rooms, service, notify: Callable) -> void:
+func _init(state, data: Dictionary, economy, rooms, service, notify: Callable, customers = null) -> void:
 	_state = state
 	_data = data
 	_economy = economy
 	_rooms = rooms
 	_service = service
 	_notify = notify
+	_customers = customers
 
 
 func setup_new_game() -> void:
@@ -39,7 +50,7 @@ func setup_new_game() -> void:
 func _make_member(def: Dictionary) -> Dictionary:
 	return {
 		"id": def["id"], "name": def["name"], "role": def["role"], "speed": def["speed"], "wage": def["wage"],
-		"about": def["about"], "energy": 100, "task": {}, "tasks_done": 0,
+		"about": def["about"], "sprite": def.get("sprite", "waiter_m"), "energy": 100, "task": {}, "tasks_done": 0,
 	}
 
 
@@ -48,6 +59,17 @@ func get_member(staff_id: String) -> Variant:
 		if member["id"] == staff_id:
 			return member
 	return null
+
+
+static func role_name(role: String) -> String:
+	return ROLE_NAMES.get(role, role)
+
+
+func count_role(role: String) -> int:
+	var count: int = 0
+	for member in _state.staff:
+		count += 1 if member["role"] == role else 0
+	return count
 
 
 ## Những ứng viên chưa làm ở quán.
@@ -63,25 +85,25 @@ func hire(staff_id: String) -> String:
 	var balance: Dictionary = _data["balance"]
 	if get_member(staff_id) != null:
 		return "Người này đã làm ở quán rồi."
-	if _state.staff.size() >= balance["staff_max"]:
-		return "Quán chỉ thuê tối đa %d nhân viên phục vụ." % balance["staff_max"]
 	var chosen: Variant = null
 	for def in _data["staff"]:
 		if def["id"] == staff_id:
 			chosen = def
 	if chosen == null:
 		return "Không tìm thấy ứng viên."
+	if count_role(chosen["role"]) >= balance["staff_max_per_role"]:
+		return "Quán chỉ thuê tối đa %d %s." % [balance["staff_max_per_role"], role_name(chosen["role"]).to_lower()]
 	var cost: int = balance["staff_hire_cost"]
 	if not _economy.can_afford(cost):
 		return "Không đủ tiền: tuyển %s cần %s." % [chosen["name"], Money.format(cost)]
-	if not _economy.record("HIRE_STAFF", -cost, staff_id, "Tuyển " + chosen["name"]):
+	if not _economy.record("HIRE_STAFF", -cost, staff_id, "Tuyển %s %s" % [role_name(chosen["role"]).to_lower(), chosen["name"]]):
 		return "Đã thanh toán phí tuyển người này rồi."
 	_state.staff.append(_make_member(chosen))
-	_notify.call("%s nhận việc phục vụ (lương %s/đêm)." % [chosen["name"], Money.format(chosen["wage"])], "good")
+	_notify.call("%s nhận việc %s (lương %s/đêm)." % [chosen["name"], role_name(chosen["role"]).to_lower(), Money.format(chosen["wage"])], "good")
 	return ""
 
 
-## Người chơi đánh dấu một phòng cần lo trước: nhân viên rảnh kế tiếp sẽ nhận ngay, không chờ nhịp.
+## Người chơi đánh dấu một phòng cần lo trước: nhân viên đúng việc rảnh kế tiếp sẽ nhận ngay.
 func prioritize(room_id: String) -> String:
 	var room = _rooms.get_room(room_id)
 	if room == null:
@@ -110,7 +132,7 @@ func tick(now: int) -> void:
 ## Kết ca: trả lương từng người, bỏ việc dở, hồi năng lượng.
 func end_night(day: int) -> void:
 	for member in _state.staff:
-		_economy.record("WAGES", -member["wage"], "day:%d:%s" % [day, member["id"]], "Lương " + member["name"])
+		_economy.record("WAGES", -member["wage"], "day:%d:%s" % [day, member["id"]], "Lương %s %s" % [role_name(member["role"]).to_lower(), member["name"]])
 		member["task"] = {}
 		member["energy"] = 100
 	_state.staff_priority = []
@@ -123,6 +145,13 @@ func _claimed_by(room_id: String) -> String:
 		if is_busy(member) and member["task"].get("room_id", "") == room_id:
 			return member["id"]
 	return ""
+
+
+func _group_claimed(group_id: int) -> bool:
+	for member in _state.staff:
+		if is_busy(member) and member["task"].get("group_id", 0) == group_id:
+			return true
+	return false
 
 
 ## Việc đang mở ở một phòng: {} nếu không có, hoặc {"kind", "order", "since", "request_id"}.
@@ -142,10 +171,14 @@ func _job_for(room: Dictionary, now: int, ignore_delay: bool) -> Dictionary:
 func _take_job(member: Dictionary, now: int) -> void:
 	var balance: Dictionary = _data["balance"]
 	if member["energy"] < balance["staff_rest_below"]:
-		member["task"] = {"kind": "REST", "room_id": "", "request_id": 0, "phase": "WORK", "start": now, "end": now + balance["staff_rest_minutes"]}
+		member["task"] = {"kind": "REST", "room_id": "", "request_id": 0, "group_id": 0, "phase": "WORK", "start": now, "end": now + balance["staff_rest_minutes"]}
 		_notify.call("%s mệt, xin nghỉ %d phút." % [member["name"], balance["staff_rest_minutes"]], "info")
 		return
+	if member["role"] == "receptionist":
+		_take_seat_job(member, now)
+		return
 
+	var allowed: Array = ROLE_JOBS.get(member["role"], [])
 	var best: Dictionary = {}
 	var best_room: Dictionary = {}
 	for room in _state.rooms:
@@ -153,7 +186,7 @@ func _take_job(member: Dictionary, now: int) -> void:
 			continue
 		var prioritized: bool = _state.staff_priority.has(room["id"])
 		var job: Dictionary = _job_for(room, now, prioritized)
-		if job.is_empty():
+		if job.is_empty() or not allowed.has(job["kind"]):
 			continue
 		if prioritized:
 			job["order"] = -1
@@ -170,7 +203,7 @@ func _take_job(member: Dictionary, now: int) -> void:
 	elif best["kind"] == "FIX":
 		base = balance["staff_fix_minutes"]
 	member["task"] = {
-		"kind": best["kind"], "room_id": best_room["id"], "request_id": best["request_id"],
+		"kind": best["kind"], "room_id": best_room["id"], "request_id": best["request_id"], "group_id": 0,
 		"phase": "TRAVEL", "start": now, "end": now + _duration(member, base),
 	}
 	match best["kind"]:
@@ -180,6 +213,37 @@ func _take_job(member: Dictionary, now: int) -> void:
 			_notify.call("%s mang micro mới tới %s." % [member["name"], best_room["name"]], "info")
 		"CLEAN":
 			_notify.call("%s đi dọn %s." % [member["name"], best_room["name"]], "info")
+
+
+## Lễ tân: chọn nhóm chờ lâu nhất và phòng hợp túi tiền nhất (đắt nhất mà không vượt ngân sách).
+func _take_seat_job(member: Dictionary, now: int) -> void:
+	if _customers == null or not seat_preview.is_valid():
+		return
+	var balance: Dictionary = _data["balance"]
+	var waiting: Array = _customers.waiting_groups().filter(func(g: Dictionary) -> bool:
+		return g["wait_minutes"] >= balance["staff_delay_seat"] and not _group_claimed(g["id"]))
+	waiting.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["wait_minutes"] > b["wait_minutes"])
+	for group in waiting:
+		var best_room: Dictionary = {}
+		var best_score: int = -1
+		for room in _state.rooms:
+			if _claimed_by(room["id"]) != "":
+				continue
+			var preview: Dictionary = seat_preview.call(group["id"], room["id"])
+			if preview["reason"] != "":
+				continue
+			# Trong ngân sách thì ưu tiên phòng giá cao; vượt ngân sách thì xếp sau mọi phòng vừa túi tiền.
+			var score: int = room["price_per_hour"] + (0 if preview["over_budget"] else 10000000)
+			if score > best_score:
+				best_score = score
+				best_room = room
+		if best_room.is_empty():
+			continue
+		member["task"] = {
+			"kind": "SEAT", "room_id": best_room["id"], "request_id": 0, "group_id": group["id"],
+			"phase": "TRAVEL", "start": now, "end": now + _duration(member, balance["staff_seat_minutes"]),
+		}
+		return
 
 
 ## Thời gian làm theo tốc độ; năng lượng thấp thì chậm hơn. Tối thiểu 1 phút.
@@ -201,6 +265,20 @@ func _advance(member: Dictionary, now: int) -> void:
 		return
 
 	var room = _rooms.get_room(task["room_id"])
+	if task["kind"] == "SEAT":
+		var group = _customers.get_group(task["group_id"]) if _customers != null else null
+		if group == null or group["state"] != "WAITING" or room == null or room["state"] != "AVAILABLE":
+			member["task"] = {}  # khách đã được xếp hoặc đã về, hoặc phòng không còn trống
+			return
+		if now < task["end"]:
+			return
+		if seat_assign.call(group["id"], room["id"]) == "":
+			_notify.call("Lễ tân %s mời nhóm %s vào %s." % [member["name"], group["type_name"], room["name"]], "info")
+			_finish(member, balance["staff_energy_deliver"])
+		else:
+			member["task"] = {}
+		return
+
 	if task["kind"] == "CLEAN":
 		if task["phase"] == "TRAVEL":
 			if room == null or room["state"] != "DIRTY":

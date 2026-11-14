@@ -19,9 +19,9 @@
       "Bàn và đèn màu cơ bản"
     ],
     "perks": [
-      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+      "Thiết bị tiêu chuẩn. Vận hành 300.000đ mỗi đêm."
     ],
-    "upkeep_per_night": 0,
+    "upkeep_per_night": 300000,
     "comfort_bonus": 0,
     "budget_bonus_percent": 0,
     "mic_weight_percent": 100
@@ -46,9 +46,9 @@
       "Bàn và đèn màu cơ bản"
     ],
     "perks": [
-      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+      "Thiết bị tiêu chuẩn. Vận hành 300.000đ mỗi đêm."
     ],
-    "upkeep_per_night": 0,
+    "upkeep_per_night": 300000,
     "comfort_bonus": 0,
     "budget_bonus_percent": 0,
     "mic_weight_percent": 100
@@ -73,9 +73,9 @@
       "Bàn và đèn màu cơ bản"
     ],
     "perks": [
-      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+      "Thiết bị tiêu chuẩn. Vận hành 300.000đ mỗi đêm."
     ],
-    "upkeep_per_night": 0,
+    "upkeep_per_night": 300000,
     "comfort_bonus": 0,
     "budget_bonus_percent": 0,
     "mic_weight_percent": 100
@@ -100,9 +100,9 @@
       "Bàn và đèn màu cơ bản"
     ],
     "perks": [
-      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+      "Thiết bị tiêu chuẩn. Vận hành 300.000đ mỗi đêm."
     ],
-    "upkeep_per_night": 0,
+    "upkeep_per_night": 300000,
     "comfort_bonus": 0,
     "budget_bonus_percent": 0,
     "mic_weight_percent": 100
@@ -132,9 +132,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50
@@ -164,9 +164,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50
@@ -196,9 +196,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50
@@ -228,9 +228,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50
@@ -260,9 +260,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50
@@ -292,9 +292,9 @@
       "Không gian sang trọng: +4 hài lòng.",
       "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
       "Micro tốt: ít trục trặc hơn một nửa.",
-      "Tốn thêm 150.000đ vận hành mỗi đêm."
+      "Vận hành 600.000đ mỗi đêm (điện, máy lạnh, thiết bị)."
     ],
-    "upkeep_per_night": 150000,
+    "upkeep_per_night": 600000,
     "comfort_bonus": 4,
     "budget_bonus_percent": 30,
     "mic_weight_percent": 50

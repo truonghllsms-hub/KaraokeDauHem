@@ -1,0 +1,221 @@
+{
+ "_note": "Đánh giá kiểu Google Maps. Tên người đánh giá ghép ngẫu nhiên; câu chọn theo đúng chuyện đã xảy ra. {room} {wait} {item} {host} {price} được điền tự động.",
+ "family_names": [
+  "Nguyễn",
+  "Trần",
+  "Lê",
+  "Phạm",
+  "Hoàng",
+  "Huỳnh",
+  "Võ",
+  "Phan",
+  "Đặng",
+  "Bùi",
+  "Đỗ",
+  "Ngô",
+  "Dương",
+  "Lý",
+  "Trương"
+ ],
+ "given_names": [
+  "Thảo Vy",
+  "Minh Khôi",
+  "Ngọc Hân",
+  "Tuấn Kiệt",
+  "Bảo Anh",
+  "Gia Huy",
+  "Thanh Tâm",
+  "Khánh Linh",
+  "Đức Mạnh",
+  "Mai Phương",
+  "Hoài Nam",
+  "Phương Uyên",
+  "Quốc Thịnh",
+  "Hồng Nhung",
+  "Anh Thư",
+  "Văn Hậu",
+  "Thùy Dung",
+  "Hải Đăng",
+  "Kim Ngân",
+  "Trọng Nghĩa",
+  "Mỹ Linh",
+  "Chí Thanh",
+  "Diễm My",
+  "Hữu Phước"
+ ],
+ "nicknames": [
+  "bé mỡ",
+  "tiểu yêu",
+  "chị hai",
+  "anh ba",
+  "mèo mập",
+  "bánh bao",
+  "cún con",
+  "heo con",
+  "sói già",
+  "gấu trúc"
+ ],
+ "nick_handles": [
+  "vy.nguyen",
+  "khoi.mk",
+  "han.ngoc",
+  "kiet_tuan",
+  "baoanh.b",
+  "huy.gia",
+  "tamthanh",
+  "linhkh",
+  "manh.dd",
+  "phuong.mai",
+  "nam.hoai",
+  "uyenphg",
+  "thinhq",
+  "nhung.hg",
+  "thu.anh"
+ ],
+ "by_tag": {
+  "mat_xe": [
+   "Hát xong ra lấy xe thì xe mất tiêu. Quán có đền nhưng mất hứng thật sự.",
+   "Bãi xe không ai trông, trộm vào tận nơi. Quán đền tiền nhưng lần sau chắc không dám gửi xe.",
+   "Hát vui bao nhiêu thì lúc ra mất xe tụt mood bấy nhiêu. Chủ quán nên thuê bảo vệ.",
+   "Ra về mới biết xe bị trộm, quán đền nhưng cả đêm mất vui.",
+   "Chỗ để xe không ai trông, mất xe ngay trước cửa quán."
+  ],
+  "trom_bat": [
+   "Có tên trộm rón rén vào bãi xe, may chủ quán chạy ra kịp. Phục anh chủ!",
+   "Đang hát thì nghe la có trộm, quán xử lý nhanh gọn, xe vẫn nguyên. Yên tâm.",
+   "Thấy có trộm lảng vảng, chủ quán chạy ra kịp. An tâm gửi xe."
+  ],
+  "micro": [
+   "Micro ở {room} cứ hú rồi tắt, gọi mãi mới có người.",
+   "Đang tới đoạn cao trào thì mic tắt tiếng. Quán nên kiểm tra thiết bị.",
+   "Mic chập chờn cả buổi, hát mà như thi giữ hơi.",
+   "Micro hết pin giữa chừng, đổi mãi mới có cái mới.",
+   "Mic rè rè, hát bolero mà nghe như radio cũ.",
+   "{room} micro trục trặc liên tục.",
+   "Thiết bị âm thanh chưa ổn, mic hay mất tiếng."
+  ],
+  "cho_do": [
+   "Gọi {item} mà chờ mỏi cổ, gần hết giờ mới thấy.",
+   "Đồ uống lên chậm quá, hát khô cả họng.",
+   "Gọi thêm {item} hai lần mới có. Nhân viên chắc đông việc.",
+   "Gọi {item} xong quên luôn, nhắc hai lần mới có.",
+   "Món lên chậm, ngồi hát mà khát khô.",
+   "Đợi {item} gần hết bài thứ năm mới thấy.",
+   "Phục vụ món hơi lề mề, chắc tối đó đông khách.",
+   "Order {item} mà chờ lâu, mong quán thêm người phục vụ."
+  ],
+  "cho_phong": [
+   "Đứng chờ ở quầy gần {wait} phút mới có phòng.",
+   "Tới nơi phải chờ {wait} phút, hơi lâu so với quán karaoke nhỏ.",
+   "Lễ tân để khách đợi {wait} phút mà không ai hỏi han.",
+   "Tới nơi đứng ở quầy {wait} phút, chân mỏi luôn.",
+   "Chờ phòng {wait} phút, nhóm mình suýt đi quán khác.",
+   "Quán đông, đợi {wait} phút mới vào được phòng.",
+   "Lễ tân xếp phòng chậm, đứng đợi {wait} phút."
+  ],
+  "het_hang": [
+   "Gọi {item} thì quán báo hết, hơi thất vọng.",
+   "Menu ghi có mà gọi thì hết hàng."
+  ],
+  "nong": [
+   "{room} nóng như cái lò, hát mồ hôi nhễ nhại.",
+   "Máy lạnh yếu, phòng bí. Mong quán sửa sớm.",
+   "Máy lạnh {room} yếu, cả nhóm quạt tay.",
+   "Phòng hơi bí, hát vài bài là đổ mồ hôi."
+  ],
+  "gia_cao": [
+   "Giá {price}/giờ hơi chát so với túi tiền tụi mình.",
+   "Phòng ổn nhưng {price} một giờ thì hơi cao.",
+   "{price}/giờ cho phòng như vậy là hơi cao.",
+   "Giá hơi mắc so với mặt bằng chung khu này.",
+   "Hát vui nhưng nhìn hóa đơn thì hơi xót."
+  ],
+  "lancan_lo": [
+   "Gọi nhân viên giao lưu mà mãi không thấy ai tới.",
+   "Book người song ca mà quán không xếp được, hơi buồn."
+  ],
+  "lancan_hop_gu": [
+   "Bạn {host} hát đúng gu, cả phòng phiêu theo luôn!",
+   "{host} song ca đỉnh, khuấy động không khí cực tốt.",
+   "{host} chọn bài đúng gu cả phòng, hát cực cuốn.",
+   "{host} song ca ăn ý, nghe như ca sĩ thật."
+  ],
+  "lancan": [
+   "Có {host} vào giao lưu nên vui hẳn.",
+   "Nhân viên giao lưu nhiệt tình, cả nhóm hát không nghỉ.",
+   "Bạn {host} vui tính, cả nhóm cười suốt.",
+   "Có {host} làm MC, buổi tiệc sôi động hẳn."
+  ],
+  "vip": [
+   "Phòng VIP xịn thật, loa nghe đã tai, màn hình to.",
+   "{room} sang, cách âm tốt, đáng tiền.",
+   "Phòng VIP rộng, đèn đẹp, chụp hình sống ảo cực xịn.",
+   "Loa phòng VIP đánh bass chắc, hát sướng."
+  ],
+  "phong_quen": [
+   "Lần nào tới cũng được xếp đúng phòng quen, thích ghê.",
+   "Quán nhớ khách quen, vẫn {room} như mọi lần."
+  ],
+  "giao_nhanh": [
+   "Gọi {item} là có liền, phục vụ nhanh.",
+   "Nhân viên lanh lẹ, vừa gọi đá đã thấy mang tới.",
+   "Vừa gọi {item} là có người mang tới liền.",
+   "Phục vụ nhanh nhẹn, gọi gì có nấy.",
+   "Nhân viên để ý từng phòng, gọi là tới."
+  ],
+  "hat_them": [
+   "Xin hát thêm được quán đồng ý liền, dễ thương.",
+   "Được gia hạn thêm nửa tiếng, hát tới bến."
+  ],
+  "gia_mem": [
+   "Giá {price}/giờ hợp lý, phòng sạch.",
+   "Giá mềm mà chất lượng ổn, sẽ quay lại.",
+   "Giá {price}/giờ mà phòng sạch sẽ, đáng tiền.",
+   "Sinh viên đi hát thấy giá ổn áp.",
+   "Giá mềm, tiền nào của nấy mà còn hơn."
+  ]
+ },
+ "by_stars": {
+  "5": [
+   "Tuyệt vời, sẽ quay lại!",
+   "10 điểm không có nhưng.",
+   "Chủ quán dễ thương, nhân viên nhiệt tình.",
+   "Quán nhỏ mà chất, recommend cho mọi người.",
+   "Âm thanh hay, phòng sạch, phục vụ chu đáo."
+  ],
+  "4": [
+   "Nhìn chung ổn, sẽ ghé lại.",
+   "Hát vui, có vài chỗ cần cải thiện.",
+   "Phòng sạch, giá hợp lý.",
+   "Không có gì để chê nhiều.",
+   "Đi nhóm bạn thấy ổn áp.",
+   "Sẽ rủ cả team công ty đến.",
+   "Phòng ổn, nhân viên dễ thương.",
+   "Có vài điểm trừ nhỏ nhưng vẫn vui."
+  ],
+  "3": [
+   "Bình thường, không có gì đặc biệt.",
+   "Tạm được, giá vậy thì chấp nhận.",
+   "Được cái gần nhà.",
+   "Cũng được, hát vui là chính.",
+   "Ổn trong tầm giá.",
+   "Không xuất sắc nhưng không tệ.",
+   "Đi một lần cho biết."
+  ],
+  "2": [
+   "Hơi thất vọng.",
+   "Chắc lần sau thử quán khác.",
+   "Phục vụ cần cải thiện nhiều.",
+   "Không như kỳ vọng.",
+   "Cần cải thiện phục vụ.",
+   "Không như ảnh trên mạng.",
+   "Hơi tiếc tiền."
+  ],
+  "1": [
+   "Trải nghiệm tệ.",
+   "Không quay lại nữa.",
+   "Mất cả buổi tối.",
+   "Rất thất vọng với quán."
+  ]
+ }
+}

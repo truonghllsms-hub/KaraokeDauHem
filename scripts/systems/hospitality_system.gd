@@ -61,6 +61,8 @@ func hire(host_id: String) -> String:
 	var balance: Dictionary = _data["balance"]
 	if get_host(host_id) != null:
 		return "Người này đã làm ở quán rồi."
+	if _rooms.equipped_on_floor(1) < balance["lancan_unlock_floor1_rooms"]:
+		return "Dịch vụ Lan can mở khi đã lắp đủ %d phòng tầng 1 (hiện có %d)." % [balance["lancan_unlock_floor1_rooms"], _rooms.equipped_on_floor(1)]
 	if _state.hosts.size() >= balance["lancan_max_staff"]:
 		return "Lan can chỉ có %d vị trí." % balance["lancan_max_staff"]
 	var chosen: Variant = null
@@ -178,9 +180,17 @@ func _complete(host: Dictionary, now: int) -> void:
 			group["host_request"] = "DONE" if group.get("host_request_closed", false) or group.get("host_assigned_count", 0) >= group.get("host_requested_count", 1) else "PENDING"
 		group["tags"].append("lancan")
 		@warning_ignore("integer_division")
-		var tip: int = Money.round_to_thousand(_rng.randi_range(0, balance["lancan_tip_max"]) * group["satisfaction"] / 100)
-		host["tips_tonight"] += tip
-		host["tips_total"] += tip
+		# Hợp gu nhóm khách thì dễ được tip hơn. Quán hưởng một phần tip (ghi vào hóa đơn khi khách trả tiền).
+		var chance: int = balance["lancan_tip_chance_percent"] + (balance["lancan_tip_match_bonus_percent"] if host["music"] == group["music"] else 0)
+		var tip: int = 0
+		if _rng.randi_range(1, 100) <= chance:
+			tip = Money.round_to_thousand(_rng.randi_range(balance["lancan_tip_max"] / 4, balance["lancan_tip_max"]) * maxi(40, group["satisfaction"]) / 100)
+		@warning_ignore("integer_division")
+		var house: int = Money.round_to_thousand(tip * balance["lancan_tip_house_percent"] / 100)
+		if house > 0:
+			group["bill_items"].append({"type": "TIP_SHARE", "amount": house, "note": "Quán hưởng %d%% tip của %s" % [balance["lancan_tip_house_percent"], host["name"]]})
+		host["tips_tonight"] += tip - house
+		host["tips_total"] += tip - house
 		var text: String = "%s khuấy động %s: +%d hài lòng" % [host["name"], room["name"], bonus]
 		if tip > 0:
 			text += ", được khách tip riêng %s" % Money.format(tip)

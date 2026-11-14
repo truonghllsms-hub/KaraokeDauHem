@@ -22,11 +22,14 @@ const ServiceSystem = preload("res://scripts/systems/service_system.gd")
 const StaffSystem = preload("res://scripts/systems/staff_system.gd")
 const RegularSystem = preload("res://scripts/systems/regular_system.gd")
 const AmbienceSystem = preload("res://scripts/systems/ambience_system.gd")
+const SecuritySystem = preload("res://scripts/systems/security_system.gd")
+const FinanceSystem = preload("res://scripts/systems/finance_system.gd")
+const ReviewSystem = preload("res://scripts/systems/review_system.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 
 const MAX_MESSAGES: int = 60
 ## Các loại giao dịch tính vào lợi nhuận vận hành của một đêm.
-const OPERATING_TYPES: Array = ["ROOM_FEE", "ORDER", "LANCAN_FEE", "DISCOUNT", "STOCK", "WAGES", "OPERATING", "UTILITIES", "COMPENSATION"]
+const OPERATING_TYPES: Array = ["ROOM_FEE", "ORDER", "LANCAN_FEE", "TIP_SHARE", "DISCOUNT", "STOCK", "WAGES", "OPERATING", "UTILITIES", "COMPENSATION", "LOAN_INTEREST"]
 ## Lời nhận xét của khách theo dấu vết trải nghiệm; mục đứng trước được ưu tiên.
 const COMMENTS: Array = [
 	["mat_xe", "Ra về thì mất xe ngay trước quán, hết hồn luôn."],
@@ -57,6 +60,9 @@ var service
 var staff
 var regulars
 var ambience
+var security
+var finance
+var review_writer
 ## Đặt đường dẫn (ví dụ SaveManager.DEFAULT_PATH) để tự lưu sau mỗi lần tổng kết đêm. Rỗng là tắt.
 var autosave_path: String = ""
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -79,8 +85,13 @@ func _init(p_data: Dictionary, p_seed: int) -> void:
 	state.reputation = balance["starting_reputation"]
 	rooms.setup_new_game()
 	service.setup_new_game()
-	staff = StaffSystem.new(state, data, economy, rooms, service, Callable(self, "notify"))
+	staff = StaffSystem.new(state, data, economy, rooms, service, Callable(self, "notify"), customers)
 	staff.setup_new_game()
+	staff.seat_preview = Callable(self, "preview_assign")
+	staff.seat_assign = Callable(self, "assign_group")
+	security = SecuritySystem.new(state, data, rng, economy, customers, Callable(self, "notify"))
+	finance = FinanceSystem.new(state, data, economy, Callable(self, "notify"))
+	review_writer = ReviewSystem.new(state, data, p_seed)
 	regulars = RegularSystem.new(state, data, rng, Callable(self, "notify"))
 	customers.regulars = regulars
 	ambience = AmbienceSystem.new(state, data, customers, p_seed, Callable(self, "_emit_line"))
@@ -104,6 +115,8 @@ func notify(text: String, kind: String = "info") -> void:
 # ---------------------------------------------------------------- Vòng đời một đêm
 
 func open_doors() -> String:
+	if state.bankrupt:
+		return "Quán đã phá sản."
 	if state.phase != "PREP":
 		return "Quán đang mở cửa rồi."
 	state.phase = "OPEN"
@@ -136,6 +149,7 @@ func step_minute() -> void:
 	hosts.tick(now)
 	service.tick(now)
 	staff.tick(now)
+	security.tick(now)
 
 	for room in state.rooms:
 		if room["state"] == "OCCUPIED" and now >= room["session_end"]:
@@ -151,6 +165,8 @@ func step_minute() -> void:
 func next_day() -> String:
 	if state.phase != "SUMMARY":
 		return "Chưa tổng kết đêm nay."
+	if state.bankrupt:
+		return "Quán đã phá sản. Hãy bắt đầu ván mới."
 	state.day += 1
 	_begin_day()
 	return ""
@@ -208,6 +224,10 @@ func _close_night() -> void:
 		if room["state"] != "LOCKED" and room["upkeep_per_night"] > 0:
 			economy.record("OPERATING", -room["upkeep_per_night"], "%s:%s" % [day_key, room["id"]], "Vận hành " + room["name"])
 
+	security.end_night()
+	var loan_paid: Dictionary = finance.settle_night(state.day)
+	var went_bankrupt: bool = finance.check_solvency()
+
 	var served: int = state.night["served"]
 	var goal_met: bool = served >= state.night["goal_served"] and state.night["unserved"] <= state.night["goal_unserved_max"]
 	if goal_met:
@@ -221,6 +241,15 @@ func _close_night() -> void:
 		"room_revenue": economy.total_for_day(state.day, "ROOM_FEE"),
 		"order_revenue": economy.total_for_day(state.day, "ORDER"),
 		"lancan_revenue": economy.total_for_day(state.day, "LANCAN_FEE"),
+		"tip_share": economy.total_for_day(state.day, "TIP_SHARE"),
+		"loan_interest": loan_paid["interest"],
+		"loan_principal_paid": loan_paid["principal"],
+		"loan_balance": state.loan_principal,
+		"next_loan_payment": finance.next_payment()["total"],
+		"negative_nights": state.negative_nights,
+		"bankrupt": went_bankrupt or state.bankrupt,
+		"thieves_caught": state.night.get("thieves_caught", 0),
+		"arrival_percent": customers.arrival_percent(),
 		"discounts": -economy.total_for_day(state.day, "DISCOUNT"),
 		"stock_cost": -economy.total_for_day(state.day, "STOCK"),
 		"wages": -economy.total_for_day(state.day, "WAGES"),
@@ -401,10 +430,16 @@ func restore(snapshot: Dictionary) -> String:
 	for field in SaveManager.STATE_FIELDS:
 		var value = saved[field]
 		state.set(field, value.duplicate(true) if (value is Array or value is Dictionary) else value)
+	for field in SaveManager.OPTIONAL_DEFAULTS:
+		var value = saved.get(field, SaveManager.OPTIONAL_DEFAULTS[field])
+		state.set(field, value.duplicate(true) if (value is Array or value is Dictionary) else value)
 	state.rng_seed = int(str(snapshot["rng_seed"]))
 	rng.seed = state.rng_seed
 	rng.state = int(str(snapshot["rng_state"]))
 	state.messages = []
+	# Các bộ ngẫu nhiên riêng (đánh giá, câu hát) phải dùng đúng hạt giống của ván đã lưu.
+	review_writer._seed = state.rng_seed
+	ambience._seed = state.rng_seed
 	ambience.reset()
 	clock.reset()
 	if state.phase == "SUMMARY":
@@ -428,7 +463,40 @@ static func create_from_save(p_data: Dictionary, path: String = SaveManager.DEFA
 
 
 func theft_risk_active() -> bool:
-	return state.day >= data["balance"]["theft_start_day"]
+	return security.risk_active()
+
+
+## Chủ quán chạy ra đuổi tên trộm đang ở bãi xe. "" nếu đã bắt đầu đuổi.
+func chase_thief() -> String:
+	if state.phase != "OPEN":
+		return "Quán chưa mở cửa."
+	return security.chase(clock.minute)
+
+
+func take_loan(amount: int) -> String:
+	return finance.take_loan(amount)
+
+
+func repay_loan(amount: int) -> String:
+	return finance.repay(amount)
+
+
+## Thông tin vay để hiển thị: hạn mức, dư nợ, khoản phải trả cuối đêm, số đêm âm tiền.
+func loan_info() -> Dictionary:
+	var balance: Dictionary = data["balance"]
+	return {
+		"principal": state.loan_principal, "limit": finance.credit_limit(), "available": finance.available_credit(),
+		"rate_permille": balance["loan_rate_permille_per_night"], "min_principal_percent": balance["loan_min_principal_percent"],
+		"next_payment": finance.next_payment(), "step": balance["loan_step"], "negative_nights": state.negative_nights,
+		"bankrupt": state.bankrupt, "can_change": state.phase != "OPEN" and not state.bankrupt,
+	}
+
+
+## Lan can mở khi đã lắp đủ phòng tầng 1. Trả về "" nếu đã mở, ngược lại là lý do.
+func lancan_lock_reason() -> String:
+	var need: int = data["balance"]["lancan_unlock_floor1_rooms"]
+	var have: int = rooms.equipped_on_floor(1)
+	return "" if have >= need else "Mở khi đã lắp đủ %d phòng tầng 1 (hiện có %d)." % [need, have]
 
 
 func clean_room(room_id: String) -> String:
@@ -608,20 +676,6 @@ func _checkout(room: Dictionary, now: int) -> void:
 	group["state"] = "LEAVING"
 	customers.remove_group(group)
 
-	# Ra sân lấy xe: từ đêm có nguy cơ, không có bảo vệ thì dễ mất xe.
-	if theft_risk_active():
-		var chance: int = balance["theft_chance_guard_permille"] if state.guard_hired else balance["theft_chance_permille"]
-		if rng.randi_range(1, 1000) <= chance:
-			group["tags"].append("mat_xe")
-			group["satisfaction"] = 0
-			state.night["thefts"] += 1
-			economy.record("COMPENSATION", -balance["theft_compensation"], key, "Đền xe cho nhóm " + group["type_name"])
-			state.reputation = clampi(state.reputation - balance["theft_reputation_penalty"], 0, 100)
-			notify("Nhóm %s ra về thì phát hiện MẤT XE! Quán đền %s, -%d danh tiếng.%s" % [
-				group["type_name"], Money.format(balance["theft_compensation"]), balance["theft_reputation_penalty"],
-				"" if state.guard_hired else " Nên thuê bảo vệ trông xe.",
-			], "bad")
-
 	var satisfaction: int = clampi(group["satisfaction"], 0, 100)
 	var change: int = reputation_change_for(satisfaction)
 	state.reputation = clampi(state.reputation + change, 0, 100)
@@ -631,16 +685,30 @@ func _checkout(room: Dictionary, now: int) -> void:
 	for item in items:
 		ordered_product_id = item.get("product_id", ordered_product_id)
 	regulars.on_checkout(group, room["id"], satisfaction, ordered_product_id, state.day)
-	var comment: String = _comment_for(group, satisfaction)
 	var stars: int = stars_for(satisfaction)
-	state.night["comments"].append({"who": group["type_name"], "text": comment, "satisfaction": satisfaction, "stars": stars})
+	var host_name: String = ""
+	var item_name: String = ""
+	for item in group["bill_items"]:
+		if item["type"] == "LANCAN_FEE":
+			host_name = item["note"].trim_prefix("Lan can: ")
+		elif item.has("product_id"):
+			item_name = service.get_product(item["product_id"])["name"]
+	if item_name == "":
+		var favorite = service.get_product(group.get("favorite_product_id", ""))
+		item_name = favorite["name"] if favorite != null else "nước"
+	var review: Dictionary = review_writer.write(group, stars, {
+		"room": room_name, "wait": group["wait_minutes"], "item": item_name, "host": host_name,
+		"price": Money.format(room["session_price"]),
+	})
+	var comment: String = review["text"]
+	state.night["comments"].append({"who": review["who"], "group_name": group["type_name"], "text": comment, "satisfaction": satisfaction, "stars": stars})
 	# Mỗi nhóm đã thanh toán để lại đúng một đánh giá.
 	if first_payment:
 		state.rating_sum += stars
 		state.rating_count += 1
 		state.night["rating_sum"] += stars
 		state.night["rating_count"] += 1
-		state.reviews.append({"day": state.day, "who": group["type_name"], "room_name": room_name, "stars": stars, "satisfaction": satisfaction, "text": comment})
+		state.reviews.append({"day": state.day, "who": review["who"], "badge": review["badge"], "group_name": group["type_name"], "room_name": room_name, "stars": stars, "satisfaction": satisfaction, "text": comment, "main": review["main"]})
 		while state.reviews.size() > balance["reviews_kept"]:
 			state.reviews.pop_front()
 

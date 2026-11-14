@@ -42,11 +42,13 @@ func _run() -> void:
 	_sim.clock.toggle_pause()
 	await _shot("02_chuan_bi")
 
-	_expect(_sim.hire_host("host_1") == "" and _sim.hire_host("host_4") == "", "Tuyển hai nhân viên Lan can")
+	_sim.equip_room("room_04")
+	_sim.economy.record("TEST", 10000000, "smoke_fund")
 	_venue.selected_room = "room_03"
 	_game._refresh_detail()
 	_game._btn_unlock.pressed.emit()
 	_expect(_sim.rooms.get_room("room_03")["state"] == "AVAILABLE", "Mở phòng 03 từ bảng chi tiết")
+	_expect(_sim.hire_host("host_1") == "" and _sim.hire_host("host_4") == "", "Đủ 4 phòng tầng 1: tuyển hai nhân viên Lan can")
 	_game._show_stock()
 	await _shot("03_kho_hang")
 	_game._close_overlay()
@@ -119,7 +121,7 @@ func _run() -> void:
 		if _sim.clock.minute == 200:
 			await _shot("10_dem_2")
 	_expect(_sim.state.day == 2 and _sim.state.history.size() == 2, "Chơi trọn đêm 2")
-	_expect(_sim.state.history[1]["wages"] >= 300000 + 350000, "Đêm 2 có trả lương bảo vệ")
+	_expect(_sim.state.history[1]["wages"] >= _sim.data["staff"][0]["wage"] + _sim.data["balance"]["guard_wage"], "Đêm 2 có trả lương bảo vệ")
 	_expect(_sim.check_invariants().is_empty() and _sim.economy.ledger_matches_balance(), "Bất biến và sổ thu chi ổn sau đêm 2")
 	print("    Đã xử lý: %s" % str(_handled))
 

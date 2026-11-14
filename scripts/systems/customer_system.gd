@@ -125,6 +125,31 @@ func add_group(type_id: String, size: int, planned_minutes: int, now: int, music
 	return group
 
 
+## Lượng khách đến theo điểm sao (100 = bình thường). Chưa có đánh giá thì 100; mỗi nửa sao trên 3,0 thêm
+## arrival_per_half_star_percent%, dưới 3,0 thì bớt; giới hạn trong [arrival_min_percent, arrival_max_percent].
+func arrival_percent() -> int:
+	var balance: Dictionary = _data["balance"]
+	if _state.rating_count <= 0:
+		return 100
+	@warning_ignore("integer_division")
+	var x10: int = (_state.rating_sum * 10 + _state.rating_count / 2) / _state.rating_count
+	@warning_ignore("integer_division")
+	return clampi(100 + (x10 - 30) * balance["arrival_per_half_star_percent"] / 5, balance["arrival_min_percent"], balance["arrival_max_percent"])
+
+
+## Hệ số khách theo danh tiếng (mức độ được biết đến): 40 điểm là 100%, mỗi điểm thêm hoặc bớt
+## reputation_arrival_per_point_percent%.
+func reputation_percent() -> int:
+	var balance: Dictionary = _data["balance"]
+	return clampi(100 + (_state.reputation - balance["starting_reputation"]) * balance["reputation_arrival_per_point_percent"], balance["reputation_arrival_min_percent"], balance["reputation_arrival_max_percent"])
+
+
+## Tổng lượng khách so với lúc mới mở quán (sao × danh tiếng).
+func demand_percent() -> int:
+	@warning_ignore("integer_division")
+	return arrival_percent() * reputation_percent() / 100
+
+
 func remove_group(group: Dictionary) -> void:
 	for i in _state.groups.size():
 		if _state.groups[i]["id"] == group["id"]:
@@ -146,7 +171,8 @@ func tick(now: int) -> void:
 		# Quán càng nhiều phòng thì khách tới càng dày, để lượng khách không vượt sức phục vụ.
 		var interval: int = _rng.randi_range(balance["spawn_interval_min"], balance["spawn_interval_max"])
 		@warning_ignore("integer_division")
-		_state.next_arrival_minute = now + maxi(1, interval * 3 / (_rooms.unlocked_count() + 1))
+		# Lượng khách theo điểm sao và danh tiếng, không theo số phòng: mở phòng chỉ có lời khi đủ khách.
+		_state.next_arrival_minute = now + maxi(1, interval * 10000 / (arrival_percent() * reputation_percent()))
 
 
 ## Giờ đóng cửa: những nhóm còn chờ ra về, không trừ danh tiếng.

@@ -12,14 +12,10 @@ func _run() -> void:
 	var sim = Sim.new(Loader.load_all(), 78)
 	check(sim.state.rooms.size() == 10 and sim.state.rooms.filter(func(r): return r["floor"] == 1).size() == 4 and sim.state.rooms.filter(func(r): return r["floor"] == 2).size() == 6, "Exactly four standard rooms and six VIP rooms")
 	var money: int = sim.state.money
-	check(not sim.rooms.floor_unlocked(2) and sim.unlock_room("room_05") != "" and sim.state.money == money, "Locked floor blocks purchases without charging")
-	check(sim.unlock_room("room_03") == "" and sim.unlock_room("room_04") == "" and not sim.rooms.floor_unlocked(2), "Four standard rooms alone do not unlock VIP floor")
-	sim.state.reputation = 60
-	check(sim.rooms.floor_unlocked(2), "60 reputation and four standard rooms unlock floor two")
-	sim.state.reputation = 55
-	check(sim.rooms.floor_unlocked(2), "Unlocked floor stays available if reputation later drops")
+	check(sim.rooms.floor_unlocked(2) and sim.room_info("room_05")["can_equip_now"], "VIP floor needs only money, no reputation")
+	check(sim.unlock_room("room_05") == "" and sim.state.money == money - 6000000, "Equipping a VIP room charges its price once")
 	sim.economy.record("TEST", 30000000, "fund")
-	check(sim.unlock_room("room_05") == "" and sim.rooms.get_room("room_05")["price_per_hour"] > sim.rooms.get_room("room_01")["price_per_hour"], "VIP rooms unlock individually at premium rates")
+	check(sim.unlock_room("room_06") == "" and sim.rooms.get_room("room_06")["price_per_hour"] > sim.rooms.get_room("room_01")["price_per_hour"], "VIP rooms unlock individually at premium rates")
 	var game = load("res://scenes/game.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
@@ -28,7 +24,7 @@ func _run() -> void:
 	venue.set_process(false)
 	game.sim.customers.spawning_enabled = false
 	game.sim.service.enabled = false
-	check(venue.current_floor == 1 and not venue.set_floor(2), "Floor switch enforces achievement gate")
+	check(venue.current_floor == 1, "Game starts on the ground floor")
 	check(venue._room_ui["room_01"]["root"].visible and not venue._room_ui["room_05"]["root"].visible, "Only ground-floor hit targets visible initially")
 	game.sim.unlock_room("room_03")
 	game.sim.unlock_room("room_04")

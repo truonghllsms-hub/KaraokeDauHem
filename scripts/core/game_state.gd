@@ -48,5 +48,12 @@ var rating_sum: int = 0
 var rating_count: int = 0
 var reviews: Array = []
 
+## Vay ngân hàng, phá sản và tên trộm đang ở bãi xe.
+var loan_principal: int = 0
+var loan_counter: int = 0
+var negative_nights: int = 0
+var bankrupt: bool = false
+var thief: Dictionary = {}
+
 var messages: Array = []
 var rng_seed: int = 0

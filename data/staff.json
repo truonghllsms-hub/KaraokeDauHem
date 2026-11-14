@@ -2,31 +2,61 @@
   {
     "id": "staff_1",
     "name": "Tí",
-    "role": "waiter",
+    "role": "janitor",
     "speed": 100,
-    "wage": 300000,
+    "wage": 220000,
     "starter": true,
-    "about": "Nhanh nhẹn vừa phải, làm lâu năm ở quán.",
+    "about": "Tạp vụ lâu năm, lau phòng sạch bong.",
     "sprite": "waiter_m"
   },
   {
     "id": "staff_2",
-    "name": "Mận",
-    "role": "waiter",
-    "speed": 125,
-    "wage": 380000,
+    "name": "Cô Năm",
+    "role": "janitor",
+    "speed": 130,
+    "wage": 300000,
     "starter": false,
-    "about": "Tay chân lẹ, bưng bê thoăn thoắt.",
+    "about": "Tạp vụ tay nhanh, dọn phòng thần tốc.",
     "sprite": "waiter_f"
   },
   {
     "id": "staff_3",
-    "name": "Sáu Lúa",
+    "name": "Mận",
     "role": "waiter",
-    "speed": 80,
-    "wage": 240000,
+    "speed": 120,
+    "wage": 300000,
     "starter": false,
-    "about": "Chậm mà chắc, lương mềm.",
+    "about": "Phục vụ lanh lẹ, bưng bê không đổ giọt nào.",
+    "sprite": "waiter_f"
+  },
+  {
+    "id": "staff_4",
+    "name": "Tèo",
+    "role": "waiter",
+    "speed": 90,
+    "wage": 220000,
+    "starter": false,
+    "about": "Phục vụ chậm mà chắc, lương mềm.",
+    "sprite": "waiter_m"
+  },
+  {
+    "id": "staff_5",
+    "name": "Bảo Ngọc",
+    "role": "receptionist",
+    "speed": 110,
+    "wage": 320000,
+    "starter": false,
+    "about": "Lễ tân niềm nở, nhớ mặt khách quen.",
+    "sprite": "waiter_f"
+  },
+  {
+    "id": "staff_6",
+    "name": "Khoa",
+    "role": "receptionist",
+    "speed": 90,
+    "wage": 250000,
+    "starter": false,
+    "about": "Lễ tân mới vào nghề, xếp phòng hơi chậm.",
     "sprite": "waiter_m"
   }
 ]

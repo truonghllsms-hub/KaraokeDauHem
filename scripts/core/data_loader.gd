@@ -69,8 +69,6 @@ const BALANCE_KEYS: Array = [
 	"extend_decline_penalty",
 	"cart_bonus_minutes",
 	"theft_start_day",
-	"theft_chance_permille",
-	"theft_chance_guard_permille",
 	"theft_compensation",
 	"theft_reputation_penalty",
 	"guard_wage",
@@ -79,9 +77,7 @@ const BALANCE_KEYS: Array = [
 	"goal_unserved_max",
 	"goal_reputation_bonus",
 	"lancan_men_request_male_percent",
-	"floor2_min_reputation",
 	"staff_hire_cost",
-	"staff_max",
 	"staff_delay_clean",
 	"staff_delay_order",
 	"staff_delay_mic",
@@ -118,8 +114,35 @@ const BALANCE_KEYS: Array = [
 	"reputation_by_stars",
 	"reputation_four_star_cap",
 	"goal_unserved_per_room",
+	"staff_max_per_role",
+	"staff_delay_seat",
+	"staff_seat_minutes",
+	"arrival_per_half_star_percent",
+	"arrival_min_percent",
+	"arrival_max_percent",
+	"loan_rate_permille_per_night",
+	"loan_min_principal_percent",
+	"credit_base",
+	"credit_equipment_percent",
+	"loan_step",
+	"bankrupt_after_negative_nights",
+	"thief_chance_per_hour_percent",
+	"thief_approach_minutes",
+	"thief_steal_minutes",
+	"chase_minutes",
+	"guard_react_minutes",
+	"guard_catch_percent",
+	"thief_satisfaction_penalty",
+	"lancan_unlock_floor1_rooms",
+	"lancan_tip_chance_percent",
+	"lancan_tip_match_bonus_percent",
+	"lancan_tip_house_percent",
+	"reputation_arrival_per_point_percent",
+	"reputation_arrival_min_percent",
+	"reputation_arrival_max_percent",
 ]
 const STAFF_KEYS: Array = ["id", "name", "role", "speed", "wage", "starter", "about"]
+const STAFF_ROLES: Array = ["janitor", "waiter", "receptionist"]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
 const UPGRADE_KEYS: Array = ["id", "name", "cost", "max_level", "effect"]
 const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage", "gender"]
@@ -135,6 +158,15 @@ static func load_all() -> Dictionary:
 	var products = _read("res://data/products.json", errors)
 	var staff = _read("res://data/staff.json", errors)
 	var lyrics = _read("res://data/lyrics.json", errors)
+	var reviews = _read("res://data/reviews.json", errors)
+	if reviews is Dictionary:
+		_require(reviews, ["family_names", "given_names", "nicknames", "nick_handles", "by_tag", "by_stars"], "reviews.json", errors)
+	elif reviews != null:
+		errors.append("reviews.json: phải là một đối tượng.")
+	if staff is Array:
+		for member in staff:
+			if member is Dictionary and not STAFF_ROLES.has(member.get("role", "")):
+				errors.append("staff.json: vai trò nhân viên không hợp lệ (janitor, waiter, receptionist).")
 	var banter = _read("res://data/banter.json", errors)
 	if lyrics is Dictionary:
 		_require(lyrics, ["sprite_age", "songs", "lines"], "lyrics.json", errors)
@@ -207,7 +239,7 @@ static func load_all() -> Dictionary:
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 
-	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars, "lyrics": lyrics, "banter": banter}
+	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars, "lyrics": lyrics, "banter": banter, "reviews": reviews}
 
 
 static func _read(path: String, errors: Array):

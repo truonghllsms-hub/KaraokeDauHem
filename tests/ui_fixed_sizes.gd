@@ -19,6 +19,10 @@ func _run() -> void:
 	var sim = game.sim
 	sim.customers.spawning_enabled = false
 	sim.service.enabled = false
+	# Lan can mở khi đã lắp đủ 4 phòng tầng 1.
+	sim.equip_room("room_03")
+	sim.equip_room("room_04")
+	sim.economy.record("TEST", 20000000, "sizes_fund")
 	for id in ["host_1", "host_2", "host_3", "host_4", "host_5"]:
 		sim.hire_host(id)
 	sim.open_doors()

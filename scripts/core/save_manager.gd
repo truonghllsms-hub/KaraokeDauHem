@@ -10,11 +10,15 @@ const GAME_ID: String = "karaoke-dau-hem"
 const DEFAULT_PATH: String = "user://karaoke_save.json"
 ## Các trường của GameState được lưu. Nhật ký thông báo (messages) không lưu.
 const STATE_FIELDS: Array = [
-	"phase", "day", "money", "reputation", "floor2_unlocked", "rooms", "groups", "next_group_id", "next_arrival_minute",
+	"phase", "day", "money", "reputation", "rooms", "groups", "next_group_id", "next_arrival_minute",
 	"ledger", "ledger_keys", "night", "history", "hosts", "stock", "upgrades", "guard_hired",
 	"next_request_id", "purchase_counter", "last_bill", "staff", "staff_priority", "regulars", "next_regular_id",
 	"rating_sum", "rating_count", "reviews",
 ]
+## Trường thêm sau; bản lưu cũ thiếu thì dùng giá trị mặc định.
+const OPTIONAL_DEFAULTS: Dictionary = {
+	"loan_principal": 0, "loan_counter": 0, "negative_nights": 0, "bankrupt": false, "thief": {}, "floor2_unlocked": true,
+}
 const SAVEABLE_PHASES: Array = ["PREP", "SUMMARY"]
 
 
@@ -33,7 +37,7 @@ static func has_save(path: String = DEFAULT_PATH) -> bool:
 ## Chụp trạng thái thành Dictionary thuần. Số ngẫu nhiên 64-bit lưu dạng chuỗi để JSON không làm tròn.
 static func make_snapshot(state, rng: RandomNumberGenerator) -> Dictionary:
 	var fields: Dictionary = {}
-	for field in STATE_FIELDS:
+	for field in STATE_FIELDS + OPTIONAL_DEFAULTS.keys():
 		var value = state.get(field)
 		fields[field] = value.duplicate(true) if (value is Array or value is Dictionary) else value
 	return {

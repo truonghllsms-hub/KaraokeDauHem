@@ -25,9 +25,17 @@ func check(ok: bool, label: String) -> void:
 
 func new_sim(seed_value: int = 77):
 	var sim = Sim.new(data, seed_value)
+	open_lancan(sim)
 	sim.customers.spawning_enabled = false
 	sim.service.enabled = false
 	return sim
+
+## Lan can chỉ tuyển được khi đã lắp đủ 4 phòng tầng 1; thêm vốn để tuyển nhiều người.
+func open_lancan(sim) -> void:
+	sim.equip_room("room_03")
+	sim.equip_room("room_04")
+	sim.economy.record("TEST", 20000000, "lancan_fund")
+
 
 func step(sim, minutes: int) -> void:
 	for i in minutes:
@@ -79,6 +87,7 @@ func policy() -> void:
 		if kind["id"] in ["couple", "family"]:
 			kind["lancan_chance"] = 100
 	var family_sim = Sim.new(forced_data, 9)
+	open_lancan(family_sim)
 	family_sim.customers.spawning_enabled = false
 	family_sim.service.enabled = false
 	family_sim.hire_host("host_9")

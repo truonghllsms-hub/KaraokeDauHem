@@ -58,19 +58,21 @@ func get_room(room_id: String) -> Variant:
 	return null
 
 
-func floor_unlocked(floor_number: int) -> bool:
-	if floor_number == 1 or _state.floor2_unlocked:
-		return true
-	if _state.reputation < _data["balance"]["floor2_min_reputation"]:
-		return false
-	for room in _state.rooms:
-		if room["floor"] == 1 and room["state"] == "LOCKED":
-			return false
+## Mọi tầng đều mở: có đủ tiền là lắp thiết bị được (không cần danh tiếng).
+func floor_unlocked(_floor_number: int) -> bool:
 	_state.floor2_unlocked = true
 	return true
 
 func floor_lock_reason() -> String:
-	return "Mở đủ 4 phòng thường và đạt %d danh tiếng để lên tầng 2." % _data["balance"]["floor2_min_reputation"]
+	return ""
+
+
+## Số phòng tầng 1 đã lắp thiết bị (điều kiện mở dịch vụ Lan can).
+func equipped_on_floor(floor_number: int) -> int:
+	var count: int = 0
+	for room in _state.rooms:
+		count += 1 if room["floor"] == floor_number and room["state"] != "LOCKED" else 0
+	return count
 
 func unlocked_count() -> int:
 	var count: int = 0

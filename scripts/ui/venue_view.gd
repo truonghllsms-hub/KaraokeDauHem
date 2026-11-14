@@ -41,9 +41,16 @@ const GUARD_POS: Vector2 = Vector2(900, 1220)
 const MAX_TASKS: int = 5
 ## Chỗ nhân viên phục vụ đứng chờ việc (cạnh quầy) và thời gian hiện một câu hát/thoại (giây thực).
 const STAFF_SLOTS: Array = [Vector2(330, 935), Vector2(250, 935), Vector2(170, 935)]
+## Chỗ đứng theo vai trò: lễ tân sau quầy, tạp vụ và phục vụ cạnh quầy.
+const ROLE_SLOTS: Dictionary = {
+	"receptionist": [Vector2(250, 975), Vector2(320, 975)],
+	"janitor": [Vector2(110, 935), Vector2(170, 935)],
+	"waiter": [Vector2(330, 925), Vector2(400, 925)],
+}
+const THIEF_FROM: Vector2 = Vector2(980, 1290)
 const LINE_SECONDS: float = 4.5
 const REPLY_AFTER: float = 2.2
-const STAFF_BUBBLE: Dictionary = {"CLEAN": "Đi dọn phòng", "DELIVER": "Mang món tới!", "FIX": "Đổi micro mới", "REST": "Nghỉ xíu..."}
+const STAFF_BUBBLE: Dictionary = {"CLEAN": "Đi dọn phòng", "DELIVER": "Mang món tới!", "FIX": "Đổi micro mới", "SEAT": "Mời vào phòng!", "REST": "Nghỉ xíu..."}
 
 const STATE_TEXT: Dictionary = {
 	"LOCKED": "[CHƯA LẮP]", "AVAILABLE": "[TRỐNG]", "OCCUPIED": "[ĐANG HÁT]",
@@ -87,6 +94,8 @@ var _lbl_yard: Label
 var _anim_time: float = 0.0
 var _toast_until: int = 0
 var _staff_actors: Dictionary = {}
+var _thief_actor = null
+var _thief_id: int = -1
 ## Câu hát/thoại đang hiện: khóa "g:<id nhóm>" hoặc "h:<id nhân viên>" -> {text, reply, reply_key, at}.
 var _lines: Dictionary = {}
 var _line_clock: float = 0.0
@@ -542,6 +551,7 @@ func advance_actors(delta: float) -> void:
 	_sync_groups()
 	_sync_hosts()
 	_sync_staff(delta)
+	_sync_thief(delta)
 	_update_owner()
 	_owner.visible = sim.state.phase != "PREP"
 	_owner.advance(delta)
@@ -576,6 +586,10 @@ func _refresh_yard() -> void:
 	for i in _bikes.size():
 		_bikes[i].visible = i >= 3 and i < parked
 	_guard.visible = sim.state.guard_hired and sim.state.phase != "PREP"
+	var thief: Dictionary = sim.state.thief
+	_guard.position = GUARD_POS
+	if not thief.is_empty() and thief["chased_by"] == "guard" and _thief_actor != null and sim.clock.minute >= thief["appear"] + sim.data["balance"]["guard_react_minutes"]:
+		_guard.position = GUARD_POS.lerp(_thief_actor.position + Vector2(40, 0), 0.8)
 	if sim.state.guard_hired:
 		_lbl_yard.text = "Bảo vệ đang trông xe"
 		_lbl_yard.add_theme_color_override("font_color", UI.GOOD)
@@ -723,7 +737,7 @@ func _sync_staff(delta: float) -> void:
 			actor = Actor.new()
 			actor.setup([member.get("sprite", "waiter_m")])
 			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
-			actor.position = STAFF_SLOTS[i % STAFF_SLOTS.size()]
+			actor.position = _staff_slot(member, i)
 			actor.speed = 300.0
 			actor.set_clickable(false)
 			actor.set_tooltip("Nhân viên phục vụ %s" % member["name"])
@@ -734,13 +748,86 @@ func _sync_staff(delta: float) -> void:
 		var key: String = task["room_id"] if working else "idle"
 		if actor.place_key != key:
 			actor.place_key = key
-			var target: Vector2 = _work_position(task["room_id"]) + Vector2(60, 0) if working else STAFF_SLOTS[i % STAFF_SLOTS.size()]
+			var target: Vector2 = _staff_slot(member, i)
+			if working:
+				target = _work_position(task["room_id"]) + Vector2(60, 0)
+				if task["kind"] == "SEAT":
+					target = QUEUE_SLOTS[0] + Vector2(-70, 0)
 			actor.walk_to(_route(actor.position, target))
 		actor.pose = "standing"
 		actor.mood = "tired" if member["energy"] < 40 else "neutral"
 		actor.set_bubble(STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
 		actor.visible = sim.state.phase != "PREP"
 		actor.advance(delta)
+
+
+func _staff_slot(member: Dictionary, index: int) -> Vector2:
+	var slots: Array = ROLE_SLOTS.get(member["role"], STAFF_SLOTS)
+	var same_role: int = 0
+	for other in sim.state.staff:
+		if other["id"] == member["id"]:
+			break
+		same_role += 1 if other["role"] == member["role"] else 0
+	return slots[same_role % slots.size()]
+
+
+## Tên trộm: đi chậm từ đầu hẻm tới chiếc xe bị nhắm, phá khóa, rồi tẩu thoát. Bấm vào hắn để đuổi.
+func _sync_thief(delta: float) -> void:
+	var thief: Dictionary = sim.state.thief
+	if thief.is_empty():
+		if _thief_actor != null:
+			_thief_actor.queue_free()
+			_thief_actor = null
+			_thief_id = -1
+		return
+	if _thief_actor == null or _thief_id != thief["id"]:
+		if _thief_actor != null:
+			_thief_actor.queue_free()
+		_thief_actor = Actor.new()
+		_thief_actor.setup(["young_m_3"])
+		_thief_actor.modulate = Color(0.45, 0.45, 0.55)
+		_thief_actor.position = THIEF_FROM
+		_thief_actor.speed = 40.0
+		_thief_actor.set_tooltip("Trộm xe! Bấm để chạy ra đuổi.")
+		_thief_actor.pressed.connect(_on_thief_pressed)
+		_actors.add_child(_thief_actor)
+		_thief_id = thief["id"]
+		_thief_actor.walk_to([BIKE_SLOTS[thief["id"] % 3]])
+	var actor = _thief_actor
+	match thief["state"]:
+		"APPROACH":
+			# Đi chậm rãi: tốc độ đủ để tới xe đúng lúc mô phỏng báo tới nơi.
+			var minutes_left: float = maxf(0.5, thief["reach"] - sim.clock.minute)
+			actor.speed = maxf(15.0, actor.position.distance_to(BIKE_SLOTS[thief["id"] % 3]) / (minutes_left * 2.0))
+			actor.set_bubble("Ai đuổi theo rồi!" if thief["catch_at"] >= 0 else "Rón rén...", Color(0.92, 0.92, 0.95), UI.MUTED)
+		"STEALING":
+			actor.set_bubble("Ai đuổi theo rồi!" if thief["catch_at"] >= 0 else "Đang phá khóa!", Color(1.0, 0.85, 0.85), UI.BAD)
+		"CAUGHT":
+			actor.set_bubble("Bị tóm rồi!", Color(0.88, 1.0, 0.9), UI.GOOD)
+			actor.mood = "angry"
+		"ESCAPED":
+			actor.set_bubble("Mất xe!", Color(1.0, 0.85, 0.85), UI.BAD)
+			if not actor.is_moving():
+				actor.speed = 260.0
+				actor.walk_to([STREET])
+	actor.set_clickable(thief["state"] in ["APPROACH", "STEALING"] and thief["catch_at"] < 0)
+	actor.pose = "standing"
+	actor.visible = current_floor == 1
+	actor.advance(delta)
+
+
+func _on_thief_pressed() -> void:
+	var reason: String = sim.chase_thief()
+	if reason != "":
+		report.emit(reason)
+		return
+	hint.emit("Chủ quán chạy ra đuổi trộm!")
+	# Chủ quán bỏ dở bước đi hiện tại, chạy ra bãi xe rồi quay lại làm tiếp.
+	if not _current_task.is_empty() and _cleaning_room == "":
+		_tasks.push_front(_current_task)
+		_current_task = {}
+	_owner.walk_to(_route(_owner.position, _thief_actor.position))
+	_owner.set_bubble("Đứng lại!")
 
 
 ## Một câu hát hoặc câu thoại vừa phát trong phòng (xem AmbienceSystem).
