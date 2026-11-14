@@ -1,7 +1,10 @@
 extends RefCounted
 ## Đọc dữ liệu định nghĩa từ res://data một lần và kiểm tra hợp lệ khi khởi động.
 
-const ROOM_KEYS: Array = ["id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
+const ROOM_KEYS: Array = [
+	"id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof",
+	"tier", "tier_name", "equipment", "perks", "upkeep_per_night", "comfort_bonus", "budget_bonus_percent", "mic_weight_percent",
+]
 const TYPE_KEYS: Array = ["id", "name", "weight", "size_min", "size_max", "budget_per_hour", "patience_min", "patience_max", "music", "greetings", "lancan_chance", "sprites", "trait", "orders_min", "orders_max", "extend_chance", "mic_penalty_mult"]
 const BALANCE_KEYS: Array = [
 	"starting_money",
@@ -100,6 +103,19 @@ const BALANCE_KEYS: Array = [
 	"regular_favorite_product_bonus",
 	"regular_keep_satisfaction",
 	"regular_lost_below",
+	"price_refuse_over_percent",
+	"star_thresholds",
+	"reviews_kept",
+	"line_first_min",
+	"line_first_max",
+	"line_gap_min",
+	"line_gap_max",
+	"line_banter_chance",
+	"line_duet_chance",
+	"line_duet_chance_with_host",
+	"reputation_by_stars",
+	"reputation_four_star_cap",
+	"goal_unserved_per_room",
 ]
 const STAFF_KEYS: Array = ["id", "name", "role", "speed", "wage", "starter", "about"]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
@@ -116,6 +132,18 @@ static func load_all() -> Dictionary:
 	var hosts = _read("res://data/hosts.json", errors)
 	var products = _read("res://data/products.json", errors)
 	var staff = _read("res://data/staff.json", errors)
+	var lyrics = _read("res://data/lyrics.json", errors)
+	var banter = _read("res://data/banter.json", errors)
+	if lyrics is Dictionary:
+		_require(lyrics, ["sprite_age", "songs", "lines"], "lyrics.json", errors)
+		for line in lyrics.get("lines", []):
+			_require(line, ["id", "age", "genre", "family", "mood", "song_id", "text"], "lyrics.json", errors)
+	elif lyrics != null:
+		errors.append("lyrics.json: phải là một đối tượng.")
+	if banter is Dictionary:
+		_require(banter, ["pairs", "reactions", "host_lines"], "banter.json", errors)
+	elif banter != null:
+		errors.append("banter.json: phải là một đối tượng.")
 	var regulars = _read("res://data/regulars.json", errors)
 	if staff is Array:
 		for member in staff:
@@ -167,7 +195,7 @@ static func load_all() -> Dictionary:
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 
-	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars}
+	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars, "lyrics": lyrics, "banter": banter}
 
 
 static func _read(path: String, errors: Array):

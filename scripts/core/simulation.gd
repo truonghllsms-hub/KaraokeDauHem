@@ -8,6 +8,8 @@ signal night_ended(summary: Dictionary)
 signal bill_paid(bill: Dictionary)
 ## Phát sau mỗi lần lưu (tự động hoặc thủ công). error rỗng là lưu thành công.
 signal game_saved(path: String, error: String)
+## Câu hát hoặc câu thoại trang trí vừa phát trong một phòng (xem AmbienceSystem để biết các trường).
+signal line_spoken(event: Dictionary)
 
 const GameState = preload("res://scripts/core/game_state.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
@@ -19,6 +21,7 @@ const HospitalitySystem = preload("res://scripts/systems/hospitality_system.gd")
 const ServiceSystem = preload("res://scripts/systems/service_system.gd")
 const StaffSystem = preload("res://scripts/systems/staff_system.gd")
 const RegularSystem = preload("res://scripts/systems/regular_system.gd")
+const AmbienceSystem = preload("res://scripts/systems/ambience_system.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 
 const MAX_MESSAGES: int = 60
@@ -35,6 +38,8 @@ const COMMENTS: Array = [
 	["gia_cao", "Giá hơi chát so với túi tiền tụi mình."],
 	["lancan_lo", "Gọi Lan can mà chẳng thấy ai."],
 	["phong_quen", "Vẫn phòng quen, vẫn dễ thương như mọi lần."],
+	["lancan_hop_gu", "Bạn Lan can hát đúng gu, cả phòng phiêu theo."],
+	["vip", "Phòng VIP xịn thật, loa nghe đã tai."],
 	["giao_nhanh", "Gọi đá có liền, ưng cái bụng!"],
 	["lancan", "Bạn Lan can khuấy động vui hết nấc."],
 	["hat_them", "Được hát thêm nửa tiếng, quán dễ thương ghê."],
@@ -51,6 +56,7 @@ var hosts
 var service
 var staff
 var regulars
+var ambience
 ## Đặt đường dẫn (ví dụ SaveManager.DEFAULT_PATH) để tự lưu sau mỗi lần tổng kết đêm. Rỗng là tắt.
 var autosave_path: String = ""
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -77,8 +83,15 @@ func _init(p_data: Dictionary, p_seed: int) -> void:
 	staff.setup_new_game()
 	regulars = RegularSystem.new(state, data, rng, Callable(self, "notify"))
 	customers.regulars = regulars
+	ambience = AmbienceSystem.new(state, data, customers, p_seed, Callable(self, "_emit_line"))
+	service.react = Callable(ambience, "react")
+	hosts.speak = Callable(ambience, "host_line")
 	economy.record("OPENING", balance["starting_money"], "new_game", "Vốn ban đầu")
 	_begin_day()
+
+
+func _emit_line(event: Dictionary) -> void:
+	line_spoken.emit(event)
 
 
 func notify(text: String, kind: String = "info") -> void:
@@ -129,6 +142,7 @@ func step_minute() -> void:
 			_checkout(room, now)
 
 	customers.tick(now)
+	ambience.tick(now)
 
 	if now >= Clock.NIGHT_MINUTES:
 		_close_night()
@@ -147,16 +161,21 @@ func _begin_day() -> void:
 	clock.reset()
 	state.next_arrival_minute = data["balance"]["first_arrival_minute"]
 	hosts.begin_day()
+	if ambience != null:
+		ambience.reset()
 	state.night = {
 		"served": 0,
 		"unserved": 0,
 		"satisfaction_sum": 0,
 		"reputation_start": state.reputation,
 		"comments": [],
+		"rating_sum": 0,
+		"rating_count": 0,
+		"rating_before_x10": rating_x10(),
 		"thefts": 0,
 		"guard_on_duty": state.guard_hired,
 		"goal_served": mini(data["balance"]["goal_base"] + state.day, data["balance"]["goal_max"]),
-		"goal_unserved_max": data["balance"]["goal_unserved_max"],
+		"goal_unserved_max": data["balance"]["goal_unserved_max"] + data["balance"]["goal_unserved_per_room"] * rooms.unlocked_count(),
 	}
 
 
@@ -185,6 +204,9 @@ func _close_night() -> void:
 	if state.night["guard_on_duty"]:
 		economy.record("WAGES", -balance["guard_wage"], day_key + ":guard", "Lương bảo vệ")
 	economy.record("OPERATING", -balance["operating_cost_per_night"], day_key, "Điện, nước, mặt bằng")
+	for room in state.rooms:
+		if room["state"] != "LOCKED" and room["upkeep_per_night"] > 0:
+			economy.record("OPERATING", -room["upkeep_per_night"], "%s:%s" % [day_key, room["id"]], "Vận hành " + room["name"])
 
 	var served: int = state.night["served"]
 	var goal_met: bool = served >= state.night["goal_served"] and state.night["unserved"] <= state.night["goal_unserved_max"]
@@ -214,6 +236,13 @@ func _close_night() -> void:
 		"goal": goal_text(),
 		"goal_met": goal_met,
 		"comments": _pick_comments(),
+		# Đánh giá sao: riêng đêm nay và toàn quán (x10 để tránh số thực; 43 nghĩa là 4,3 sao).
+		"night_reviews": state.night["rating_count"],
+		"night_rating_x10": _average_x10(state.night["rating_sum"], state.night["rating_count"]),
+		"night_rating_text": format_rating(_average_x10(state.night["rating_sum"], state.night["rating_count"]), state.night["rating_count"]),
+		"rating_before_x10": state.night["rating_before_x10"],
+		"rating_after_x10": rating_x10(),
+		"rating_text": rating_text(),
 		"balance": state.money,
 	}
 	state.history.append(summary)
@@ -265,11 +294,41 @@ func preview_assign(group_id: int, room_id: String) -> Dictionary:
 	var room = rooms.get_room(room_id)
 	if group == null or room == null:
 		return {"reason": "Không tìm thấy nhóm hoặc phòng.", "estimate": 0, "over_budget": false}
+	var reason: String = rooms.check_assign(room, group, clock.minute, Clock.NIGHT_MINUTES)
 	return {
-		"reason": rooms.check_assign(room, group, clock.minute, Clock.NIGHT_MINUTES),
+		"reason": reason,
+		# Mã lý do ngắn để giao diện chọn nhãn: "" | STATE | CAPACITY | TIME | PRICE.
+		"block": _block_code(room, group, reason),
+		"block_text": _block_text(room, group, reason),
 		"estimate": Money.room_fee(room["price_per_hour"], group["planned_minutes"]),
-		"over_budget": room["price_per_hour"] > group["budget_per_hour"],
+		"over_budget": room["price_per_hour"] > rooms.effective_budget(room, group),
+		"budget_per_hour": rooms.effective_budget(room, group),
 	}
+
+
+func _block_code(room: Dictionary, group: Dictionary, reason: String) -> String:
+	if reason == "":
+		return ""
+	if room["state"] != "AVAILABLE":
+		return "STATE"
+	if group["size"] > room["capacity"]:
+		return "CAPACITY"
+	if clock.minute + group["planned_minutes"] > Clock.NIGHT_MINUTES:
+		return "TIME"
+	return "PRICE"
+
+
+func _block_text(room: Dictionary, group: Dictionary, reason: String) -> String:
+	match _block_code(room, group, reason):
+		"STATE":
+			return {"LOCKED": "Chưa lắp thiết bị", "OCCUPIED": "Đang có khách", "DIRTY": "Đang bẩn", "CLEANING": "Đang dọn", "BROKEN": "Đang hỏng"}.get(room["state"], "Không dùng được")
+		"CAPACITY":
+			return "Thiếu chỗ: chỉ chứa %d người" % room["capacity"]
+		"TIME":
+			return "Không kịp trước 24:00"
+		"PRICE":
+			return "Khách chê đắt: %s/giờ" % Money.format(room["price_per_hour"])
+	return ""
 
 
 func deliver_order(room_id: String) -> String:
@@ -346,6 +405,7 @@ func restore(snapshot: Dictionary) -> String:
 	rng.seed = state.rng_seed
 	rng.state = int(str(snapshot["rng_state"]))
 	state.messages = []
+	ambience.reset()
 	clock.reset()
 	if state.phase == "SUMMARY":
 		clock.minute = Clock.NIGHT_MINUTES
@@ -378,20 +438,100 @@ func clean_room(room_id: String) -> String:
 	return rooms.start_cleaning(room, clock.minute)
 
 
-func unlock_room(room_id: String) -> String:
+## Lắp thiết bị cho một phòng đã xây sẵn để đưa vào kinh doanh. Chỉ làm được ở giai đoạn chuẩn bị.
+func equip_room(room_id: String) -> String:
 	var room = rooms.get_room(room_id)
 	if room == null:
 		return "Không tìm thấy phòng."
 	if room["state"] != "LOCKED":
-		return "%s đã mở rồi." % room["name"]
+		return "%s đã lắp thiết bị rồi." % room["name"]
+	if state.phase != "PREP":
+		return "Chỉ lắp thiết bị được ở giai đoạn chuẩn bị, trước khi mở cửa."
 	var cost: int = room["unlock_cost"]
 	if not economy.can_afford(cost):
-		return "Không đủ tiền: mở %s cần %s." % [room["name"], Money.format(cost)]
-	if not economy.record("UNLOCK_ROOM", -cost, room["id"], "Mở " + room["name"]):
+		return "Không đủ tiền: lắp thiết bị %s cần %s, còn thiếu %s." % [room["name"], Money.format(cost), Money.format(cost - state.money)]
+	if not economy.record("EQUIP_ROOM", -cost, room["id"], "Lắp thiết bị phòng: " + room["name"]):
 		return "%s đã được thanh toán trước đó." % room["name"]
 	room["state"] = "AVAILABLE"
-	notify("Đã mở %s (sức chứa %d người)." % [room["name"], room["capacity"]], "good")
+	notify("Đã lắp thiết bị cho %s (%s, %d người). Phòng sẵn sàng đón khách." % [room["name"], room["tier_name"], room["capacity"]], "good")
 	return ""
+
+
+## Tên cũ của equip_room, giữ lại để giao diện hiện tại vẫn chạy.
+func unlock_room(room_id: String) -> String:
+	return equip_room(room_id)
+
+
+## Thông tin một phòng để hiển thị: loại, thiết bị, lợi ích, chi phí lắp và số tiền còn thiếu.
+func room_info(room_id: String) -> Dictionary:
+	var room = rooms.get_room(room_id)
+	if room == null:
+		return {}
+	var equipped: bool = room["state"] != "LOCKED"
+	var cost: int = room["unlock_cost"]
+	return {
+		"id": room["id"], "name": room["name"], "tier": room["tier"], "tier_name": room["tier_name"],
+		"capacity": room["capacity"], "price_per_hour": room["price_per_hour"],
+		"equipped": equipped, "status_text": "Sẵn sàng" if equipped else "Chưa lắp thiết bị",
+		"equipment": room["equipment"], "perks": room["perks"],
+		"equip_cost": cost, "missing_money": 0 if equipped else maxi(0, cost - state.money),
+		"can_equip_now": not equipped and state.phase == "PREP" and economy.can_afford(cost),
+		"equip_button_text": "Lắp thiết bị — %s" % Money.format(cost),
+		"upkeep_per_night": room["upkeep_per_night"], "sound": room["sound"], "soundproof": room["soundproof"],
+	}
+
+
+# ---------------------------------------------------------------- Đánh giá sao
+
+## Danh tiếng (mức độ được biết đến) thay đổi theo số sao nhóm để lại: 5★ và 4★ +1, 3★ 0, 2★ −1, 1★ −3.
+## Từ mốc reputation_four_star_cap trở lên, chỉ khách 5★ mới làm quán nổi tiếng thêm.
+func reputation_change_for(satisfaction: int) -> int:
+	var balance: Dictionary = data["balance"]
+	var stars: int = stars_for(satisfaction)
+	if stars == 4 and state.reputation >= balance["reputation_four_star_cap"]:
+		return 0
+	return balance["reputation_by_stars"][str(stars)]
+
+
+## Số sao (1-5) ứng với mức hài lòng cuối lượt.
+func stars_for(satisfaction: int) -> int:
+	var thresholds: Array = data["balance"]["star_thresholds"]
+	for i in thresholds.size():
+		if satisfaction >= thresholds[i]:
+			return 5 - i
+	return 1
+
+
+static func _average_x10(total: int, count: int) -> int:
+	if count <= 0:
+		return 0
+	@warning_ignore("integer_division")
+	return (total * 10 + count / 2) / count
+
+
+## Điểm trung bình toàn quán nhân 10 (43 nghĩa là 4,3 sao); 0 khi chưa có đánh giá.
+func rating_x10() -> int:
+	return _average_x10(state.rating_sum, state.rating_count)
+
+
+static func format_rating(x10: int, count: int) -> String:
+	if count <= 0:
+		return "Chưa có đánh giá"
+	@warning_ignore("integer_division")
+	return "★ %d,%d/5 · %d đánh giá" % [x10 / 10, x10 % 10, count]
+
+
+## Dòng hiển thị trên giao diện chính, ví dụ "★ 4,3/5 · 28 đánh giá" hoặc "Chưa có đánh giá".
+func rating_text() -> String:
+	return format_rating(rating_x10(), state.rating_count)
+
+
+## Các nhận xét gần nhất, mới nhất đứng đầu: {"day", "who", "room_name", "stars", "satisfaction", "text"}.
+func recent_reviews(limit: int = 10) -> Array:
+	var result: Array = []
+	for i in range(state.reviews.size() - 1, maxi(-1, state.reviews.size() - 1 - limit), -1):
+		result.append(state.reviews[i])
+	return result
 
 
 func hire_host(host_id: String) -> String:
@@ -442,10 +582,12 @@ func _checkout(room: Dictionary, now: int) -> void:
 	var key: String = "group:%d" % group["id"]
 
 	group["state"] = "CHECKOUT"
+	ambience.react(room, "checkout", now)
 	hosts.release_room(room, now)
 	service.close_room(room)
 	var total: int = 0
-	if economy.record("ROOM_FEE", room_fee, key, "%s, %d phút" % [room["name"], minutes]):
+	var first_payment: bool = economy.record("ROOM_FEE", room_fee, key, "%s, %d phút" % [room["name"], minutes])
+	if first_payment:
 		total += room_fee
 	var items: Array = []
 	for i in group["bill_items"].size():
@@ -476,7 +618,7 @@ func _checkout(room: Dictionary, now: int) -> void:
 			], "bad")
 
 	var satisfaction: int = clampi(group["satisfaction"], 0, 100)
-	var change: int = clampi(int(round((satisfaction - 60) / 10.0)), -3, 3)
+	var change: int = reputation_change_for(satisfaction)
 	state.reputation = clampi(state.reputation + change, 0, 100)
 	state.night["served"] += 1
 	state.night["satisfaction_sum"] += satisfaction
@@ -485,13 +627,23 @@ func _checkout(room: Dictionary, now: int) -> void:
 		ordered_product_id = item.get("product_id", ordered_product_id)
 	regulars.on_checkout(group, room["id"], satisfaction, ordered_product_id, state.day)
 	var comment: String = _comment_for(group, satisfaction)
-	state.night["comments"].append({"who": group["type_name"], "text": comment, "satisfaction": satisfaction})
+	var stars: int = stars_for(satisfaction)
+	state.night["comments"].append({"who": group["type_name"], "text": comment, "satisfaction": satisfaction, "stars": stars})
+	# Mỗi nhóm đã thanh toán để lại đúng một đánh giá.
+	if first_payment:
+		state.rating_sum += stars
+		state.rating_count += 1
+		state.night["rating_sum"] += stars
+		state.night["rating_count"] += 1
+		state.reviews.append({"day": state.day, "who": group["type_name"], "room_name": room_name, "stars": stars, "satisfaction": satisfaction, "text": comment})
+		while state.reviews.size() > balance["reviews_kept"]:
+			state.reviews.pop_front()
 
 	var bill: Dictionary = {
 		"group_name": group["type_name"], "size": group["size"], "room_name": room_name, "minutes": minutes,
 		"price_per_hour": room["session_price"], "room_fee": room_fee, "items": items,
 		"discount": discount, "discount_percent": group["discount_percent"], "total": total,
-		"satisfaction": satisfaction, "reputation_change": change, "comment": comment,
+		"satisfaction": satisfaction, "reputation_change": change, "comment": comment, "stars": stars,
 	}
 	state.last_bill = bill
 	var text: String = "Nhóm %s thanh toán %s (%s, %d phút). Hài lòng %d/100" % [group["type_name"], Money.format(total), room_name, minutes, satisfaction]
@@ -521,7 +673,7 @@ func _rate_seating(group: Dictionary, room: Dictionary) -> void:
 		_change_satisfaction(group, -mini(over_wait, balance["wait_penalty_max"]), "Chờ %d phút" % group["wait_minutes"])
 
 	var price: int = room["price_per_hour"]
-	var budget: int = group["budget_per_hour"]
+	var budget: int = rooms.effective_budget(room, group)
 	if price > budget:
 		group["tags"].append("gia_cao")
 		_change_satisfaction(group, -balance["price_over_budget_penalty"], "Giá phòng cao hơn dự tính")
@@ -529,6 +681,9 @@ func _rate_seating(group: Dictionary, room: Dictionary) -> void:
 		group["tags"].append("gia_mem")
 		_change_satisfaction(group, balance["price_bargain_bonus"], "Giá phòng dễ chịu")
 
+	if room["comfort_bonus"] > 0:
+		group["tags"].append("vip")
+		_change_satisfaction(group, room["comfort_bonus"], "%s sang trọng" % room["tier_name"])
 	if group.get("favorite_room_id", "") == room["id"]:
 		group["tags"].append("phong_quen")
 		_change_satisfaction(group, balance["regular_favorite_room_bonus"], "Được ngồi đúng phòng quen")

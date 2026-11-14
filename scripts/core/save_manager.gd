@@ -13,6 +13,7 @@ const STATE_FIELDS: Array = [
 	"phase", "day", "money", "reputation", "rooms", "groups", "next_group_id", "next_arrival_minute",
 	"ledger", "ledger_keys", "night", "history", "hosts", "stock", "upgrades", "guard_hired",
 	"next_request_id", "purchase_counter", "last_bill", "staff", "staff_priority", "regulars", "next_regular_id",
+	"rating_sum", "rating_count", "reviews",
 ]
 const SAVEABLE_PHASES: Array = ["PREP", "SUMMARY"]
 

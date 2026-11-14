@@ -29,6 +29,9 @@ func _init() -> void:
 		test_staff()
 		test_regulars()
 		test_save_load()
+		test_rooms_and_vip()
+		test_ratings()
+		test_ambience()
 		test_full_nights()
 	print("\n%d kiểm tra, %d lỗi." % [_checks, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -48,6 +51,7 @@ func new_sim(p_seed: int = 1, spawning: bool = false):
 	sim.customers.spawning_enabled = spawning
 	sim.service.enabled = spawning
 	sim.staff.enabled = spawning
+	sim.ambience.enabled = spawning
 	return sim
 
 
@@ -133,7 +137,7 @@ func test_assignment_rules() -> void:
 	var big = sim.customers.add_group("company", 8, 60, 0)
 	var reason: String = sim.assign_group(big["id"], "room_01")
 	check(reason.contains("chỉ chứa 6 người"), "Vượt sức chứa: báo rõ lý do (%s)" % reason)
-	check(sim.assign_group(big["id"], "room_04").contains("chưa mở"), "Phòng chưa mở: từ chối kèm lý do")
+	check(sim.assign_group(big["id"], "room_04").contains("chưa lắp thiết bị"), "Phòng chưa lắp thiết bị: từ chối kèm lý do")
 	var preview: Dictionary = sim.preview_assign(big["id"], "room_02")
 	check(preview["reason"] == "" and preview["estimate"] == 350000 and not preview["over_budget"], "Xem trước: phòng 02 vừa nhóm 8 người, dự kiến 350.000đ")
 	check(sim.preview_assign(early["id"], "room_02")["over_budget"], "Xem trước: báo vượt ngân sách của nhóm bạn bè")
@@ -155,8 +159,19 @@ func test_waiting_and_unlock() -> void:
 	check(sim.change_price("room_01", -100) != "", "Chặn giá dưới mức tối thiểu")
 	check(sim.change_price("room_03", 1) != "", "Phòng chưa mở: không chỉnh giá")
 	sim.change_price("room_01", -1)
+	var money: int = sim.state.money
+	check(sim.equip_room("room_03") == "" and sim.state.money == money - 4000000, "Lắp thiết bị phòng 03 trừ 4.000.000đ")
+	check(sim.equip_room("room_03").contains("đã lắp") and sim.state.money == money - 4000000, "Không lắp trùng, không trừ tiền lần hai")
+	check(sim.unlock_room("room_04") == "", "Tên hàm cũ unlock_room vẫn dùng được (phòng 04)")
+	var note: String = sim.state.ledger[sim.state.ledger.size() - 1]["note"]
+	check(note == "Lắp thiết bị phòng: Phòng 04", "Sổ thu chi ghi \"Lắp thiết bị phòng\"")
+	check(sim.state.rooms.size() == 6 and sim.rooms.unlocked_count() == 4, "Quán có 6 phòng, 2 sẵn sàng và vừa lắp thêm 2")
+	var reason: String = sim.equip_room("room_05")
+	check(reason.contains("còn thiếu " + Money.format(12000000 - sim.state.money)), "Thiếu tiền: báo rõ số còn thiếu (%s)" % reason)
 	sim.open_doors()
 	check(sim.change_price("room_01", 1) != "", "Đang mở cửa: không chỉnh giá")
+	sim.economy.record("TEST", 20000000, "gift")
+	check(sim.equip_room("room_05").contains("giai đoạn chuẩn bị") and sim.rooms.get_room("room_05")["state"] == "LOCKED", "Đang mở cửa: không lắp thiết bị")
 
 	var rep: int = sim.state.reputation
 	var group = sim.customers.add_group("friends", 2, 45, 0)
@@ -164,13 +179,7 @@ func test_waiting_and_unlock() -> void:
 	check(sim.customers.get_group(group["id"]) == null, "Hết kiên nhẫn: nhóm bỏ về")
 	check(sim.state.night["unserved"] == 1 and sim.state.reputation == rep - 1, "Bỏ về: -1 danh tiếng")
 
-	var money: int = sim.state.money
-	check(sim.unlock_room("room_03") == "" and sim.state.money == money - 4000000, "Mở phòng 03 trừ 4.000.000đ")
-	check(sim.unlock_room("room_03") != "" and sim.state.money == money - 4000000, "Không mở trùng, không trừ tiền lần hai")
-	check(sim.unlock_room("room_04") == "", "Mở phòng 04")
-	sim.economy.record("TEST", -sim.state.money, "drain")
-	check(sim.unlock_room("room_05").contains("Không đủ tiền"), "Thiếu tiền: không mở được phòng")
-	check(sim.state.rooms.size() == 6 and sim.rooms.unlocked_count() == 4, "Quán có 6 phòng, mở sẵn 2 và vừa mở thêm 2")
+
 
 
 func test_closing_time() -> void:
@@ -350,7 +359,7 @@ func test_service() -> void:
 	money = sim.state.money
 	check(sim.buy_upgrade("spare_mics") == "" and sim.state.money == money - 1500000 and sim.service.upgrade_level("spare_mics") == 1, "Mua micro dự phòng")
 	check(sim.buy_upgrade("spare_mics").contains("cao nhất"), "Không mua quá cấp tối đa")
-	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_05")["sound"] == 2, "Dàn loa mới: mọi phòng lên cấp âm thanh 2")
+	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_04")["sound"] == 2 and sim.rooms.get_room("room_05")["sound"] == 3, "Dàn loa mới: phòng thường lên cấp 2, VIP lên cấp 3")
 	sim.state.stock["da"] = 0
 	var thirsty = sim.customers.add_group("drinking", 3, 60, sim.clock.minute)
 	sim.assign_group(thirsty["id"], "room_01")
@@ -368,7 +377,7 @@ func test_yard_and_goals() -> void:
 	var balance: Dictionary = _data["balance"]
 	var sim = new_sim()
 	check(not sim.theft_risk_active(), "Đêm 1 chưa có nguy cơ mất xe")
-	check(sim.goal_text().contains("4 nhóm"), "Mục tiêu đêm 1: phục vụ 4 nhóm")
+	check(sim.goal_text().contains("4 nhóm") and sim.goal_text().contains("quá 5 nhóm"), "Mục tiêu đêm 1: phục vụ 4 nhóm, không quá 3 + 2 phòng = 5 nhóm bỏ về")
 	sim.open_doors()
 	for i in 4:
 		var group = sim.customers.add_group("couple", 2, 45, sim.clock.minute)
@@ -762,6 +771,220 @@ func test_save_load() -> void:
 	for leftover in [path, backup, auto_path, SaveManager.backup_path(auto_path)]:
 		if FileAccess.file_exists(leftover):
 			DirAccess.remove_absolute(leftover)
+
+
+func test_rooms_and_vip() -> void:
+	print("Phòng chưa lắp thiết bị và phòng VIP")
+	var balance: Dictionary = _data["balance"]
+	var sim = new_sim()
+	var ready: int = 0
+	var vip: int = 0
+	for room in sim.state.rooms:
+		ready += 1 if room["state"] == "AVAILABLE" else 0
+		vip += 1 if room["tier"] == "vip" else 0
+	check(ready == 2 and sim.rooms.unlocked_count() == 2, "Ban đầu: hai phòng hoạt động, bốn phòng chưa lắp thiết bị")
+	check(vip == 2 and sim.rooms.get_room("room_05")["tier"] == "vip" and sim.rooms.get_room("room_06")["tier"] == "vip" and sim.rooms.get_room("room_04")["tier"] == "standard", "Phòng 01-04 thường, 05-06 VIP")
+	var info: Dictionary = sim.room_info("room_05")
+	check(not info["equipped"] and info["status_text"] == "Chưa lắp thiết bị" and info["equip_button_text"] == "Lắp thiết bị — 12.000.000đ", "Thông tin phòng: nhãn và nút lắp thiết bị")
+	check(info["equipment"].size() >= 5 and info["perks"].size() >= 3 and info["upkeep_per_night"] == 150000 and info["missing_money"] == 0 and info["can_equip_now"], "Thông tin phòng VIP: thiết bị, lợi ích, chi phí vận hành")
+	check(sim.room_info("room_06")["missing_money"] == 1000000 and not sim.room_info("room_06")["can_equip_now"], "Phòng VIP 06: báo còn thiếu 1.000.000đ")
+	check(sim.rooms.max_unlocked_capacity() == 8, "Phòng chưa lắp không tính vào sức chứa khi sinh khách")
+	var vip_group = sim.customers.add_group("company", 10, 60, 0)
+	check(sim.preview_assign(vip_group["id"], "room_05")["reason"].contains("chưa lắp thiết bị"), "Phòng chưa lắp thiết bị không nhận khách")
+	check(sim.equip_room("room_05") == "" and sim.state.money == 3000000, "Lắp phòng VIP 05: trừ 12.000.000đ đúng một lần")
+	check(sim.room_info("room_05")["equipped"] and sim.rooms.unlocked_count() == 3 and sim.rooms.max_unlocked_capacity() == 12, "Lắp xong: phòng sẵn sàng, được tính khi sinh khách")
+	sim.economy.record("TEST", 10000000, "gift_vip")
+	sim.equip_room("room_04")
+	sim.open_doors()
+
+	# Cùng một loại nhóm: VIP cho trải nghiệm tốt hơn phòng thường.
+	var normal_group = sim.customers.add_group("company", 10, 60, 0)
+	check(sim.assign_group(normal_group["id"], "room_04") == "" and sim.assign_group(vip_group["id"], "room_05") == "", "Xếp một nhóm vào phòng thường, một nhóm vào VIP")
+	check(vip_group["budget_per_hour"] == 550000 and sim.rooms.get_room("room_05")["price_per_hour"] == 600000 and vip_group["tags"].has("vip") and not vip_group["tags"].has("gia_cao"), "VIP 600.000đ/giờ vẫn trong ngân sách nới 30% của nhóm 550.000đ")
+	check(vip_group["satisfaction"] == normal_group["satisfaction"] + 4 + balance["sound_bonus_per_level"] - balance["price_bargain_bonus"], "VIP: +4 sang trọng và +5 âm thanh so với phòng thường (phòng thường được +5 giá mềm)")
+	check(sim.rooms.get_room("room_05")["mic_weight_percent"] == 50 and sim.rooms.get_room("room_05")["soundproof"] == 2, "VIP: micro ít trục trặc hơn, cách âm cấp 2")
+	step(sim, 60)
+	check(sim.state.last_bill["room_fee"] == 600000, "Một giờ phòng VIP thu 600.000đ")
+
+	# Giá vượt ngân sách quá 35%: khách từ chối trước khi vào phòng.
+	var couple = sim.customers.add_group("couple", 2, 45, sim.clock.minute)
+	var refuse: String = sim.assign_group(couple["id"], "room_02")
+	check(refuse.contains("chê giá") and sim.customers.get_group(couple["id"])["state"] == "WAITING", "Cặp đôi 240.000đ từ chối phòng 350.000đ (%s)" % refuse)
+	var why: Dictionary = sim.preview_assign(couple["id"], "room_02")
+	check(why["block"] == "PRICE" and why["block_text"] == "Khách chê đắt: 350.000đ/giờ", "Xem trước: mã lý do PRICE và nhãn ngắn cho giao diện")
+	check(sim.preview_assign(couple["id"], "room_06")["block"] == "STATE" and sim.preview_assign(couple["id"], "room_06")["block_text"] == "Chưa lắp thiết bị", "Xem trước: phòng chưa lắp thiết bị có mã STATE")
+	check(sim.assign_group(couple["id"], "room_01") == "", "Chuyển sang phòng vừa túi tiền thì nhận")
+	step(sim, 400)
+	var summary: Dictionary = sim.state.history[0]
+	check(summary["operating"] == balance["operating_cost_per_night"] + 150000, "Cuối đêm: thêm 150.000đ vận hành cho phòng VIP đã lắp")
+	check(sim.economy.ledger_matches_balance() and sim.check_invariants().is_empty(), "Sổ khớp, bất biến ổn")
+
+
+func test_ratings() -> void:
+	print("Đánh giá sao")
+	var sim = new_sim()
+	check(sim.rating_text() == "Chưa có đánh giá" and sim.rating_x10() == 0 and sim.recent_reviews().is_empty(), "Chưa có khách: không tự cho sao")
+	check(sim.reputation_change_for(95) == 1 and sim.reputation_change_for(80) == 1 and sim.reputation_change_for(65) == 0 and sim.reputation_change_for(50) == -1 and sim.reputation_change_for(10) == -3, "Danh tiếng theo sao: +1, +1, 0, -1, -3")
+	sim.state.reputation = 70
+	check(sim.reputation_change_for(80) == 0 and sim.reputation_change_for(95) == 1, "Danh tiếng từ 60: chỉ khách 5 sao mới làm quán nổi thêm")
+	sim.state.reputation = 40
+	check(sim.stars_for(100) == 5 and sim.stars_for(90) == 5 and sim.stars_for(89) == 4 and sim.stars_for(75) == 4 and sim.stars_for(74) == 3 and sim.stars_for(60) == 3 and sim.stars_for(59) == 2 and sim.stars_for(40) == 2 and sim.stars_for(39) == 1 and sim.stars_for(0) == 1, "Mốc quy đổi hài lòng sang sao")
+	sim.open_doors()
+	var rep: int = sim.state.reputation
+	var impatient = sim.customers.add_group("couple", 2, 45, 0)
+	step(sim, impatient["patience"])
+	check(sim.state.rating_count == 0 and sim.state.reputation < rep, "Khách bỏ về: không tính sao, vẫn trừ danh tiếng")
+
+	var scores: Array = [95, 80, 50]
+	for i in scores.size():
+		var group = sim.customers.add_group("couple", 2, 45, sim.clock.minute)
+		sim.assign_group(group["id"], "room_01")
+		if i == 2:
+			open_request(sim, "room_01", {"kind": "MIC"}, 5)
+			step(sim, 5)
+		group["satisfaction"] = scores[i]
+		step(sim, 45 - (5 if i == 2 else 0))
+		sim.clean_room("room_01")
+		step(sim, 8)
+	check(sim.state.rating_count == 3 and sim.state.rating_sum == 5 + 4 + 2, "Ba nhóm thanh toán: ba đánh giá 5, 4 và 2 sao")
+	check(sim.rating_x10() == 37 and sim.rating_text() == "★ 3,7/5 · 3 đánh giá", "Trung bình 3,7 sao, một chữ số thập phân (%s)" % sim.rating_text())
+	var reviews: Array = sim.recent_reviews(2)
+	check(reviews.size() == 2 and reviews[0]["stars"] == 2 and reviews[1]["stars"] == 4, "Nhận xét gần đây: mới nhất đứng đầu")
+	check(reviews[0]["text"] == "Micro hú hoài mà không ai lo.", "Nhận xét phản ánh đúng sự việc (micro hỏng)")
+	check(sim.state.last_bill["stars"] == 2, "Hóa đơn có số sao của nhóm")
+	check(not sim.economy.record("ROOM_FEE", 1, "group:%d" % (sim.state.next_group_id - 1)) and sim.state.rating_count == 3, "Không ghi trùng đánh giá cho cùng một nhóm")
+	step(sim, 400)
+	var summary: Dictionary = sim.state.history[0]
+	check(summary["night_reviews"] == 3 and summary["night_rating_x10"] == 37 and summary["rating_before_x10"] == 0 and summary["rating_after_x10"] == 37, "Tổng kết: điểm riêng của đêm và thay đổi điểm toàn quán")
+	check(summary["night_rating_text"] == "★ 3,7/5 · 3 đánh giá" and summary["rating_text"] == sim.rating_text(), "Tổng kết có sẵn dòng hiển thị")
+	var again: Dictionary = sim.last_summary()
+	check(again["night_reviews"] == 3 and sim.state.rating_count == 3, "Mở lại tổng kết không nhân đôi đánh giá")
+
+	sim.next_day()
+	sim.open_doors()
+	var star = sim.customers.add_group("couple", 2, 45, 0)
+	sim.assign_group(star["id"], "room_01")
+	star["satisfaction"] = 100
+	var saved: int = _data["balance"]["theft_chance_permille"]
+	_data["balance"]["theft_chance_permille"] = 0
+	step(sim, 400)
+	_data["balance"]["theft_chance_permille"] = saved
+	var second: Dictionary = sim.state.history[1]
+	check(second["night_rating_x10"] == 50 and second["rating_before_x10"] == 37 and second["rating_after_x10"] == 40 and sim.rating_text() == "★ 4,0/5 · 4 đánh giá", "Đêm 2: đêm 5,0 sao, toàn quán từ 3,7 lên 4,0")
+	for i in 60:
+		sim.state.reviews.append({"day": 2, "who": "x", "room_name": "y", "stars": 3, "satisfaction": 60, "text": "z"})
+	check(sim.recent_reviews(5).size() == 5, "Lấy đúng số nhận xét yêu cầu")
+
+
+func test_ambience() -> void:
+	print("Câu hát và thoại trong phòng")
+	var lyrics: Dictionary = _data["lyrics"]
+	var per_age: Dictionary = {"young": 0, "middle": 0, "senior": 0}
+	var texts: Dictionary = {}
+	for line in lyrics["lines"]:
+		per_age[line["age"]] += 1
+		texts[line["text"]] = true
+	check(per_age["young"] >= 15 and per_age["middle"] >= 15 and per_age["senior"] >= 15, "Mỗi nhóm tuổi có ít nhất 15 câu hát (%s)" % str(per_age))
+	check(texts.size() == lyrics["lines"].size(), "Không có câu hát trùng nhau")
+	for def in _data["hosts"]:
+		var lines: Dictionary = _data["banter"]["host_lines"].get(def["id"], {})
+		check(lines.has("enter") and lines.has("match") and lines.has("rescue") and lines.has("finish") and lines.has("rest"), "%s có đủ năm loại câu riêng" % def["name"])
+
+	var sim = new_sim(21)
+	sim.ambience.enabled = true
+	var events: Array = []
+	sim.line_spoken.connect(func(event: Dictionary) -> void: events.append(event))
+	sim.hire_host("host_2")
+	sim.open_doors()
+	var elders = sim.customers.add_group("family", 6, 90, 0, "bolero")
+	var kids = sim.customers.add_group("genz", 4, 90, 0, "remix")
+	sim.assign_group(elders["id"], "room_02")
+	sim.assign_group(kids["id"], "room_01")
+	elders["wants_host"] = false
+	kids["wants_host"] = false
+	var money: int = sim.state.money
+	var sat: Array = [elders["satisfaction"], kids["satisfaction"]]
+	step(sim, 85)
+	var songs: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == "SONG")
+	check(songs.size() >= 2 and events.size() >= 6 and events.size() <= 14, "Mỗi phòng thỉnh thoảng có câu hát hoặc thoại, không dồn dập (%d câu trong 85 phút, 2 phòng)" % events.size())
+	var all_marked: bool = true
+	var per_room: Dictionary = {}
+	var seen: Dictionary = {}
+	var repeated: bool = false
+	for event in events:
+		if event["kind"] == "SONG":
+			all_marked = all_marked and event["text"].begins_with("♪") and event["song_title"] != ""
+		else:
+			all_marked = all_marked and not event["text"].begins_with("♪")
+		repeated = repeated or seen.has(event["text"])
+		seen[event["text"]] = true
+		per_room[event["room_id"]] = per_room.get(event["room_id"], [])
+		per_room[event["room_id"]].append(event["minute"])
+	check(all_marked, "Câu hát có ký hiệu ♪ và tên bài; câu trò chuyện thì không")
+	check(not repeated, "Không lặp câu trong cùng đêm")
+	var spaced: bool = true
+	for room_id in per_room:
+		for i in range(1, per_room[room_id].size()):
+			spaced = spaced and per_room[room_id][i] - per_room[room_id][i - 1] >= 15
+	check(spaced and per_room.size() == 2, "Cùng một phòng: các câu cách nhau ít nhất 15 phút game")
+	check(elders["satisfaction"] == sat[0] and kids["satisfaction"] == sat[1] and sim.state.money == money, "Thoại trang trí không đổi hài lòng hay tiền")
+	var family_ages: Dictionary = {}
+	for event in events:
+		if event["group_id"] == elders["id"]:
+			family_ages[event["speaker_age"]] = true
+			check(event["speaker_sprite"] == elders["sprites"][event["speaker_index"] % elders["sprites"].size()], "Người hát là một thành viên cụ thể của nhóm gia đình")
+	check(family_ages.size() >= 2, "Nhóm gia đình: người cầm micro thuộc nhiều lứa tuổi khác nhau (%s)" % str(family_ages.keys()))
+
+	# Tuổi và gu nhạc chỉ làm lệch xác suất: thống kê 400 lượt chọn.
+	var match_age: int = 0
+	var total: int = 0
+	var probe = new_sim(77)
+	probe.ambience.enabled = true
+	var picked: Array = []
+	probe.line_spoken.connect(func(event: Dictionary) -> void: picked.append(event))
+	probe.open_doors()
+	var seniors = probe.customers.add_group("bolero_regular", 2, 90, 0, "bolero")
+	seniors["sprites"] = ["uncle"]
+	probe.assign_group(seniors["id"], "room_01")
+	var age_of: Dictionary = {}
+	for line in lyrics["lines"]:
+		age_of["♪ %s ♪" % line["text"]] = line["age"]
+	for i in 400:
+		probe.ambience.reset()
+		probe.ambience._rng.seed = i
+		probe.ambience._song(probe.rooms.get_room("room_01"), seniors, 10)
+	for event in picked:
+		total += 1
+		match_age += 1 if age_of[event["text"]] == "senior" else 0
+	check(total == 400 and match_age > 240 and match_age < 400, "Khách lớn tuổi thích bolero: đa số hát nhạc xưa nhưng vẫn có lúc hát bài khác (%d/400)" % match_age)
+
+	# Micro hỏng: không hát, chỉ có câu phản ứng; có Lan can thì người đó đỡ lời.
+	events.clear()
+	var room2: Dictionary = sim.rooms.get_room("room_02")
+	elders["host_request"] = "PENDING"
+	room2["session_end"] = sim.clock.minute + 60
+	check(sim.assign_host("host_2", "room_02") == "", "Cử Thu Cúc vào phòng gia đình")
+	check(events.size() == 1 and events[0]["kind"] == "LANCAN" and events[0]["host_id"] == "host_2" and events[0]["key"] == "match" and events[0]["speaker_index"] == -1, "Lan can vào phòng hợp gu: nói câu riêng của mình")
+	events.clear()
+	sim.ambience._next_at["room_02"] = sim.clock.minute + 1
+	open_request(sim, "room_02", {"kind": "MIC"}, 30)
+	sim.ambience.react(room2, "mic_broken", sim.clock.minute)
+	check(events.size() == 1 and events[0]["kind"] == "REACTION" and events[0]["reply_host_id"] == "host_2" and events[0]["reply_text"] == _data["banter"]["host_lines"]["host_2"]["rescue"], "Micro hỏng khi có Lan can: khách than, nhân viên đỡ lời")
+	events.clear()
+	step(sim, 3)
+	var sang_while_broken: bool = false
+	for event in events:
+		sang_while_broken = sang_while_broken or (event["room_id"] == "room_02" and event["kind"] == "SONG")
+	check(not sang_while_broken, "Đang báo micro hỏng thì phòng đó không hiện câu hát")
+	check(not sim.ambience.current_line("room_02", sim.clock.minute, 5).is_empty() and sim.ambience.current_line("room_03", sim.clock.minute).is_empty(), "Giao diện hỏi được câu vừa phát của từng phòng")
+
+	# Không làm lệch mô phỏng: bật hay tắt thoại thì diễn biến như nhau.
+	var with_lines = new_sim(8, true)
+	var without_lines = new_sim(8, true)
+	without_lines.ambience.enabled = false
+	bot_night(with_lines)
+	bot_night(without_lines)
+	check(JSON.stringify(with_lines.state.history[0]) == JSON.stringify(without_lines.state.history[0]), "Bật hay tắt thoại trang trí, kết quả đêm giống hệt nhau")
 
 
 ## Chơi tự động nhiều đêm với seed cố định, kiểm tra bất biến ở từng phút.

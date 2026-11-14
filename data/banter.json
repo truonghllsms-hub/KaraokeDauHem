@@ -1,0 +1,245 @@
+{
+ "_note": "Thoại đối đáp (người tung, người hứng), phản ứng theo tình huống và câu riêng của từng nhân viên Lan can. types rỗng nghĩa là nhóm nào cũng dùng được.",
+ "pairs": [
+  {
+   "types": [
+    "friends"
+   ],
+   "situation": "vừa vào phòng",
+   "text": "Tao không biết hát đâu nha.",
+   "reply": "Ừ, thế ai đăng ký mười bảy bài?"
+  },
+  {
+   "types": [
+    "friends"
+   ],
+   "situation": "giành mic",
+   "text": "Bài này bài tủ của tao!",
+   "reply": "Tủ nhà mày chứa nguyên quán à?"
+  },
+  {
+   "types": [
+    "genz"
+   ],
+   "situation": "lên nốt cao",
+   "text": "Đoạn này để tao cân!",
+   "reply": "Cân nhắc lại đi."
+  },
+  {
+   "types": [
+    "genz"
+   ],
+   "situation": "quay clip",
+   "text": "Khoan, đoạn vừa rồi chưa quay!",
+   "reply": "Nhưng thanh quản tao quay xe rồi."
+  },
+  {
+   "types": [
+    "bolero_regular"
+   ],
+   "situation": "nhạc dạo dài",
+   "text": "Nhạc dạo này mới có cảm xúc.",
+   "reply": "Dạo hết bình trà rồi ông."
+  },
+  {
+   "types": [
+    "drinking"
+   ],
+   "situation": "hát sai nhịp",
+   "text": "Nhạc chạy nhanh quá!",
+   "reply": "Nãy giờ có mỗi ông chạy riêng."
+  },
+  {
+   "types": [
+    "company"
+   ],
+   "situation": "liên hoan",
+   "text": "Ở công ty anh ít nói lắm.",
+   "reply": "Vâng, anh để dành hết cho micro."
+  },
+  {
+   "types": [
+    "company"
+   ],
+   "situation": "sếp vừa hát xong",
+   "text": "Mọi người góp ý thật lòng nhé.",
+   "reply": "Dạ… em xin thêm nước trước."
+  },
+  {
+   "types": [
+    "aunties"
+   ],
+   "situation": "xin thêm giờ",
+   "text": "Một bài nữa thôi rồi về!",
+   "reply": "Câu này chị nói từ ba bài trước."
+  },
+  {
+   "types": [
+    "couple"
+   ],
+   "situation": "đang giận",
+   "text": "Em vẫn đang giận anh đấy.",
+   "reply": "Ừ, nhưng đoạn này tới phần em."
+  },
+  {
+   "types": [
+    "family"
+   ],
+   "situation": "ông cầm mic",
+   "text": "Ông hát một bài ngắn thôi.",
+   "reply": "Bà ơi, sao ông kể cả lời giới thiệu?"
+  },
+  {
+   "types": [
+    "birthday"
+   ],
+   "situation": "sinh nhật",
+   "text": "Hát mừng sinh nhật trước nha!",
+   "reply": "Lần này nhớ đúng tên nhân vật chính."
+  },
+  {
+   "types": [],
+   "situation": "người thất tình",
+   "text": "Bài này chẳng làm tao buồn đâu.",
+   "reply": "Ừ, đưa khăn đây tao giữ hộ."
+  },
+  {
+   "types": [],
+   "situation": "người chỉ đi ăn",
+   "text": "Mày chưa hát bài nào luôn.",
+   "reply": "Tao đang phụ trách doanh thu quán."
+  },
+  {
+   "types": [],
+   "situation": "chọn bài lâu",
+   "text": "Chờ xíu, tao đang chọn bài.",
+   "reply": "Mày chọn từ lúc tụi tao còn trẻ."
+  },
+  {
+   "types": [],
+   "situation": "lệch tông",
+   "text": "Tông này hơi cao so với tao.",
+   "reply": "Không sao, hàng xóm quen rồi."
+  }
+ ],
+ "reactions": {
+  "mic_broken": [
+   {
+    "text": "Đến đoạn hay thì mic xin nghỉ phép.",
+    "reply": ""
+   },
+   {
+    "text": "Alo alo… mic ơi ở lại với anh!",
+    "reply": "Nó đình công rồi anh ơi."
+   }
+  ],
+  "mic_fixed_fast": [
+   {
+    "text": "Cứu được nốt này là cứu cả sự nghiệp!",
+    "reply": ""
+   },
+   {
+    "text": "Mic mới tới rồi, làm lại từ điệp khúc!",
+    "reply": ""
+   }
+  ],
+  "order_late": [
+   {
+    "text": "Đá tới chưa em? Nỗi buồn phòng anh tan hết rồi.",
+    "reply": ""
+   },
+   {
+    "text": "Gọi món từ bài trước, giờ sang bài mới rồi nè.",
+    "reply": ""
+   }
+  ],
+  "hot": [
+   {
+    "text": "Giọng chưa lên mà nhiệt độ lên trước.",
+    "reply": ""
+   },
+   {
+    "text": "Hát bài mùa đông cho mát đi.",
+    "reply": "Hát xong vẫn nóng."
+   }
+  ],
+  "extend_declined": [
+   {
+    "text": "Cho anh hát nốt câu cuối!",
+    "reply": "Câu cuối của bài nào?"
+   }
+  ],
+  "checkout": [
+   {
+    "text": "Lúc hát không ai quen ai, lúc chia tiền thân thiết hẳn.",
+    "reply": ""
+   },
+   {
+    "text": "Về thôi, mai còn đi làm.",
+    "reply": "Mai là Chủ nhật mà."
+   },
+   {
+    "text": "Hát đã ghê, hẹn quán bữa sau nha!",
+    "reply": ""
+   }
+  ]
+ },
+ "host_lines": {
+  "host_1": {
+   "enter": "Ngọc Lan xin chào cả phòng, ai mở màn nào?",
+   "match": "Đúng bài em thích, mình bắt nhịp liền nha!",
+   "rescue": "Anh cứ hát tiếp, đoạn quên lời để em gọi là giao lưu.",
+   "finish": "Cảm ơn cả phòng, hẹn bài sau nha!",
+   "rest": "Em xin mười lăm phút uống nước đã."
+  },
+  "host_2": {
+   "enter": "Dạ Thu Cúc xin phép góp một giọng.",
+   "match": "Bài này mình hát chậm cho thấm nha chú.",
+   "rescue": "Chú xuống một tông nhé, mình buồn chứ mình đừng mệt.",
+   "finish": "Cúc cảm ơn cả nhà, hát vui nhé.",
+   "rest": "Cho Cúc ngồi nghỉ xíu lấy hơi."
+  },
+  "host_3": {
+   "enter": "Bảo Trâm tới rồi, phòng mình sẵn sàng chưa?",
+   "match": "Bài này phải đứng lên mới đúng!",
+   "rescue": "Ai còn ngồi yên thì phụ trách vỗ tay!",
+   "finish": "Hết giờ rồi nhưng đừng hết sung nha!",
+   "rest": "Trâm sạc pin, lát quẩy tiếp."
+  },
+  "host_4": {
+   "enter": "Mỹ Duyên xin gửi lời chào quý khách.",
+   "match": "Bài này em xin được song ca cùng anh.",
+   "rescue": "Anh ngân đẹp quá, cho em xin lại nhịp để vào câu.",
+   "finish": "Em cảm ơn, chúc cả phòng một tối trọn vẹn.",
+   "rest": "Em xin phép nghỉ một lát cho ấm giọng."
+  },
+  "host_5": {
+   "enter": "Kim Chi đây, hôm nay không ai được ngồi im!",
+   "match": "Đúng nhạc rồi, bật đèn lên nào!",
+   "rescue": "Mỗi người một câu nha, hôm nay không ai làm khán giả!",
+   "finish": "Phòng mình đỉnh quá, lần sau gọi Chi nữa nha!",
+   "rest": "Chi thở cái đã, nhảy muốn rớt giày."
+  },
+  "host_6": {
+   "enter": "Hoàng Yến xin một phút lắng đọng cùng cả phòng.",
+   "match": "Bài này Yến thuộc từng hơi thở.",
+   "rescue": "Bài này mình hát cho nhẹ lòng, đừng hát xong nhắn người cũ.",
+   "finish": "Cảm ơn mọi người đã cho Yến hát cùng.",
+   "rest": "Yến cần một ly nước ấm."
+  },
+  "host_7": {
+   "enter": "Thảo Vy báo danh, MC kiêm ca sĩ dự bị!",
+   "match": "Bài này đang nổi nè, lên luôn!",
+   "rescue": "Phòng mình lệch tông nhưng rất đúng tinh thần.",
+   "finish": "Hết phiên rồi, nhớ đánh giá Vy năm sao!",
+   "rest": "Vy đi lướt điện thoại tí rồi quay lại."
+  },
+  "host_8": {
+   "enter": "Quốc Bảo xin phép được đồng hành cùng quý vị.",
+   "match": "Một bài rất hợp chất giọng của anh chị.",
+   "rescue": "Anh giữ giai điệu nhé, phần cao để tôi thương lượng.",
+   "finish": "Rất hân hạnh, chúc quý vị buổi tối vui vẻ.",
+   "rest": "Tôi xin phép nghỉ ít phút."
+  }
+ }
+}
