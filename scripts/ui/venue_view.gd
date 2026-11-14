@@ -719,9 +719,9 @@ func _sync_groups() -> void:
 				_show_line(actor, "g:%d" % group_id)
 			else:
 				var kind: String = room_now["request"].get("kind", "HOST")
-				var colors: Dictionary = {"ORDER": Color("#996000"), "MIC": Color("#b52f37"), "HOT": Color("#a75209"), "EXTEND": Color("#236aa2")}
+				var colors: Dictionary = {"ORDER": Color("#24618b"), "MIC": Color("#a53741"), "HOT": Color("#96531d"), "EXTEND": Color("#3c6d92")}
 				actor.bubble_speaker = int(room_now["request"].get("id", 0)) % group["size"]
-				actor.set_bubble(_wrap_line(request_text), Color.WHITE, colors.get(kind, UI.PINK), colors.get(kind, Color("#b03d72")))
+				actor.set_bubble(_wrap_line(request_text), colors.get(kind, Color("#75508e")), Color("#c5e5fa"), Color.WHITE)
 
 	for group_id in _group_actors.keys():
 		if alive.has(group_id):

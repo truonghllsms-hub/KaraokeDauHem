@@ -1,6 +1,6 @@
 # Thoại, bài hát và bát họ
 
-Thoại thường của khách: nền trắng, chữ đen. Yêu cầu phục vụ vẫn nền trắng, đổi chữ sang vàng nâu, đỏ, cam hoặc xanh để đọc rõ. Người đang nói được chọn trong đủ năm thành viên của nhóm.
+Thoại thường của khách: nền trắng, chữ đen. Yêu cầu phục vụ dùng nền xanh dương (gọi đồ), đỏ (mic hỏng), cam (nóng) hoặc tím (giao lưu), chữ trắng để phân biệt với thoại thường. Người đang nói được chọn trong đủ năm thành viên của nhóm.
 
 - Câu tao/mày chỉ dành cho nhóm bạn thân và hội trẻ; không dùng chung cho gia đình hoặc công ty.
 - Cặp đôi lọc người nói/người đáp theo giới tính cho các câu anh/em; lời ông/con của gia đình lọc cả lứa tuổi.
@@ -21,3 +21,15 @@ Vị trí ngồi dùng điểm tiếp xúc dưới hông thay cho bàn chân; b�
 ![Lấy đồ ở sau quầy](screenshots/16_sau_quay.webp)
 
 ![Bốc bát họ theo ngày](screenshots/17_boc_bat_ho.webp)
+
+Ghế dọc đặt điểm tì gần mép trong để chân buông xuống sàn; cặp khách/người giao lưu nằm liền nhau dọc nhánh ghế. Kho dùng thẻ hai cột, nâng cấp dùng thẻ cả hàng; thu chi tách từng giao dịch với số tiền lớn. Chữ nội dung 22–30 thay cho bảng 12–14 trước đây.
+
+![Ghế dọc](screenshots/18_ghe_doc.webp)
+
+![Yêu cầu nền xanh](screenshots/19_yeu_cau_xanh.webp)
+
+![Kho](screenshots/20_kho_de_doc.webp)
+
+![Nâng cấp](screenshots/21_nang_cap_de_doc.webp)
+
+![Thu chi](screenshots/22_thu_chi_de_doc.webp)

@@ -9,8 +9,8 @@ static func build(rect: Rect2, guests: int, companions: int) -> Dictionary:
 		[Vector2(96, cushion_y), Vector2(138, cushion_y)],
 		[Vector2(186, cushion_y), Vector2(228, cushion_y)],
 		[Vector2(276, cushion_y), Vector2(318, cushion_y)],
-		[Vector2(54, 260), Vector2(86, 260)],
-		[Vector2(54, 342), Vector2(86, 342)],
+		[Vector2(84, 252), Vector2(84, 288)],
+		[Vector2(84, 332), Vector2(84, 368)],
 	]
 	var selected: Array = [[1], [0, 2], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4]][guests - 1]
 	var guest_points: Array = []

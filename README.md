@@ -36,7 +36,7 @@ python3 -m http.server 8060 --directory build/web
 - Màn hình vào game là mặt tiền quán buổi tối, có Chơi mới, Tiếp tục, Tải game và Cài đặt. Menu trong game có 3 ô lưu thủ công, giữ được ca đang chơi và công việc giao đồ dở; bản tự lưu cuối đêm tách riêng. Bản lưu trên trình duyệt/thiết bị hiện tại.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Game tự lưu cuối đêm; có nhạc nền nhẹ với nút tắt, chọn bài và chỉnh âm lượng riêng.
 - Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
-- Câu hát có bong bóng nền trắng, chữ đen trên người đang hát; gọi đồ, hỏng mic và yêu cầu khác dùng chữ màu riêng.
+- Câu hát có bong bóng nền trắng, chữ đen trên người đang hát; gọi đồ dùng bong bóng xanh dương, mic hỏng dùng đỏ; chữ trắng để phân biệt với thoại thường.
 - Bảng tổng kết ghim nút sang đêm ở cuối bảng, luôn có thể chuyển sang đêm mới sau khi đóng bảng.
 - Mỗi nhóm có tối đa 5 khách. Các phòng gọn có 5 cặp chỗ ngồi cố định, bổ sung ghế đơn khi gọi nhiều nhân viên: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
 

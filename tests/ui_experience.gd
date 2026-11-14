@@ -91,12 +91,12 @@ func _run() -> void:
 	var room: Dictionary = sim.rooms.get_room("room_02")
 	sim.service._open(room, {"kind": "MIC", "text": "Micro"}, sim.clock.minute, 100)
 	venue.advance_actors(0)
-	check(actor._bubble.text.contains("mic hỏng") and actor._bubble.get_theme_color("font_color") != Color.BLACK and not venue._room_ui["room_02"]["request"].visible, "Broken mic becomes customer speech with distinct color")
+	check(actor._bubble.text.contains("mic hỏng") and actor._bubble.get_theme_color("font_color") == Color.WHITE and actor._bubble_background == Color("#a53741") and not venue._room_ui["room_02"]["request"].visible, "Broken mic becomes customer speech with distinct color")
 	await shot("e03_mic_chat")
 	sim.fix_mic("room_02")
 	sim.service._open(room, {"kind": "ORDER", "product_id": "da", "quantity": 1, "price": 15000, "text": "Đá"}, sim.clock.minute, 100)
 	venue.advance_actors(0)
-	check(actor._bubble.text.contains("thêm đá") and actor._bubble.get_theme_color("font_color") == Color("#996000"), "Drinks request speaks in amber")
+	check(actor._bubble.text.contains("thêm đá") and actor._bubble.get_theme_color("font_color") == Color.WHITE and actor._bubble_background == Color("#24618b"), "Drinks request speaks in amber")
 	await shot("e04_order_chat")
 	venue._add_task({"kind": "deliver", "room_id": "room_02"})
 	for i in 400:
@@ -130,6 +130,16 @@ func _run() -> void:
 	game._show_waiters()
 	check(button("Thuê bảo vệ") != null, "Guard recruitment lives with other staff")
 	await shot("e06_staff")
+	for panel in ["stock", "upgrades", "ledger"]:
+		if panel == "stock": game._show_stock()
+		elif panel == "upgrades": game._show_upgrades()
+		else: game._show_ledger()
+		await process_frame
+		var readable: bool = true
+		for label in game._overlay.find_children("*", "Label", true, false):
+			readable = readable and label.get_theme_font_size("font_size") >= 22
+		check(readable, "Readable text size in " + panel)
+		await shot("e06_" + panel)
 	game._close_overlay()
 	for i in 400:
 		if sim.state.phase == "OPEN": sim.step_minute()

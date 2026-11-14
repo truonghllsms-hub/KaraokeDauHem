@@ -844,21 +844,22 @@ func _show_summary() -> void:
 ## Danh sách nâng cấp dùng chung cho bảng tổng kết và nút Nâng cấp.
 func _upgrade_list(reopen: Callable) -> Control:
 	var grid: GridContainer = GridContainer.new()
-	grid.columns = 3
+	grid.columns = 1
 	grid.add_theme_constant_override("h_separation", 8)
 	for upgrade in sim.data["upgrades"]:
 		var upgrade_id: String = upgrade["id"]
 		var level: int = sim.service.upgrade_level(upgrade_id)
 		var card: PanelContainer = UI.panel(UI.PANEL, UI.BORDER)
-		card.custom_minimum_size = Vector2(240, 0)
+		card.custom_minimum_size = Vector2(820, 0)
 		var box: VBoxContainer = VBoxContainer.new()
+		box.add_theme_constant_override("separation", 14)
 		card.add_child(box)
-		box.add_child(UI.label("%s (cấp %d/%d)" % [upgrade["name"], level, upgrade["max_level"]], 14, UI.GOLD, true))
-		var effect: Label = UI.label(upgrade["effect"], 12, UI.TEXT)
+		box.add_child(UI.label("%s (cấp %d/%d)" % [upgrade["name"], level, upgrade["max_level"]], 28, UI.TEXT, true))
+		var effect: Label = UI.label(upgrade["effect"], 24, UI.TEXT)
 		effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		effect.custom_minimum_size = Vector2(216, 36)
+		effect.custom_minimum_size = Vector2(780, 52)
 		box.add_child(effect)
-		var buy: Button = UI.button("Đã tối đa" if level >= upgrade["max_level"] else "Mua · %s" % Money.format(upgrade["cost"]), 13, UI.GOLD)
+		var buy: Button = UI.button("Đã tối đa" if level >= upgrade["max_level"] else "Mua · %s" % Money.format(upgrade["cost"]), 24, UI.GOLD)
 		buy.disabled = level >= upgrade["max_level"] or not sim.economy.can_afford(upgrade["cost"])
 		buy.pressed.connect(func() -> void:
 			var reason: String = sim.buy_upgrade(upgrade_id)
@@ -875,26 +876,31 @@ func _show_upgrades() -> void:
 
 func _show_stock() -> void:
 	var grid: GridContainer = GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 18)
-	grid.add_theme_constant_override("v_separation", 6)
-	for header in ["Mặt hàng", "Tồn kho", "Nhập / Bán", ""]:
-		grid.add_child(UI.label(header, 13, UI.MUTED, true))
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 16)
 	for product in sim.data["products"]:
 		var product_id: String = product["id"]
 		var stock: int = sim.state.stock[product_id]
-		grid.add_child(UI.label(product["name"].capitalize() + " (" + product["unit"] + ")", 14, UI.TEXT))
-		grid.add_child(UI.label("%d %s" % [stock, product["unit"]], 14, UI.BAD if stock == 0 else (UI.GOLD if stock < 5 else UI.GOOD), true))
-		grid.add_child(UI.label("%s / %s" % [Money.format(product["cost"]), Money.format(product["price"])], 13, UI.TEXT))
+		var card: PanelContainer = UI.panel(UI.PANEL, UI.BAD if stock == 0 else UI.BORDER)
+		card.custom_minimum_size.x = 414
+		var column: VBoxContainer = VBoxContainer.new()
+		column.add_theme_constant_override("separation", 12)
+		card.add_child(column)
+		column.add_child(UI.label(product["name"].capitalize(), 28, UI.TEXT, true))
+		column.add_child(UI.label("Còn %d %s" % [stock, product["unit"]], 25, UI.BAD if stock == 0 else UI.GOOD, true))
+		var prices: Label = UI.label("Giá nhập: %s/%s\nGiá bán: %s/%s" % [Money.format(product["cost"]), product["unit"], Money.format(product["price"]), product["unit"]], 23, UI.TEXT)
+		column.add_child(prices)
 		var cost: int = product["cost"] * product["pack_size"]
-		var buy: Button = UI.button("Nhập %d %s · %s" % [product["pack_size"], product["unit"], Money.format(cost)], 13, UI.GOLD)
+		var buy: Button = UI.button("Nhập %d %s · %s" % [product["pack_size"], product["unit"], Money.format(cost)], 24, UI.GOLD)
 		buy.disabled = not sim.economy.can_afford(cost)
 		buy.pressed.connect(func() -> void:
 			var reason: String = sim.buy_stock(product_id)
 			_show_stock()
 			_report(reason))
-		grid.add_child(buy)
-	_show_overlay("ledger", "KHO HÀNG", "Khách gọi món nào mà kho hết thì mất hài lòng. Hàng được giữ chỗ ngay khi khách gọi; khách hủy thì trả lại kho.\nSố dư: %s." % Money.format(sim.state.money), [["Đóng", _close_overlay]], grid)
+		column.add_child(buy)
+		grid.add_child(card)
+	_show_overlay("ledger", "KHO HÀNG", "Số dư: %s. Hàng được giữ chỗ khi khách gọi; hủy món sẽ hoàn lại kho." % Money.format(sim.state.money), [["Đóng", _close_overlay]], grid)
 
 
 func _show_loan() -> void:
@@ -1073,24 +1079,38 @@ func _show_choice(room_id: String) -> void:
 
 
 func _show_ledger() -> void:
-	var lines: Array = []
-	var ledger: Array = sim.state.ledger
-	for i in range(maxi(0, ledger.size() - 10), ledger.size()):
-		var entry: Dictionary = ledger[i]
-		var sign_text: String = "+" if entry["amount"] >= 0 else "-"
-		lines.append("Đêm %d %s   %s%s   %s" % [entry["day"], Clock.time_text(entry["minute"]), sign_text, Money.format(absi(entry["amount"])), entry["note"]])
-	lines.append("")
-	lines.append("Số dư hiện tại: %s" % Money.format(sim.state.money))
 	var loan: Dictionary = sim.loan_info()
-	lines.append("")
-	lines.append("BỐC BÁT HỌ")
-	lines.append("Dư nợ: %s · hạn mức %s (còn bốc họ được %s)" % [Money.format(loan["principal"]), Money.format(loan["limit"]), Money.format(loan["available"])])
-	lines.append("Lãi %d,%d%%/ngày trên dư nợ; cuối mỗi đêm tự trả lãi và %d%% gốc. Lắp thêm phòng thì hạn mức tăng." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]])
-	if loan["principal"] > 0:
-		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
-	lines.append("Cảnh báo: số dư âm sau quyết toán %d đêm liền là phá sản." % sim.data["balance"]["bankrupt_after_negative_nights"])
-	if not loan["can_change"]:
-		lines.append("(Chỉ bốc họ hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 18)
+	var metrics: GridContainer = GridContainer.new()
+	metrics.columns = 2
+	metrics.add_theme_constant_override("h_separation", 16)
+	for entry in [["Số dư", Money.format(sim.state.money)], ["Dư nợ bát họ", Money.format(loan["principal"])]]:
+		var card: PanelContainer = UI.panel(UI.PANEL, UI.BORDER)
+		card.custom_minimum_size.x = 414
+		var column: VBoxContainer = VBoxContainer.new()
+		column.add_child(UI.label(entry[0], 24, UI.TEXT))
+		column.add_child(UI.label(entry[1], 30, UI.GOLD, true))
+		card.add_child(column)
+		metrics.add_child(card)
+	content.add_child(metrics)
+	var terms: Label = UI.label("Bát họ: lãi %d,%d%%/ngày · trả %d%% gốc cuối ca.\nKỳ tới: %s (lãi %s + gốc %s)." % [loan["rate_permille"]/10, loan["rate_permille"]%10, loan["min_principal_percent"], Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])], 25, UI.TEXT)
+	terms.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(terms)
+	content.add_child(UI.label("GIAO DỊCH GẦN ĐÂY", 27, UI.TEXT, true))
+	var ledger: Array = sim.state.ledger
+	for i in range(ledger.size()-1, maxi(-1, ledger.size()-11), -1):
+		var entry: Dictionary = ledger[i]
+		var card: PanelContainer = UI.panel(Color("#fff9e9"), UI.BORDER)
+		var column: VBoxContainer = VBoxContainer.new()
+		column.add_theme_constant_override("separation", 6)
+		var note: Label = UI.label(entry["note"], 25, UI.TEXT, true)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(note)
+		column.add_child(UI.label(("+" if entry["amount"] >= 0 else "−") + Money.format(absi(entry["amount"])), 29, UI.GOOD if entry["amount"] >= 0 else UI.BAD, true))
+		column.add_child(UI.label("Đêm %d · %s" % [entry["day"], Clock.time_text(entry["minute"])], 22, UI.TEXT))
+		card.add_child(column)
+		content.add_child(card)
 	var buttons: Array = []
 	if loan["can_change"]:
 		var step_amount: int = mini(loan["step"], loan["available"])
@@ -1107,7 +1127,7 @@ func _show_ledger() -> void:
 					_show_ledger()
 					_report(reason)])
 	buttons.append(["Đóng", _close_overlay])
-	_show_overlay("ledger", "THU CHI & BÁT HỌ", "\n".join(lines), buttons)
+	_show_overlay("ledger", "THU CHI & BÁT HỌ", "", buttons, content)
 
 
 func _show_lancan() -> void:
