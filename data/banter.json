@@ -39,7 +39,8 @@
    ],
    "situation": "nhạc dạo dài",
    "text": "Nhạc dạo này mới có cảm xúc.",
-   "reply": "Dạo hết bình trà rồi ông."
+   "reply": "Dạo hết bình trà rồi ông.",
+   "speaker_gender": "male"
   },
   {
    "types": [
@@ -55,7 +56,8 @@
    ],
    "situation": "liên hoan",
    "text": "Ở công ty anh ít nói lắm.",
-   "reply": "Vâng, anh để dành hết cho micro."
+   "reply": "Vâng, anh để dành hết cho micro.",
+   "speaker_gender": "male"
   },
   {
    "types": [
@@ -79,15 +81,20 @@
    ],
    "situation": "đang giận",
    "text": "Em vẫn đang giận anh đấy.",
-   "reply": "Ừ, nhưng đoạn này tới phần em."
+   "reply": "Ừ, nhưng đoạn này tới phần em.",
+   "speaker_gender": "female",
+   "reply_gender": "male"
   },
   {
    "types": [
     "family"
    ],
    "situation": "ông cầm mic",
-   "text": "Ông hát một bài ngắn thôi.",
-   "reply": "Bà ơi, sao ông kể cả lời giới thiệu?"
+   "text": "Ông hát một bài, cả nhà hát cùng nhé.",
+   "reply": "Dạ, con vỗ tay giữ nhịp cho ông.",
+   "speaker_age": "senior",
+   "speaker_gender": "male",
+   "reply_age": "young"
   },
   {
    "types": [
@@ -98,28 +105,123 @@
    "reply": "Lần này nhớ đúng tên nhân vật chính."
   },
   {
-   "types": [],
+   "types": [
+    "friends",
+    "genz",
+    "young_men"
+   ],
    "situation": "người thất tình",
    "text": "Bài này chẳng làm tao buồn đâu.",
    "reply": "Ừ, đưa khăn đây tao giữ hộ."
   },
   {
-   "types": [],
+   "types": [
+    "friends",
+    "genz",
+    "young_men"
+   ],
    "situation": "người chỉ đi ăn",
    "text": "Mày chưa hát bài nào luôn.",
    "reply": "Tao đang phụ trách doanh thu quán."
   },
   {
-   "types": [],
+   "types": [
+    "friends",
+    "genz",
+    "young_men"
+   ],
    "situation": "chọn bài lâu",
    "text": "Chờ xíu, tao đang chọn bài.",
    "reply": "Mày chọn từ lúc tụi tao còn trẻ."
   },
   {
-   "types": [],
+   "types": [
+    "friends",
+    "genz",
+    "young_men"
+   ],
    "situation": "lệch tông",
    "text": "Tông này hơi cao so với tao.",
    "reply": "Không sao, hàng xóm quen rồi."
+  },
+  {
+   "types": [
+    "family"
+   ],
+   "situation": "cả nhà hát",
+   "text": "Cả nhà mình hát chung đoạn này nhé.",
+   "reply": "Để con chọn tông vừa giọng ông bà."
+  },
+  {
+   "types": [
+    "company"
+   ],
+   "situation": "liên hoan",
+   "text": "Mời mọi người một bài rồi mình cùng hát nhé.",
+   "reply": "Dạ, em phụ bè cho anh chị."
+  },
+  {
+   "types": [
+    "couple"
+   ],
+   "situation": "song ca",
+   "text": "Bài này mình chia nhau mỗi người một đoạn nhé.",
+   "reply": "Đoạn điệp khúc thì hát cùng nhau nha anh.",
+   "speaker_gender": "male",
+   "reply_gender": "female"
+  },
+  {
+   "types": [
+    "bolero_regular",
+    "middle_aged_men"
+   ],
+   "situation": "chọn bolero",
+   "text": "Cho tôi bài Thành Phố Buồn, hạ một tông nhé.",
+   "reply": "Bài tủ đây rồi, cứ thong thả mà ngân."
+  },
+  {
+   "types": [
+    "aunties"
+   ],
+   "situation": "hội chị em",
+   "text": "Chị em mình mỗi người một bài, đừng giành mic nha.",
+   "reply": "Rồi, để chị mở màn trước!"
+  },
+  {
+   "types": [
+    "genz",
+    "young_men",
+    "friends"
+   ],
+   "situation": "chọn bài đang nổi",
+   "text": "Có Lời Ong Bướm không, bật thử đi!",
+   "reply": "Có rồi, để mình tìm bản karaoke."
+  },
+  {
+   "types": [
+    "genz",
+    "friends",
+    "birthday"
+   ],
+   "situation": "chọn bài mới",
+   "text": "Mỹ Miều đang cuốn ghê, ai hát cùng không?",
+   "reply": "Mình vào điệp khúc, nhớ chừa mic nhé."
+  },
+  {
+   "types": [
+    "genz",
+    "friends",
+    "birthday"
+   ],
+   "situation": "hát bài đang nổi",
+   "text": "Chọn Nếu Một Mai Tôi Bay Lên Trời đi!",
+   "reply": "Đoạn cao thì cả phòng cùng vào nhé."
+  },
+  {
+   "types": [],
+   "situation": "nghỉ lấy hơi",
+   "text": "Nghỉ lấy hơi một chút rồi mình hát tiếp nhé.",
+   "reply": "Ừ, uống ngụm nước đã."
   }
  ],
  "reactions": {
@@ -129,7 +231,7 @@
     "reply": ""
    },
    {
-    "text": "Alo alo… mic ơi ở lại với anh!",
+    "text": "Alo alo… mic ơi ở lại với mình!",
     "reply": "Nó đình công rồi anh ơi."
    }
   ],
@@ -145,7 +247,7 @@
   ],
   "order_late": [
    {
-    "text": "Đá tới chưa em? Nỗi buồn phòng anh tan hết rồi.",
+    "text": "Đá tới chưa em? Nỗi buồn phòng mình tan hết rồi.",
     "reply": ""
    },
    {
@@ -165,18 +267,33 @@
   ],
   "extend_declined": [
    {
-    "text": "Cho anh hát nốt câu cuối!",
+    "text": "Cho mình hát nốt câu cuối!",
     "reply": "Câu cuối của bài nào?"
    }
   ],
   "checkout": [
    {
     "text": "Lúc hát không ai quen ai, lúc chia tiền thân thiết hẳn.",
-    "reply": ""
+    "reply": "",
+    "types": [
+     "friends",
+     "company",
+     "genz",
+     "young_men",
+     "drinking",
+     "middle_aged_men"
+    ]
    },
    {
     "text": "Về thôi, mai còn đi làm.",
-    "reply": "Mai là Chủ nhật mà."
+    "reply": "Vậy mình hát bài cuối rồi về nhé.",
+    "types": [
+     "friends",
+     "company",
+     "genz",
+     "young_men",
+     "middle_aged_men"
+    ]
    },
    {
     "text": "Hát đã ghê, hẹn quán bữa sau nha!",
@@ -262,5 +379,73 @@
    "finish": "Cảm ơn anh chị, chúc cả phòng tối nay thật vui.",
    "rest": "Huy xin phép nghỉ ít phút cho giọng ấm lại."
   }
- }
+ },
+ "companion_pairs": [
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Bé bỏ việc đi, về làm vợ anh, anh nuôi!",
+   "reply": "Anh thuộc lời bài này trước rồi mình tính tiếp nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "{host} xinh thế này, anh quên luôn lời bài hát.",
+   "reply": "Quên lời thì em nhắc, anh đừng bỏ nhịp nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Anh vừa nhận lương, tối nay em hát hết bài tủ cho anh nghe nhé.",
+   "reply": "Anh nhớ giữ tiền ăn sáng nữa nha, em còn nhiều bài lắm!"
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Anh không say bia, anh say giọng em!",
+   "reply": "Vậy cho em xin một tràng vỗ tay cho tỉnh nào."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Đi phụ hồ mấy bữa anh lại sang gặp {host} nhé!",
+   "reply": "Anh giữ sức đi làm, bữa nào ghé mình lại song ca."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Chốt đơn làm vợ anh nha {host}!",
+   "reply": "Anh chốt bài tiếp theo trước đi, phòng mình đang chờ kìa."
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Anh sáu múi đẹp zai quá!",
+   "reply": "Em cảm ơn chị, đoạn điệp khúc mình cùng hát nhé.",
+   "host_ids": [
+    "host_9"
+   ]
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Anh {host} đứng gần là chị quên hết giai điệu.",
+   "reply": "Chị hát phần đầu, em đỡ phần sau nha."
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Về phụ chị coi tiệm đi, chị bao cơm ngày ba bữa!",
+   "reply": "Nghe cũng hấp dẫn đó chị, giờ mình làm nốt bài này đã nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "male",
+   "text": "Ông em sáu múi khuấy một bài đi, hội anh vỗ tay!",
+   "reply": "Vậy mọi người vào điệp khúc cùng em nha!",
+   "host_ids": [
+    "host_9"
+   ]
+  }
+ ]
 }

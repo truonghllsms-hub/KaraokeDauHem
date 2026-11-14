@@ -3,6 +3,7 @@
 Dùng: python3 tools/deploy_vercel.py [tên_dự_án]
 Token: đặt biến VERCEL_TOKEN, hoặc để trống nếu proxy của môi trường tự chèn."""
 import hashlib, json, os, sys, urllib.request, urllib.error
+from pathlib import Path
 
 API = "https://api.vercel.com"
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "build", "web")
@@ -27,10 +28,11 @@ def call(method, path, data=None, headers=None):
 team = call("GET", "/v2/user")["user"].get("defaultTeamId")
 q = "?teamId=" + team if team else ""
 files = []
-for fname in sorted(os.listdir(ROOT)):
-    if fname.endswith(".import"):
+for path in sorted(Path(ROOT).rglob("*")):
+    if not path.is_file() or path.name.endswith(".import"):
         continue
-    blob = open(os.path.join(ROOT, fname), "rb").read()
+    fname = path.relative_to(ROOT).as_posix()
+    blob = path.read_bytes()
     sha = hashlib.sha1(blob).hexdigest()
     call("POST", "/v2/files" + q, blob, {"Content-Type": "application/octet-stream", "x-vercel-digest": sha})
     files.append({"file": fname, "sha": sha, "size": len(blob)})

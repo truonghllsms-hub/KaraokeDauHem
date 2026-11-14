@@ -2,6 +2,7 @@ extends Control
 ## Hai tầng: 4 phòng thường và 6 VIP, hành lang giữa và cầu thang nối tầng.
 ## Giữ tọa độ thế giới riêng cho mỗi tầng, camera chỉ hiển thị tầng đang chọn.
 
+signal next_day_requested
 signal report(reason: String)
 signal hint(text: String)
 signal choice_requested(room_id: String)
@@ -11,8 +12,11 @@ const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
+const EMPTY_FLOOR = preload("res://assets/topdown/unequipped_floor.webp")
 const MAP_STANDARD = preload("res://assets/topdown/floor1_final.webp")
 const MAP_VIP = preload("res://assets/topdown/floor2_final.webp")
+const LobbyNavigation = preload("res://scripts/ui/lobby_navigation.gd")
+const VehicleArt = preload("res://scripts/ui/vehicle_art.gd")
 const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
@@ -32,7 +36,7 @@ const GATE: Vector2 = Vector2(515, 1084)
 const STAIR1: Vector2 = Vector2(515, 300)
 const STAIR2: Vector2 = Vector2(515, 1700)
 const OWNER_HOME: Vector2 = Vector2(410, 1000)
-const PICKUP: Vector2 = Vector2(420, 1010)
+const PICKUP: Vector2 = Vector2(170, 925)
 const HOST_SLOTS: Array = [Vector2(650, 960), Vector2(735, 960), Vector2(820, 960), Vector2(905, 960), Vector2(960, 1015), Vector2(960, 1070)]
 const QUEUE_SLOTS: Array = [Vector2(460, 1010), Vector2(460, 1065), Vector2(580, 1010), Vector2(580, 1065)]
 const STREET: Vector2 = Vector2(515, 1280)
@@ -43,9 +47,9 @@ const MAX_TASKS: int = 5
 const STAFF_SLOTS: Array = [Vector2(330, 935), Vector2(250, 935), Vector2(170, 935)]
 ## Chỗ đứng theo vai trò: lễ tân sau quầy, tạp vụ và phục vụ cạnh quầy.
 const ROLE_SLOTS: Dictionary = {
-	"receptionist": [Vector2(250, 975), Vector2(320, 975)],
-	"janitor": [Vector2(110, 935), Vector2(170, 935)],
-	"waiter": [Vector2(330, 925), Vector2(400, 925)],
+	"receptionist": [Vector2(250, 940), Vector2(340, 940)],
+	"janitor": [Vector2(190, 950), Vector2(430, 1060)],
+	"waiter": [Vector2(565, 955), Vector2(565, 1060)],
 }
 const THIEF_FROM: Vector2 = Vector2(980, 1290)
 const LINE_SECONDS: float = 4.5
@@ -92,6 +96,7 @@ var _lbl_toast: Label
 var _lbl_tasks: Label
 var _lbl_yard: Label
 var _anim_time: float = 0.0
+var _fridge_active_until: float = 0.0
 var _toast_until: int = 0
 var _staff_actors: Dictionary = {}
 var _thief_actor = null
@@ -121,10 +126,11 @@ func setup(p_sim) -> void:
 	add_child(_actors)
 	for i in BIKE_SLOTS.size():
 		var bike: Sprite2D = Sprite2D.new()
-		bike.texture = ReferenceSkin.texture(Rect2(107, 1208, 70, 175))
+		bike.texture = VehicleArt.texture(i)
+		bike.scale = Vector2.ONE * (146.0 / bike.texture.get_height())
 		bike.visible = false
-		bike.position = BIKE_SLOTS[i] - Vector2(0, 72)
-		bike.modulate = [Color.WHITE, Color("#d4d8ab"), Color("#9fbbb6")][i % 3]
+		bike.position = BIKE_SLOTS[i] - Vector2(0, 36)
+		bike.modulate = Color.WHITE
 		_actors.add_child(bike)
 		_bikes.append(bike)
 
@@ -151,17 +157,22 @@ func setup(p_sim) -> void:
 	_lbl_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_lbl_toast.size = Vector2(830, 64)
 	_lbl_toast.position.y = 1182
-	_lbl_toast.add_theme_font_size_override("font_size", 19)
+	_lbl_toast.add_theme_font_size_override("font_size", 22)
 	_lbl_toast.visible = false
 	_lbl_toast.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 5))
-	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 1050, 290, 32), true)
+	_lbl_tasks = _add_label("", 22, UI.TEXT, Rect2(365, 1060, 270, 40), true)
+	_lbl_tasks.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.94), UI.BORDER, 1, 8))
 	_lbl_tasks.visible = false
 
 	_btn_open = UI.button("▶  MỞ CỬA ĐÓN KHÁCH", 28, UI.PINK)
 	_btn_open.position = Vector2(330, 1006)
 	_btn_open.visible = false
 	_btn_open.size = Vector2(360, 72)
-	_btn_open.pressed.connect(func() -> void: report.emit(sim.open_doors()))
+	_btn_open.pressed.connect(func() -> void:
+		if sim.state.phase == "SUMMARY":
+			next_day_requested.emit()
+		else:
+			report.emit(sim.open_doors()))
 	add_child(_btn_open)
 	_build_floor_controls()
 	sim.line_spoken.connect(_on_line_spoken)
@@ -287,11 +298,12 @@ func _build_room(room: Dictionary, index: int) -> void:
 	root.visible = room["floor"] == current_floor
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	var dimmer: ColorRect = ColorRect.new()
-	dimmer.position = Vector2(0, 65)
-	dimmer.size = Vector2(ROOM_W, ROOM_H - 65)
-	# Phòng chưa lắp thiết bị: sàn trống, che hết nội thất vẽ sẵn.
-	dimmer.color = Color("#cdb790")
+	var dimmer: TextureRect = TextureRect.new()
+	dimmer.texture = EMPTY_FLOOR
+	dimmer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	dimmer.stretch_mode = TextureRect.STRETCH_SCALE
+	dimmer.position = Vector2(8, 68)
+	dimmer.size = Vector2(ROOM_W - 16, ROOM_H - 78)
 	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(dimmer)
 	var furniture: Control = Control.new()
@@ -387,7 +399,7 @@ func _route(from: Vector2, to: Vector2) -> Array:
 	if finish >= 2 and to.x < 400 and to.y < 1030:
 		points.append(Vector2(430, to.y))
 	points.append(to)
-	return points
+	return LobbyNavigation.avoid(from, points)
 
 
 # ---------------------------------------------------------------- Thao tác của người chơi
@@ -458,6 +470,9 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _add_task(task: Dictionary) -> void:
+	if task["kind"] == "deliver":
+		var order: Dictionary = sim.rooms.get_room(task["room_id"])["request"]
+		task["request_id"] = order.get("id", -1)
 	if sim.state.phase != "OPEN" and task["kind"] != "goto":
 		report.emit("Quán chưa mở cửa.")
 		return
@@ -487,6 +502,22 @@ func _task_target(task: Dictionary) -> Vector2:
 
 
 func _update_owner() -> void:
+	if _current_task.get("kind", "") == "chase":
+		if not sim.security.is_active() or _thief_actor == null:
+			_current_task = {}
+			_owner.walk_to([])
+		elif _owner.position.distance_to(_thief_actor.position) < 55:
+			sim.security.confirm_chase(sim.clock.minute)
+			_current_task = {}
+			_owner.walk_to([])
+		elif not _owner.is_moving():
+			_owner.walk_to(_route(_owner.position, _thief_actor.position))
+		return
+	if _current_task.get("kind", "") == "deliver" and not _owner_order_valid(_current_task):
+		_owner.walk_to([])
+		_owner.carrying = false
+		_owner.pose = "standing"
+		_current_task = {}
 	if _cleaning_room != "":
 		if sim.rooms.get_room(_cleaning_room)["state"] == "CLEANING":
 			return
@@ -501,8 +532,12 @@ func _update_owner() -> void:
 			_owner.set_bubble("")
 			return
 		_current_task = _tasks.pop_front()
+		_owner.carrying = false
+		if _current_task["kind"] == "deliver" and not _owner_order_valid(_current_task):
+			_current_task = {}
+			return
 		_owner.walk_to(_route(_owner.position, _task_target(_current_task)))
-		var bubbles: Dictionary = {"seat": "Mời vào phòng!", "clean": "Đi dọn phòng", "deliver": "Lấy món ở quầy", "fix": "Đi đổi micro"}
+		var bubbles: Dictionary = {"seat": "Mời vào phòng!", "clean": "Đi dọn phòng", "deliver": "Đến tủ lạnh lấy đồ", "fix": "Đi đổi micro"}
 		_owner.set_bubble(bubbles.get(_current_task["kind"], ""))
 		return
 
@@ -522,15 +557,28 @@ func _update_owner() -> void:
 				report.emit(reason)
 		"deliver":
 			if not task.get("picked", false):
-				# Chặng hai: bưng món từ quầy tới phòng.
+				if not task.has("pickup_started"):
+					task["pickup_started"] = _anim_time
+					_owner.set_bubble("Lấy đồ ở tủ lạnh")
+					return
+				if _anim_time - task["pickup_started"] < 0.5:
+					return
 				task["picked"] = true
+				_owner.carrying = true
+				_fridge_active_until = _anim_time + 0.8
 				_owner.walk_to(_route(_owner.position, _work_position(task["room_id"])))
 				_owner.set_bubble("Mang món tới!")
 				return
+			_owner.carrying = false
 			report.emit(sim.deliver_order(task["room_id"]))
 		"fix":
 			report.emit(sim.fix_mic(task["room_id"]))
 	_current_task = {}
+
+
+func _owner_order_valid(task: Dictionary) -> bool:
+	var room = sim.rooms.get_room(task.get("room_id", ""))
+	return room != null and room["state"] == "OCCUPIED" and room["request"].get("kind", "") == "ORDER" and room["request"].get("id", -1) == task.get("request_id", room["request"].get("id", -1))
 
 
 # ---------------------------------------------------------------- Đồng bộ với mô phỏng
@@ -569,11 +617,12 @@ func advance_actors(delta: float) -> void:
 	_refresh_yard()
 	_refresh_floor_controls()
 	_apply_actor_visibility()
-	_btn_open.visible = sim.state.phase == "PREP" and current_floor == 1
+	_btn_open.visible = sim.state.phase in ["PREP", "SUMMARY"] and not sim.state.bankrupt and current_floor == 1
+	_btn_open.text = "SANG ĐÊM TIẾP THEO →" if sim.state.phase == "SUMMARY" else "▶  MỞ CỬA ĐÓN KHÁCH"
 	if _lbl_toast.visible and Time.get_ticks_msec() > _toast_until:
 		_lbl_toast.visible = false
 	var count: int = task_count()
-	_lbl_tasks.text = "Việc đang chờ chủ quán: %d" % count if count > 0 else ""
+	_lbl_tasks.text = "Chờ làm: %d" % count if count > 0 else ""
 	queue_redraw()
 
 
@@ -581,10 +630,10 @@ func _refresh_yard() -> void:
 	var parked: int = 0
 	for group in sim.state.groups:
 		@warning_ignore("integer_division")
-		parked += (group["size"] + 1) / 2
-	parked = mini(parked + _leaving.size(), _bikes.size())
+		parked += maxi(0, (group["size"] + 1) / 2 - group.get("stolen_bikes", 0))
+	parked = mini(parked, _bikes.size())
 	for i in _bikes.size():
-		_bikes[i].visible = i >= 3 and i < parked
+		_bikes[i].visible = i < parked
 	_guard.visible = sim.state.guard_hired and sim.state.phase != "PREP"
 	var thief: Dictionary = sim.state.thief
 	_guard.position = GUARD_POS
@@ -662,13 +711,18 @@ func _sync_groups() -> void:
 		else:
 			actor.patience_ratio = -1.0
 			actor.mood = "angry" if group["satisfaction"] < 55 else "happy"
-			var request_text: String = sim.hosts.request_label(group)
+			var request_text: String = "Em ơi, cho anh %d bạn vào giao lưu nhé!" % group.get("host_requested_count", 1) if sim.hosts.needs_staff(group) else ""
 			var room_now = sim.rooms.get_room(group["room_id"])
+			if room_now != null and not room_now["request"].is_empty():
+				request_text = _request_chat(room_now["request"], group)
 			# Cảnh báo luôn ưu tiên hơn câu hát trang trí.
 			if request_text == "" and room_now != null and room_now["request"].is_empty():
 				_show_line(actor, "g:%d" % group_id)
 			else:
-				actor.set_bubble(request_text, Color(1.0, 0.9, 0.97), UI.PINK)
+				var kind: String = room_now["request"].get("kind", "HOST")
+				var colors: Dictionary = {"ORDER": Color("#24618b"), "MIC": Color("#a53741"), "HOT": Color("#96531d"), "EXTEND": Color("#3c6d92")}
+				actor.bubble_speaker = int(room_now["request"].get("id", 0)) % group["size"]
+				actor.set_bubble(_wrap_line(request_text), colors.get(kind, Color("#75508e")), Color("#c5e5fa"), Color.WHITE)
 
 	for group_id in _group_actors.keys():
 		if alive.has(group_id):
@@ -677,10 +731,10 @@ func _sync_groups() -> void:
 		_group_actors.erase(group_id)
 		if actor.place_key.begins_with("queue"):
 			actor.mood = "angry"
-			actor.set_bubble("Thôi về!", Color(1.0, 0.85, 0.85), UI.BAD)
+			actor.set_bubble("Thôi về!", Color.WHITE, UI.BAD, Color.BLACK)
 		else:
 			actor.mood = "happy"
-			actor.set_bubble("Cảm ơn nha!", Color(0.88, 1.0, 0.9), UI.GOOD)
+			actor.set_bubble("Cảm ơn nhé!", Color.WHITE, UI.GOOD, Color.BLACK)
 		actor.patience_ratio = -1.0
 		actor.set_clickable(false)
 		actor.set_highlight(false)
@@ -694,6 +748,7 @@ func _sync_groups() -> void:
 
 
 func _sync_hosts() -> void:
+	var speaking_rooms: Dictionary = {}
 	for i in sim.state.hosts.size():
 		var host: Dictionary = sim.state.hosts[i]
 		var host_id: String = host["id"]
@@ -716,6 +771,8 @@ func _sync_hosts() -> void:
 			actor.walk_to(_route(actor.position, target))
 		actor.set_clickable(host["state"] != "SERVING")
 		actor.set_highlight(host_id == selected_host)
+		if host["state"] == "SERVING" and not actor.is_moving():
+			actor.position = _host_position(host["room_id"], host_id)
 		actor.singing = host["state"] == "SERVING" and not actor.is_moving()
 		actor.pose = "seated"
 		actor.seated_faces_left = key == "lounge" or _rect_of(host["room_id"]).position.x > CORRIDOR_X
@@ -725,7 +782,13 @@ func _sync_hosts() -> void:
 		elif host["state"] == "RESTING":
 			actor.set_bubble("Nghỉ xíu...", Color(0.9, 0.93, 1.0), UI.INFO)
 		else:
-			_show_line(actor, "h:" + host_id)
+			var guest_actor = _group_actors.get(host["group_id"])
+			if host["state"] == "SERVING" and (speaking_rooms.has(host["room_id"]) or (guest_actor != null and guest_actor._bubble.visible)):
+				actor.set_bubble("")
+			else:
+				_show_line(actor, "h:" + host_id)
+				if host["state"] == "SERVING" and actor._bubble.visible:
+					speaking_rooms[host["room_id"]] = true
 
 
 func _sync_staff(delta: float) -> void:
@@ -735,30 +798,47 @@ func _sync_staff(delta: float) -> void:
 		var actor = _staff_actors.get(staff_id)
 		if actor == null:
 			actor = Actor.new()
-			actor.setup([member.get("sprite", "waiter_m")])
+			actor.setup([CharacterArt.staff_sprite(member)])
 			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 			actor.position = _staff_slot(member, i)
-			actor.speed = 300.0
 			actor.set_clickable(false)
-			actor.set_tooltip("Nhân viên phục vụ %s" % member["name"])
+			actor.set_tooltip("%s %s" % [sim.staff.role_name(member["role"]), member["name"]])
 			_actors.add_child(actor)
 			_staff_actors[staff_id] = actor
+		actor.speed = 300.0 * (1.0 + 0.08*sim.service.upgrade_level("staff_training"))
 		var task: Dictionary = member["task"]
 		var working: bool = not task.is_empty() and task["kind"] != "REST"
-		var key: String = task["room_id"] if working else "idle"
+		var delivery: bool = working and task["kind"] == "DELIVER"
+		var phase: String = task.get("phase", "")
+		var key: String = "%s:%s:%s:%d" % [task["room_id"], task["kind"], phase, task.get("request_id", 0)] if working else "idle"
 		if actor.place_key != key:
 			actor.place_key = key
+			actor.set_meta("pickup_wait", 0.0)
 			var target: Vector2 = _staff_slot(member, i)
 			if working:
-				target = _work_position(task["room_id"]) + Vector2(60, 0)
-				if task["kind"] == "SEAT":
+				target = _work_position(task["room_id"])
+				if delivery and phase == "PICKUP":
+					target = PICKUP
+				elif task["kind"] == "SEAT":
 					target = QUEUE_SLOTS[0] + Vector2(-70, 0)
 			actor.walk_to(_route(actor.position, target))
-		actor.pose = "standing"
+		actor.speed = 300.0 * (1.0 + 0.08*sim.service.upgrade_level("staff_training"))
+		actor.carrying = delivery and phase == "CARRY" and task.get("pickup_confirmed", false)
+		actor.pose = "cleaning" if working and task["kind"] == "CLEAN" and phase == "WORK" else "standing"
 		actor.mood = "tired" if member["energy"] < 40 else "neutral"
-		actor.set_bubble(STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
+		actor.set_bubble(("Đến tủ lạnh" if phase == "PICKUP" else "Mang đồ tới phòng") if delivery else STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
 		actor.visible = sim.state.phase != "PREP"
 		actor.advance(delta)
+		if delivery and not actor.is_moving() and delta > 0.0:
+			var request_id: int = task["request_id"]
+			if phase == "PICKUP" and actor.position.distance_to(PICKUP) < 2.0:
+				var waited: float = actor.get_meta("pickup_wait", 0.0) + delta
+				actor.set_meta("pickup_wait", waited)
+				if waited >= 0.5 and sim.staff.confirm_pickup(staff_id, request_id):
+					_fridge_active_until = _anim_time + 0.8
+			elif phase == "CARRY":
+				if sim.staff.confirm_delivery(staff_id, request_id, sim.clock.minute):
+					actor.carrying = false
 
 
 func _staff_slot(member: Dictionary, index: int) -> Vector2:
@@ -784,21 +864,24 @@ func _sync_thief(delta: float) -> void:
 		if _thief_actor != null:
 			_thief_actor.queue_free()
 		_thief_actor = Actor.new()
-		_thief_actor.setup(["young_m_3"])
-		_thief_actor.modulate = Color(0.45, 0.45, 0.55)
+		_thief_actor.setup(["thief"])
 		_thief_actor.position = THIEF_FROM
 		_thief_actor.speed = 40.0
 		_thief_actor.set_tooltip("Trộm xe! Bấm để chạy ra đuổi.")
 		_thief_actor.pressed.connect(_on_thief_pressed)
 		_actors.add_child(_thief_actor)
 		_thief_id = thief["id"]
-		_thief_actor.walk_to([BIKE_SLOTS[thief["id"] % 3]])
+		_thief_actor.walk_to([_bike_position_for(thief["group_id"])])
+		if thief["state"] != "APPROACH":
+			_thief_actor.position = _bike_position_for(thief["group_id"])
+			_thief_actor.walk_to([])
 	var actor = _thief_actor
 	match thief["state"]:
 		"APPROACH":
+			actor.walk_to([_bike_position_for(thief["group_id"])])
 			# Đi chậm rãi: tốc độ đủ để tới xe đúng lúc mô phỏng báo tới nơi.
 			var minutes_left: float = maxf(0.5, thief["reach"] - sim.clock.minute)
-			actor.speed = maxf(15.0, actor.position.distance_to(BIKE_SLOTS[thief["id"] % 3]) / (minutes_left * 2.0))
+			actor.speed = maxf(15.0, actor.position.distance_to(_bike_position_for(thief["group_id"])) / (minutes_left * 2.0))
 			actor.set_bubble("Ai đuổi theo rồi!" if thief["catch_at"] >= 0 else "Rón rén...", Color(0.92, 0.92, 0.95), UI.MUTED)
 		"STEALING":
 			actor.set_bubble("Ai đuổi theo rồi!" if thief["catch_at"] >= 0 else "Đang phá khóa!", Color(1.0, 0.85, 0.85), UI.BAD)
@@ -810,13 +893,15 @@ func _sync_thief(delta: float) -> void:
 			if not actor.is_moving():
 				actor.speed = 260.0
 				actor.walk_to([STREET])
-	actor.set_clickable(thief["state"] in ["APPROACH", "STEALING"] and thief["catch_at"] < 0)
-	actor.pose = "standing"
+	actor.set_clickable(thief["state"] in ["APPROACH", "STEALING"] and thief["chased_by"] != "owner")
+	actor.pose = "stealing" if thief["state"] == "STEALING" else ("caught" if thief["state"] == "CAUGHT" else "standing")
 	actor.visible = current_floor == 1
 	actor.advance(delta)
 
 
 func _on_thief_pressed() -> void:
+	if not is_instance_valid(_thief_actor):
+		return
 	var reason: String = sim.chase_thief()
 	if reason != "":
 		report.emit(reason)
@@ -824,8 +909,11 @@ func _on_thief_pressed() -> void:
 	hint.emit("Chủ quán chạy ra đuổi trộm!")
 	# Chủ quán bỏ dở bước đi hiện tại, chạy ra bãi xe rồi quay lại làm tiếp.
 	if not _current_task.is_empty() and _cleaning_room == "":
+		_current_task.erase("picked")
+		_current_task.erase("pickup_started")
 		_tasks.push_front(_current_task)
-		_current_task = {}
+	_owner.carrying = false
+	_current_task = {"kind": "chase"}
 	_owner.walk_to(_route(_owner.position, _thief_actor.position))
 	_owner.set_bubble("Đứng lại!")
 
@@ -836,7 +924,7 @@ func _on_line_spoken(event: Dictionary) -> void:
 	var reply_key: String = ""
 	if event["reply_text"] != "":
 		reply_key = "h:" + event["reply_host_id"] if event["reply_host_id"] != "" else key
-	_lines[key] = {"text": event["text"], "reply": event["reply_text"], "reply_key": reply_key, "at": _line_clock, "song": event["kind"] == "SONG"}
+	_lines[key] = {"text": event["text"], "reply": event["reply_text"], "reply_key": reply_key, "at": _line_clock, "song": event["kind"] == "SONG", "speaker": event.get("speaker_index", 0), "reply_speaker": event.get("reply_speaker_index", 0)}
 
 
 func _show_line(actor, key: String) -> void:
@@ -847,17 +935,19 @@ func _show_line(actor, key: String) -> void:
 		var age: float = _line_clock - line["at"]
 		if line_key == key and age < (REPLY_AFTER if line["reply_key"] == key else LINE_SECONDS):
 			text = line["text"]
+			actor.bubble_speaker = maxi(0, line.get("speaker", 0))
 			song = line["song"]
 		elif line["reply_key"] == key and age >= REPLY_AFTER and age < REPLY_AFTER + LINE_SECONDS:
 			text = line["reply"]
+			actor.bubble_speaker = maxi(0, line.get("reply_speaker", 0))
 			song = line["song"]
 	if text == "":
 		actor.set_bubble("")
 		return
 	if song:
-		actor.set_bubble(_wrap_line(text), Color(0.97, 0.92, 1.0), UI.PURPLE)
+		actor.set_bubble(_wrap_line(text), Color.WHITE, Color("#a2b579"), Color.BLACK)
 	else:
-		actor.set_bubble(_wrap_line(text), Color(1, 1, 1, 0.96), UI.BORDER)
+		actor.set_bubble(_wrap_line(text), Color.WHITE, UI.BORDER, Color.BLACK)
 
 
 ## Ngắt câu dài thành hai dòng ở khoảng trắng gần giữa.
@@ -925,10 +1015,10 @@ func _refresh_rooms() -> void:
 		ui["center"].text = center
 		ui["center"].visible = center != ""
 		# Phòng chưa lắp thiết bị: khung chữ nằm giữa sàn trống, không đè lên phòng bên cạnh.
-		ui["center"].position = Vector2(68, 150) if locked and selected_group == 0 else Vector2(90, 300)
-		ui["center"].size = Vector2(310, 120) if locked and selected_group == 0 else Vector2(270, 80)
+		ui["center"].position = Vector2(63, 155) if locked and selected_group == 0 else Vector2(90, 300)
+		ui["center"].size = Vector2(320, 116) if locked and selected_group == 0 else Vector2(270, 80)
 		ui["center"].add_theme_color_override("font_color", color)
-		ui["center"].add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 6))
+		ui["center"].add_theme_stylebox_override("normal", UI.box(Color("#fff5dd", 0.95), Color("#b48b4c"), 2, 14))
 		var bar: ProgressBar = ui["bar"]
 		bar.visible = false
 		if room["state"] == "OCCUPIED":
@@ -936,7 +1026,7 @@ func _refresh_rooms() -> void:
 		elif room["state"] == "CLEANING":
 			_show_bar(bar, UI.INFO, now - room["task_start"], room["task_end"] - room["task_start"])
 		var request: Dictionary = room["request"]
-		ui["request"].visible = not request.is_empty()
+		ui["request"].visible = false # Requests speak from the customer, rather than a detached room banner.
 		if not request.is_empty():
 			var kind: String = request["kind"]
 			ui["request"].text = "%s · %d'" % [request["text"] if kind == "ORDER" else REQUEST_LABEL[kind], maxi(0, request["deadline"] - now)]
@@ -967,9 +1057,125 @@ func _draw() -> void:
 		var source_rows: Array = [0, 490, 900, MAP_VIP.get_height()]
 		for row in 3:
 			draw_texture_rect_region(MAP_VIP, Rect2(0, MAP_Y + row * ROOM_H, 1024, ROOM_H), Rect2(0, source_rows[row], MAP_VIP.get_width(), source_rows[row + 1] - source_rows[row]))
+	if current_floor == 1 and _anim_time < _fridge_active_until:
+		draw_style_box(UI.box(Color(1.0, 0.92, 0.5, 0.2), UI.GOLD, 2, 0), Rect2(45, 885, 94, 180))
 	for room in sim.state.rooms:
 		if room["floor"] != current_floor or room["state"] != "OCCUPIED":
 			continue
 		for point in _seating(room["id"])["stools"]:
 			var seat: Vector2 = point - _floor_offset() - Vector2(0, 10)
 			draw_style_box(UI.box(Color("#8b7844"), Color("#50351f"), 2, 6), Rect2(seat - Vector2(23, 8), Vector2(46, 20)))
+
+
+func save_view() -> Dictionary:
+	var groups: Dictionary = {}
+	for group_id in _group_actors:
+		groups[str(group_id)] = _group_actors[group_id].save_view()
+	var hosts: Dictionary = {}
+	for host_id in _host_actors:
+		hosts[host_id] = _host_actors[host_id].save_view()
+	var staff: Dictionary = {}
+	for staff_id in _staff_actors:
+		staff[staff_id] = _staff_actors[staff_id].save_view()
+	var tasks: Array = []
+	for task in _tasks:
+		tasks.append(_save_task(task))
+	return {"owner": _owner.save_view(), "staff": staff, "groups": groups, "hosts": hosts, "thief": _thief_actor.save_view() if _thief_actor != null else {}, "tasks": tasks, "current": _save_task(_current_task), "cleaning": _cleaning_room, "time": _anim_time, "floor": current_floor}
+
+func _save_task(task: Dictionary) -> Dictionary:
+	var copy: Dictionary = task.duplicate(true)
+	if copy.get("position") is Vector2:
+		copy["position"] = [copy["position"].x, copy["position"].y]
+	return copy
+
+func _restore_task(task: Dictionary) -> Dictionary:
+	var copy: Dictionary = task.duplicate(true)
+	if copy.get("position") is Array:
+		copy["position"] = Vector2(float(copy["position"][0]), float(copy["position"][1]))
+	return copy
+
+func restore_view(saved: Dictionary) -> void:
+	if saved.is_empty():
+		return
+	advance_actors(0.0)
+	_anim_time = float(saved.get("time", 0.0))
+	_current_task = _restore_task(saved.get("current", {}))
+	_tasks = []
+	for task in saved.get("tasks", []):
+		_tasks.append(_restore_task(task))
+	_cleaning_room = saved.get("cleaning", "")
+	if saved.has("owner"):
+		_owner.restore_view(saved["owner"])
+		_owner.position = LobbyNavigation.free_point(_owner.position)
+		if _current_task.get("kind", "") == "deliver" and not _current_task.get("picked", false):
+			_owner.walk_to(_route(_owner.position, PICKUP))
+		elif _owner.is_moving():
+			_owner.walk_to(_route(_owner.position, _owner._path.back()))
+	for group_id in saved.get("groups", {}):
+		if _group_actors.has(int(group_id)):
+			_group_actors[int(group_id)].restore_view(saved["groups"][group_id])
+	for host_id in saved.get("hosts", {}):
+		if _host_actors.has(host_id):
+			_host_actors[host_id].restore_view(saved["hosts"][host_id])
+	for staff_id in saved.get("staff", {}):
+		if _staff_actors.has(staff_id):
+			_staff_actors[staff_id].restore_view(saved["staff"][staff_id])
+			_staff_actors[staff_id].position = LobbyNavigation.free_point(_staff_actors[staff_id].position)
+			_staff_actors[staff_id].place_key = ""
+	if _thief_actor != null and not saved.get("thief", {}).is_empty():
+		_thief_actor.restore_view(saved["thief"])
+	set_floor(int(saved.get("floor", 1)))
+
+
+func _request_text(request: Dictionary) -> String:
+	match request.get("kind", ""):
+		"MIC": return "Em ơi, mic hỏng em ơi!"
+		"HOT": return "Em ơi, phòng nóng quá!"
+		"EXTEND": return "Cho anh chị hát thêm nhé em!"
+		"ORDER":
+			for product in sim.data["products"]:
+				if product["id"] == request.get("product_id", ""):
+					return product["call"]
+	return request.get("text", "Em ơi!")
+
+
+func _bike_position_for(group_id: int) -> Vector2:
+	var offset: int = 0
+	for group in sim.state.groups:
+		var count: int = maxi(0, ceili(group["size"] / 2.0) - group.get("stolen_bikes", 0))
+		if group["id"] == group_id and count > 0:
+			return BIKE_SLOTS[mini(offset, BIKE_SLOTS.size() - 1)]
+		offset += count
+	return BIKE_SLOTS[0]
+
+func begin_day() -> void:
+	_tasks.clear()
+	_current_task.clear()
+	_cleaning_room = ""
+	_owner.walk_to([])
+	_owner.position = OWNER_HOME
+	_owner.carrying = false
+	_owner.pose = "standing"
+	_owner.set_bubble("")
+	for actor in _group_actors.values():
+		actor.queue_free()
+	_group_actors.clear()
+	for actor in _leaving:
+		actor.queue_free()
+	_leaving.clear()
+	_lines.clear()
+	advance_actors(0)
+
+
+func _request_chat(request: Dictionary, group: Dictionary = {}) -> String:
+	var text: String = _request_text(request)
+	if group.is_empty(): return text
+	var speaker: int = int(request.get("id", 0)) % group["size"]
+	var person: String = group["sprites"][speaker % group["sprites"].size()]
+	var age: String = sim.data["lyrics"]["sprite_age"].get(person, "middle")
+	var female: bool = sim.data["customers"]["sprite_genders"].get(person, "male") == "female"
+	var self_name: String = "bác" if age == "senior" else (("chị" if female else "anh") if age == "middle" else "tụi mình")
+	text = text.replace("anh chị", self_name).replace("cho anh", "cho " + self_name).replace("phòng anh", "phòng " + self_name)
+	if age == "senior": text = text.replace("Em ơi", "Cháu ơi").replace("nhé em", "nhé cháu")
+	elif age == "young": text = text.replace("Em ơi", "Bạn ơi").replace("nhé em", "nhé bạn")
+	return text

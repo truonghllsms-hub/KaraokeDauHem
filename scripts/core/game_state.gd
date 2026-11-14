@@ -51,6 +51,7 @@ var reviews: Array = []
 ## Vay ngân hàng, phá sản và tên trộm đang ở bãi xe.
 var loan_principal: int = 0
 var loan_counter: int = 0
+var loan_last_settled_day: int = 0
 var negative_nights: int = 0
 var bankrupt: bool = false
 var thief: Dictionary = {}

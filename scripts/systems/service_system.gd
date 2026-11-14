@@ -76,14 +76,15 @@ func buy_upgrade(upgrade_id: String) -> String:
 	var level: int = upgrade_level(upgrade_id)
 	if level >= upgrade["max_level"]:
 		return "%s đã ở cấp cao nhất." % upgrade["name"]
-	if not _economy.can_afford(upgrade["cost"]):
-		return "Không đủ tiền: %s cần %s." % [upgrade["name"], Money.format(upgrade["cost"])]
-	if not _economy.record("UPGRADE", -upgrade["cost"], "%s:%d" % [upgrade_id, level + 1], upgrade["name"]):
+	var cost: int = upgrade_cost(upgrade_id)
+	if not _economy.can_afford(cost):
+		return "Không đủ tiền: %s cần %s." % [upgrade["name"], Money.format(cost)]
+	if not _economy.record("UPGRADE", -cost, "%s:%d" % [upgrade_id, level + 1], upgrade["name"]):
 		return "Nâng cấp này đã được thanh toán."
 	_state.upgrades[upgrade_id] = level + 1
-	if upgrade_id == "sound":
+	if upgrade_id in ["sound", "soundproof"]:
 		for room in _state.rooms:
-			room["sound"] += 1
+			room[upgrade_id] += 1
 	_notify.call("Đã lắp %s (cấp %d)." % [upgrade["name"], level + 1], "good")
 	return ""
 
@@ -126,11 +127,15 @@ func _open(room: Dictionary, request: Dictionary, now: int, timeout: int) -> voi
 
 
 func _open_random(room: Dictionary, group: Dictionary, now: int) -> void:
+	if _state.day == 1 and _state.night.get("training_spawned", 0) > 0:
+		_open_order(room, group, now)
+		return
 	var balance: Dictionary = _data["balance"]
-	var mic_weight: int = balance["request_weight_mic_spare"] if upgrade_level("spare_mics") > 0 else balance["request_weight_mic"]
+	var mic_weight: int = mic_request_weight()
+	var hot_weight: int = hot_request_weight()
 	@warning_ignore("integer_division")
 	mic_weight = mic_weight * room.get("mic_weight_percent", 100) / 100
-	var roll: int = _rng.randi_range(1, balance["request_weight_order"] + mic_weight + balance["request_weight_hot"])
+	var roll: int = _rng.randi_range(1, balance["request_weight_order"] + mic_weight + hot_weight)
 	if roll <= balance["request_weight_order"]:
 		_open_order(room, group, now)
 	elif roll <= balance["request_weight_order"] + mic_weight:
@@ -160,7 +165,7 @@ func _open_order(room: Dictionary, group: Dictionary, now: int) -> void:
 	quantity = mini(quantity, in_stock)
 	# Giữ chỗ hàng để không bán trùng tồn kho.
 	_state.stock[product["id"]] -= quantity
-	var timeout: int = balance["order_timeout"] + (balance["cart_bonus_minutes"] if upgrade_level("cart") > 0 else 0)
+	var timeout: int = balance["order_timeout"] + balance["cart_bonus_minutes"] * upgrade_level("cart")
 	var price: int = product["price"] * quantity
 	_open(room, {
 		"kind": "ORDER", "product_id": product["id"], "quantity": quantity, "price": price,
@@ -254,8 +259,8 @@ func answer(room: Dictionary, choice: String) -> String:
 	if request["kind"] == "HOT":
 		room["request"] = {}
 		if choice == "ac":
-			_economy.record("UTILITIES", -balance["ac_cost"], "request:%d" % request["id"], "Tăng điều hòa " + room["name"])
-			_change_satisfaction.call(group, balance["ac_bonus"], "%s mát rượi (tốn %s tiền điện)" % [room["name"], Money.format(balance["ac_cost"])])
+			_economy.record("UTILITIES", -cooling_cost(), "request:%d" % request["id"], "Tăng điều hòa " + room["name"])
+			_change_satisfaction.call(group, balance["ac_bonus"], "%s mát rượi (tốn %s tiền điện)" % [room["name"], Money.format(cooling_cost())])
 		else:
 			group["tags"].append("nong")
 			_change_satisfaction.call(group, -balance["hot_penalty"], "%s vẫn nóng" % room["name"])
@@ -274,3 +279,19 @@ func answer(room: Dictionary, choice: String) -> String:
 			_react(room, "extend_declined", request["opened"])
 		return ""
 	return "Yêu cầu này cần chủ quán tới tận phòng."
+
+
+func upgrade_cost(upgrade_id: String) -> int:
+	var definition = get_upgrade(upgrade_id)
+	if definition == null: return 0
+	return Money.round_to_thousand(int(round(definition["cost"] * pow(definition.get("cost_growth_percent", 100)/100.0, upgrade_level(upgrade_id)))))
+
+func mic_request_weight() -> int:
+	var level: int = upgrade_level("spare_mics")
+	return _data["balance"]["request_weight_mic"] if level == 0 else maxi(1, int(round(_data["balance"]["request_weight_mic_spare"] * pow(0.65, level-1))))
+
+func hot_request_weight() -> int:
+	return maxi(1, int(round(_data["balance"]["request_weight_hot"] * maxf(0.25, 1.0-0.12*upgrade_level("aircon")))))
+
+func cooling_cost() -> int:
+	return Money.round_to_thousand(int(round(_data["balance"]["ac_cost"] * (1.0-0.05*upgrade_level("aircon")))))

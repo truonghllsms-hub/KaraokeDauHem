@@ -5,7 +5,7 @@
     "role": "janitor",
     "speed": 100,
     "wage": 220000,
-    "starter": true,
+    "starter": false,
     "about": "Tạp vụ lâu năm, lau phòng sạch bong.",
     "sprite": "waiter_m"
   },

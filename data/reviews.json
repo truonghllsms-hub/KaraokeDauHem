@@ -217,5 +217,77 @@
    "Mất cả buổi tối.",
    "Rất thất vọng với quán."
   ]
- }
+ },
+ "companion_profiles": [
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Hùng thợ điện",
+   "text": "Vợ {host} xinh, ngoan quá. Hứa mỗi tháng lĩnh lương lại ghé nghe vợ hát một lần."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Tuấn phụ hồ",
+   "text": "Đợi anh đi phụ hồ mấy hôm rồi lại đến gặp vợ {host} nhé. Giữ bài tủ cho anh!"
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Long shipper",
+   "text": "Em {host} hoàn lương đi, về sống với anh. Anh chạy thêm mấy cuốc là đủ tiền hát tiếp rồi."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Chú Bình tổ trưởng",
+   "text": "{host} hát có duyên quá, chú quên luôn giờ về. Tháng sau nhận lương chú lại ghé.",
+   "types": [
+    "drinking",
+    "middle_aged_men"
+   ]
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Hải xe ôm",
+   "text": "Cho anh xin một lời hẹn với {host}, mai anh chăm chỉ chạy xe rồi lại tới nghe em hát."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Cường công trình",
+   "text": "Đi hát với anh em mà về cứ nhớ giọng {host}. Mai đi làm lại có động lực tăng ca rồi."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "who": "Anh Phúc mê bolero",
+   "text": "Quán có điều hòa mà ngồi cạnh {host} anh vẫn thấy nóng mặt. Hẹn em bữa lĩnh lương nha."
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "who": "Chị Hạnh kế toán",
+   "text": "Anh {host} sáu múi đẹp trai mà hát cũng hay. Chị em chốt lịch tháng sau gặp lại!",
+   "host_ids": [
+    "host_9"
+   ]
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "who": "Chị Thủy chủ tiệm",
+   "text": "Định hát một tiếng thôi, ai ngờ {host} vào song ca là cả hội xin thêm giờ."
+  },
+  {
+   "composition": "men",
+   "host_gender": "male",
+   "who": "Anh Nam phòng gym",
+   "text": "Ông em {host} sáu múi mà song ca ngọt ghê. Lần sau hội anh lại gọi song ca nhé.",
+   "host_ids": [
+    "host_9"
+   ]
+  }
+ ]
 }

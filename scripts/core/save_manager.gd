@@ -1,5 +1,5 @@
 extends RefCounted
-## Lưu và tải tiến trình ở mốc cuối đêm (sau tổng kết) hoặc lúc chuẩn bị. Không lưu giữa ca.
+## Lưu tiến trình trước, giữa và sau ca. Giữ tương thích bản tự lưu cũ.
 ## - Ghi ra tệp tạm, kiểm tra đọc lại được, rồi mới thay tệp chính; bản chính cũ thành bản sao lưu (.bak).
 ## - Tải: kiểm tra phiên bản và dữ liệu; tệp chính hỏng thì thử bản sao lưu. Không bao giờ tự xóa tệp hỏng.
 
@@ -17,9 +17,10 @@ const STATE_FIELDS: Array = [
 ]
 ## Trường thêm sau; bản lưu cũ thiếu thì dùng giá trị mặc định.
 const OPTIONAL_DEFAULTS: Dictionary = {
-	"loan_principal": 0, "loan_counter": 0, "negative_nights": 0, "bankrupt": false, "thief": {}, "floor2_unlocked": true,
+	"loan_principal": 0, "loan_last_settled_day": 0, "loan_counter": 0, "negative_nights": 0, "bankrupt": false, "thief": {}, "floor2_unlocked": true,
 }
-const SAVEABLE_PHASES: Array = ["PREP", "SUMMARY"]
+const SAVEABLE_PHASES: Array = ["PREP", "OPEN", "SUMMARY"]
+const MANUAL_PATHS: Array = ["user://karaoke_slot_1.json", "user://karaoke_slot_2.json", "user://karaoke_slot_3.json"]
 
 
 static func backup_path(path: String) -> String:
@@ -31,7 +32,7 @@ static func temp_path(path: String) -> String:
 
 
 static func has_save(path: String = DEFAULT_PATH) -> bool:
-	return FileAccess.file_exists(path) or FileAccess.file_exists(backup_path(path))
+	return _exists(path) or _exists(backup_path(path))
 
 
 ## Chụp trạng thái thành Dictionary thuần. Số ngẫu nhiên 64-bit lưu dạng chuỗi để JSON không làm tròn.
@@ -44,6 +45,7 @@ static func make_snapshot(state, rng: RandomNumberGenerator) -> Dictionary:
 		"game": GAME_ID,
 		"schema_version": SCHEMA_VERSION,
 		"saved_at": Time.get_datetime_string_from_system(),
+		"saved_at_unix": Time.get_unix_time_from_system(),
 		"day": state.day,
 		"money": state.money,
 		"rng_seed": str(state.rng_seed),
@@ -65,6 +67,7 @@ static func write_snapshot(snapshot: Dictionary, path: String = DEFAULT_PATH) ->
 	var check: Dictionary = _read_file(temp)
 	if check["error"] != "":
 		return "Tệp lưu vừa ghi không đọc lại được: " + check["error"]
+	var previous: String = FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else _web_read(path)
 	if FileAccess.file_exists(path):
 		var copy_error: int = DirAccess.copy_absolute(path, backup_path(path))
 		if copy_error != OK:
@@ -72,6 +75,10 @@ static func write_snapshot(snapshot: Dictionary, path: String = DEFAULT_PATH) ->
 	var rename_error: int = DirAccess.rename_absolute(temp, path)
 	if rename_error != OK:
 		return "Không thay được tệp lưu chính (lỗi %d)." % rename_error
+	if OS.has_feature("web"):
+		if previous != "":
+			_web_write(backup_path(path), previous)
+		_web_write(path, JSON.stringify(snapshot, "", false))
 	return ""
 
 
@@ -80,7 +87,7 @@ static func write_snapshot(snapshot: Dictionary, path: String = DEFAULT_PATH) ->
 static func read_save(data: Dictionary, path: String = DEFAULT_PATH) -> Dictionary:
 	var problems: Array = []
 	for candidate in [path, backup_path(path)]:
-		if not FileAccess.file_exists(candidate):
+		if not _exists(candidate):
 			continue
 		var loaded: Dictionary = _read_file(candidate)
 		var error: String = loaded["error"]
@@ -99,7 +106,9 @@ static func read_save(data: Dictionary, path: String = DEFAULT_PATH) -> Dictiona
 
 
 static func _read_file(path: String) -> Dictionary:
-	var text: String = FileAccess.get_file_as_string(path)
+	var text: String = _web_read(path)
+	if text == "" and FileAccess.file_exists(path):
+		text = FileAccess.get_file_as_string(path)
 	if text == "":
 		return {"snapshot": {}, "error": "Tệp lưu trống hoặc không đọc được."}
 	var parser: JSON = JSON.new()
@@ -138,11 +147,18 @@ static func validate(snapshot: Dictionary, data: Dictionary) -> String:
 		if not (state[field] is Dictionary):
 			return "Trường \"%s\" trong bản lưu sai kiểu." % field
 	if not SAVEABLE_PHASES.has(state["phase"]):
-		return "Bản lưu không ở mốc cuối đêm hoặc chuẩn bị."
+		return "Bản lưu có giai đoạn chơi không hợp lệ."
 	if state["day"] < 1 or state["reputation"] < 0 or state["reputation"] > 100:
 		return "Bản lưu có số ngày hoặc danh tiếng không hợp lệ."
-	if not state["groups"].is_empty():
+	if state["phase"] != "OPEN" and not state["groups"].is_empty():
 		return "Bản lưu còn khách trong quán, không phải mốc cuối đêm."
+
+	if state["phase"] == "OPEN":
+		var time = snapshot.get("clock", {})
+		if not time is Dictionary or typeof(time.get("minute", null)) != TYPE_INT or time["minute"] < 0 or time["minute"] >= 360:
+			return "Bản lưu giữa ca thiếu đồng hồ hợp lệ."
+		if not time.get("speed", 1) in [1, 2, 4]:
+			return "Tốc độ trong bản lưu không hợp lệ."
 
 	# Sổ giao dịch phải khớp số dư.
 	var total: int = 0
@@ -173,3 +189,29 @@ static func validate(snapshot: Dictionary, data: Dictionary) -> String:
 			if not (entry is Dictionary) or not known.has(entry.get("id", "")):
 				return "Bản lưu có %s không tồn tại trong game hiện tại." % pair[2]
 	return ""
+
+
+static func _exists(path: String) -> bool:
+	return FileAccess.file_exists(path) or _web_read(path) != ""
+
+static func _web_read(path: String) -> String:
+	if not OS.has_feature("web"):
+		return ""
+	var value = JavaScriptBridge.eval("(function(){try{return localStorage.getItem(" + JSON.stringify("karaoke_save:" + path) + ");}catch(e){return null;}})()", true)
+	return value if value is String else ""
+
+static func _web_write(path: String, contents: String) -> void:
+	JavaScriptBridge.eval("try{localStorage.setItem(" + JSON.stringify("karaoke_save:" + path) + "," + JSON.stringify(contents) + ");}catch(e){}", true)
+
+static func latest_path(data: Dictionary) -> String:
+	var latest: String = ""
+	var latest_time: float = -1.0
+	for path in [DEFAULT_PATH] + MANUAL_PATHS:
+		var saved: Dictionary = read_save(data, path)
+		if saved["ok"]:
+			var snapshot: Dictionary = saved["snapshot"]
+			var stamp: float = float(snapshot.get("saved_at_unix", Time.get_unix_time_from_datetime_string(str(snapshot.get("saved_at", "")))))
+			if latest == "" or stamp > latest_time:
+				latest = path
+				latest_time = stamp
+	return latest

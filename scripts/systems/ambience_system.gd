@@ -7,7 +7,7 @@ extends RefCounted
 ##   {"id", "minute", "room_id", "group_id", "kind": "SONG"|"BANTER"|"REACTION"|"LANCAN", "key",
 ##    "text", "speaker_index", "speaker_sprite", "speaker_age", "host_id",
 ##    "reply_text", "reply_speaker_index", "reply_host_id", "song_id", "song_title", "mood"}
-## speaker_index là vị trí thành viên trong nhóm (0..2, trùng thứ tự hình của nhóm); -1 nếu người nói
+## speaker_index là vị trí thành viên trong nhóm (0..4, trùng thứ tự hình của nhóm); -1 nếu người nói
 ## là nhân viên Lan can (xem host_id). reply_text rỗng nếu không có câu đáp.
 
 var enabled: bool = true
@@ -75,6 +75,8 @@ func tick(now: int) -> void:
 		if group == null:
 			continue
 		_next_at[room_id] = now + _rng.randi_range(balance["line_gap_min"], balance["line_gap_max"])
+		if room["host_id"] != "" and _rng.randi_range(1,100) <= 55 and _companion_banter(room, group, now):
+			continue
 		if room["host_id"] == "" and _rng.randi_range(1, 100) <= balance["line_banter_chance"] and _banter(room, group, now):
 			continue
 		_song(room, group, now)
@@ -88,6 +90,8 @@ func react(room: Dictionary, key: String, now: int) -> void:
 	var group = _customers.get_group(room["group_id"])
 	if options.is_empty() or group == null:
 		return
+	options = options.filter(func(option: Dictionary) -> bool: return option.get("types", []).is_empty() or option["types"].has(group["type"]))
+	if options.is_empty(): return
 	var option: Dictionary = _pick_unused(options, group)
 	var event: Dictionary = _event(room, group, "REACTION", key, option["text"], now)
 	event["reply_text"] = option.get("reply", "")
@@ -97,7 +101,7 @@ func react(room: Dictionary, key: String, now: int) -> void:
 	if key == "mic_broken" and room["host_id"] != "":
 		var lines: Dictionary = _data["banter"]["host_lines"].get(room["host_id"], {})
 		if lines.has("rescue"):
-			event["reply_text"] = lines["rescue"]
+			event["reply_text"] = _host_address(lines["rescue"], room["id"])
 			event["reply_speaker_index"] = -1
 			event["reply_host_id"] = room["host_id"]
 	_publish(event)
@@ -114,7 +118,7 @@ func host_line(host: Dictionary, key: String, room_id: String, now: int) -> void
 		return
 	var event: Dictionary = {
 		"id": _next_id, "minute": now, "room_id": room_id, "group_id": 0, "kind": "LANCAN", "key": key,
-		"text": lines[key], "speaker_index": -1, "speaker_sprite": host["sprite"], "speaker_age": "", "host_id": host["id"],
+		"text": _host_address(lines[key], room_id), "speaker_index": -1, "speaker_sprite": host["sprite"], "speaker_age": "", "host_id": host["id"],
 		"reply_text": "", "reply_speaker_index": -1, "reply_host_id": "", "song_id": "", "song_title": "", "mood": "",
 	}
 	_publish(event)
@@ -124,7 +128,7 @@ func host_line(host: Dictionary, key: String, room_id: String, now: int) -> void
 
 func _members(group: Dictionary) -> Array:
 	var sprites: Array = []
-	for i in mini(group["size"], 3):
+	for i in mini(group["size"], 5):
 		sprites.append(group["sprites"][i % group["sprites"].size()])
 	return sprites
 
@@ -176,24 +180,28 @@ func _banter(room: Dictionary, group: Dictionary, now: int) -> bool:
 	var options: Array = []
 	for pair in _data["banter"]["pairs"]:
 		var fits: bool = pair["types"].is_empty() or pair["types"].has(group["type"])
-		if fits and not used.has(pair["text"]) and not _used_tonight.has(pair["text"]):
+		if fits and not _pair_speakers(pair, group).is_empty() and not used.has(pair["text"]) and not _used_tonight.has(pair["text"]):
 			options.append(pair)
 	if options.is_empty():
 		return false
 	var pair: Dictionary = options[_rng.randi_range(0, options.size() - 1)]
+	var speakers: Array = _pair_speakers(pair, group)
 	var event: Dictionary = _event(room, group, "BANTER", pair["situation"], pair["text"], now)
+	event["speaker_index"] = speakers[0]
+	event["speaker_sprite"] = _members(group)[speakers[0]]
+	event["speaker_age"] = _data["lyrics"]["sprite_age"].get(event["speaker_sprite"], "middle")
 	event["reply_text"] = pair["reply"]
-	event["reply_speaker_index"] = _other_member(group, event["speaker_index"])
+	event["reply_speaker_index"] = speakers[1]
 	_publish(event)
 	return true
 
 
-## Chọn câu hát theo tuổi người đang cầm micro và gu nhạc của nhóm (chỉ là xác suất, không cấm cứng).
+## Lọc câu hát theo tuổi người cầm mic, rồi ưu tiên gu nhạc của nhóm.
 func _song(room: Dictionary, group: Dictionary, now: int) -> void:
 	var balance: Dictionary = _data["balance"]
 	var event: Dictionary = _event(room, group, "SONG", "", "", now)
 	var used: Dictionary = _used_by_group.get(group["id"], {})
-	var lines: Array = _data["lyrics"]["lines"]
+	var lines: Array = _data["lyrics"]["lines"].filter(func(line: Dictionary) -> bool: return line.get("ages", [line["age"]]).has(event["speaker_age"]))
 	var pool: Array = lines.filter(func(l: Dictionary) -> bool: return not used.has(_sung(l["text"])) and not _used_tonight.has(_sung(l["text"])))
 	if pool.is_empty():
 		pool = lines.filter(func(l: Dictionary) -> bool: return not used.has(_sung(l["text"])))
@@ -203,7 +211,7 @@ func _song(room: Dictionary, group: Dictionary, now: int) -> void:
 	var weights: Array = []
 	for line in pool:
 		var weight: int = 1
-		if line["age"] == event["speaker_age"]:
+		if line.get("ages", [line["age"]]).has(event["speaker_age"]):
 			weight *= 4
 		if line["family"] == group["music"]:
 			weight *= 2
@@ -242,3 +250,65 @@ func _song(room: Dictionary, group: Dictionary, now: int) -> void:
 
 static func _sung(text: String) -> String:
 	return "♪ %s ♪" % text
+
+
+func _host_address(text: String, room_id: String) -> String:
+	var matches: Array = _state.rooms.filter(func(r: Dictionary) -> bool: return r["id"] == room_id)
+	if matches.is_empty(): return text
+	var room: Dictionary = matches[0]
+	if room["state"] != "OCCUPIED": return text
+	var group = _customers.get_group(room["group_id"])
+	if group == null: return text
+	var members: Array = _members(group)
+	var age: String = _data["lyrics"]["sprite_age"].get(members[0], "middle")
+	var female: bool = group.get("composition", "") == "women"
+	var address: String = ("cô" if female else "chú") if age == "senior" else (("chị" if female else "anh") if age == "middle" else "bạn")
+	var lower: RegEx = RegEx.new()
+	lower.compile("(?<![a-zA-ZÀ-ỹ])(anh|chú)(?![a-zA-ZÀ-ỹ])")
+	text = lower.sub(text, address, true)
+	var upper: RegEx = RegEx.new()
+	upper.compile("(?<![a-zA-ZÀ-ỹ])(Anh|Chú)(?![a-zA-ZÀ-ỹ])")
+	return upper.sub(text, address.capitalize(), true)
+
+
+func _pair_speakers(pair: Dictionary, group: Dictionary) -> Array:
+	var members: Array = _members(group)
+	var genders: Dictionary = _data["customers"]["sprite_genders"]
+	var ages: Dictionary = _data["lyrics"]["sprite_age"]
+	for offset in 1:
+		var first: int = (int(_turn.get(group["id"], 0)) + offset) % members.size()
+		if pair.get("speaker_gender", genders.get(members[first], "")) != genders.get(members[first], ""): continue
+		if pair.get("speaker_age", ages.get(members[first], "middle")) != ages.get(members[first], "middle"): continue
+		for next in range(1, members.size()):
+			var second: int = (first + next) % members.size()
+			if pair.get("reply_gender", genders.get(members[second], "")) != genders.get(members[second], ""): continue
+			if pair.get("reply_age", ages.get(members[second], "middle")) != ages.get(members[second], "middle"): continue
+			return [first, second]
+	return []
+
+
+func _companion_banter(room: Dictionary, group: Dictionary, now: int) -> bool:
+	if group.get("composition", "") in ["couple", "family"]: return false
+	var serving: Array = _state.hosts.filter(func(host): return host["state"] == "SERVING" and host["room_id"] == room["id"])
+	if serving.is_empty(): return false
+	var host: Dictionary = serving[_rng.randi_range(0,serving.size()-1)]
+	var used: Dictionary = _used_by_group.get(group["id"], {})
+	var options: Array = []
+	for pair in _data["banter"].get("companion_pairs", []):
+		if pair["composition"] != group.get("composition", "") or pair["host_gender"] != host["gender"]: continue
+		if not pair.get("host_ids", []).is_empty() and not pair["host_ids"].has(host["id"]): continue
+		var copy: Dictionary = pair.duplicate()
+		copy["text"] = String(pair["text"]).replace("{host}", host["name"])
+		if not used.has(copy["text"]) and not _used_tonight.has(copy["text"]): options.append(copy)
+	if options.is_empty(): return false
+	var pair: Dictionary = options[_rng.randi_range(0,options.size()-1)]
+	var event: Dictionary = _event(room, group, "BANTER", "companion", pair["text"], now)
+	var index: int = clampi(host.get("guest_index", 0), 0, group["size"]-1)
+	event["speaker_index"] = index
+	event["speaker_sprite"] = _members(group)[index]
+	event["speaker_age"] = _data["lyrics"]["sprite_age"].get(event["speaker_sprite"], "middle")
+	event["reply_text"] = _host_address(pair["reply"], room["id"])
+	event["reply_host_id"] = host["id"]
+	event["reply_speaker_index"] = -1
+	_publish(event)
+	return true

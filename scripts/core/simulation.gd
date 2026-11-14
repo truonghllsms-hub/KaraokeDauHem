@@ -158,7 +158,8 @@ func step_minute() -> void:
 	customers.tick(now)
 	ambience.tick(now)
 
-	if now >= Clock.NIGHT_MINUTES:
+	var training_done: bool = state.day == 1 and customers.spawning_enabled and customers.training_count() >= 2 and state.groups.is_empty() and not state.rooms.any(func(room: Dictionary) -> bool: return room["state"] in ["DIRTY", "CLEANING"])
+	if now >= Clock.NIGHT_MINUTES or training_done:
 		_close_night()
 
 
@@ -190,12 +191,14 @@ func _begin_day() -> void:
 		"rating_before_x10": rating_x10(),
 		"thefts": 0,
 		"guard_on_duty": state.guard_hired,
-		"goal_served": mini(data["balance"]["goal_base"] + state.day, data["balance"]["goal_max"]),
+		"goal_served": 2 if state.day == 1 else mini(data["balance"]["goal_base"] + state.day, data["balance"]["goal_max"]),
+		"training_spawned": 0,
 		"goal_unserved_max": data["balance"]["goal_unserved_max"] + data["balance"]["goal_unserved_per_room"] * rooms.unlocked_count(),
 	}
 
 
 func goal_text() -> String:
+	if state.day == 1: return "Ca hướng dẫn: phục vụ 2 nhóm khách và dọn phòng"
 	return "Phục vụ ít nhất %d nhóm, không để quá %d nhóm bỏ về" % [state.night["goal_served"], state.night["goal_unserved_max"]]
 
 
@@ -410,13 +413,16 @@ func last_summary() -> Dictionary:
 
 # ---------------------------------------------------------------- Lưu và tải
 
-## Lưu ở mốc chuẩn bị hoặc sau tổng kết. Trả về "" nếu thành công.
-func save_game(path: String = SaveManager.DEFAULT_PATH) -> String:
+## Lưu đầy đủ ca hiện tại và trạng thái hình ảnh tùy chọn. Trả về "" nếu thành công.
+func save_game(path: String = SaveManager.DEFAULT_PATH, view_state: Dictionary = {}) -> String:
 	var error: String = ""
 	if not SaveManager.SAVEABLE_PHASES.has(state.phase):
-		error = "Chỉ lưu được trước khi mở cửa hoặc sau tổng kết đêm."
+		error = "Không thể lưu ở trạng thái hiện tại."
 	else:
-		error = SaveManager.write_snapshot(SaveManager.make_snapshot(state, rng), path)
+		var snapshot: Dictionary = SaveManager.make_snapshot(state, rng)
+		snapshot["clock"] = {"minute": clock.minute, "speed": clock.speed, "paused": clock.paused, "accum": clock._accum}
+		snapshot["view"] = view_state.duplicate(true)
+		error = SaveManager.write_snapshot(snapshot, path)
 	game_saved.emit(path, error)
 	return error
 
@@ -433,6 +439,10 @@ func restore(snapshot: Dictionary) -> String:
 	for field in SaveManager.OPTIONAL_DEFAULTS:
 		var value = saved.get(field, SaveManager.OPTIONAL_DEFAULTS[field])
 		state.set(field, value.duplicate(true) if (value is Array or value is Dictionary) else value)
+	for room in state.rooms:
+		if room.get("floor", 1) == 1 and not room.get("price_customized", false):
+			var legacy: Dictionary = {"room_01": 250000, "room_02": 350000, "room_03": 260000, "room_04": 420000}
+			if room["price_per_hour"] == legacy.get(room["id"], -1): room["price_per_hour"] = 250000
 	state.rng_seed = int(str(snapshot["rng_seed"]))
 	rng.seed = state.rng_seed
 	rng.state = int(str(snapshot["rng_state"]))
@@ -444,6 +454,11 @@ func restore(snapshot: Dictionary) -> String:
 	clock.reset()
 	if state.phase == "SUMMARY":
 		clock.minute = Clock.NIGHT_MINUTES
+	elif state.phase == "OPEN":
+		clock.minute = int(snapshot["clock"]["minute"])
+	clock.set_speed(int(snapshot.get("clock", {}).get("speed", 1)))
+	clock.paused = bool(snapshot.get("clock", {}).get("paused", false))
+	clock._accum = clampf(float(snapshot.get("clock", {}).get("accum", 0.0)), 0.0, 2.0)
 	var problems: Array = check_invariants()
 	if not problems.is_empty():
 		return "Bản lưu không nhất quán: " + problems[0]
@@ -459,7 +474,7 @@ static func create_from_save(p_data: Dictionary, path: String = SaveManager.DEFA
 	var error: String = sim.restore(loaded["snapshot"])
 	if error != "":
 		return {"ok": false, "sim": null, "error": error, "used_backup": loaded["used_backup"], "notice": ""}
-	return {"ok": true, "sim": sim, "error": "", "used_backup": loaded["used_backup"], "notice": loaded["notice"]}
+	return {"ok": true, "sim": sim, "error": "", "used_backup": loaded["used_backup"], "notice": loaded["notice"], "view": loaded["snapshot"].get("view", {})}
 
 
 func theft_risk_active() -> bool:
@@ -486,7 +501,7 @@ func loan_info() -> Dictionary:
 	var balance: Dictionary = data["balance"]
 	return {
 		"principal": state.loan_principal, "limit": finance.credit_limit(), "available": finance.available_credit(),
-		"rate_permille": balance["loan_rate_permille_per_night"], "min_principal_percent": balance["loan_min_principal_percent"],
+		"rate_permille": balance["loan_rate_permille_per_day"], "min_principal_percent": balance["loan_min_principal_percent"],
 		"next_payment": finance.next_payment(), "step": balance["loan_step"], "negative_nights": state.negative_nights,
 		"bankrupt": state.bankrupt, "can_change": state.phase != "OPEN" and not state.bankrupt,
 	}
@@ -634,9 +649,11 @@ func change_price(room_id: String, steps: int) -> String:
 		return "Phòng chưa mở."
 	var balance: Dictionary = data["balance"]
 	var price: int = room["price_per_hour"] + steps * balance["price_step"]
-	if price < balance["price_min"] or price > balance["price_max"]:
-		return "Giá phòng phải từ %s đến %s." % [Money.format(balance["price_min"]), Money.format(balance["price_max"])]
+	var bounds: Vector2i = rooms.price_bounds(room)
+	if price < bounds.x or price > bounds.y:
+		return "%s: giá từ %s đến %s/giờ." % [room["tier_name"], Money.format(bounds.x), Money.format(bounds.y)]
 	room["price_per_hour"] = price
+	room["price_customized"] = true
 	return ""
 
 
@@ -764,6 +781,10 @@ func _rate_seating(group: Dictionary, room: Dictionary) -> void:
 	var sound_bonus: int = (room["sound"] - 1) * balance["sound_bonus_per_level"]
 	if sound_bonus > 0:
 		_change_satisfaction(group, sound_bonus, "Âm thanh hay")
+
+	var comfort: int = service.upgrade_level("soundproof")*2 + service.upgrade_level("lighting")*2
+	if comfort > 0:
+		_change_satisfaction(group, comfort, "Cách âm và không gian dễ chịu")
 
 
 func _change_satisfaction(group: Dictionary, delta: int, reason: String) -> void:

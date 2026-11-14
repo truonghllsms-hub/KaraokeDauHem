@@ -51,6 +51,8 @@ const CANVAS_SIZES: Dictionary = {
 static var _cache: Dictionary = {}
 
 static func walk_texture(person: String, step: int, facing: String = "front") -> Texture2D:
+	if person == "thief":
+		return Art.texture("thief_walk_%d" % posmod(step, 4))
 	if person == "owner":
 		var directions: Array = ["front", "back", "left", "right"]
 		return _frame("owner_walk", maxi(0, directions.find(facing)), posmod(step, 4), 4)

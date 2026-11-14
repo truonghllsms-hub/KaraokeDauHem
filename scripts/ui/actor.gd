@@ -20,6 +20,11 @@ signal pressed
 
 var speed: float = 190.0
 var place_key: String = ""
+var bubble_speaker: int = 0
+var _bubble_background: Color = Color.WHITE
+var _bubble_border: Color = UI.BORDER
+var _bubble_text_color: Color = UI.TEXT
+var carrying: bool = false
 var singing: bool = false
 var pose: String = "standing"
 var seated_faces_left: bool = false
@@ -76,7 +81,7 @@ func setup(texture_names: Array, badge_text: String = "") -> void:
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_badge)
 
-	_bubble = UI.label("", 18, Color(0.2, 0.14, 0.22), true)
+	_bubble = UI.label("", 20, Color(0.2, 0.14, 0.22), true)
 	_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.visible = false
@@ -104,16 +109,31 @@ func set_tooltip(text: String) -> void:
 
 
 ## Bóng thoại phía trên đầu. Chuỗi rỗng để ẩn.
-func set_bubble(text: String, background: Color = Color(1, 1, 1, 0.95), border: Color = UI.PINK) -> void:
+func set_bubble(text: String, background: Color = Color(1, 1, 1, 0.95), border: Color = UI.PINK, text_color: Color = UI.TEXT) -> void:
 	if text == "":
 		_bubble.visible = false
 		return
-	if _bubble.text != text or not _bubble.visible:
+	if _bubble.text != text or _bubble_background != background or _bubble_border != border or _bubble_text_color != text_color:
 		_bubble.text = text
-		_bubble.add_theme_stylebox_override("normal", UI.box(background, border, 2, 4))
+		_bubble_background = background
+		_bubble_border = border
+		_bubble_text_color = text_color
+		_bubble.add_theme_color_override("font_color", text_color)
+		_bubble.add_theme_stylebox_override("normal", UI.box(background, border, 2, 6))
 		_bubble.reset_size()
 	_bubble.visible = true
-	_bubble.position = Vector2(-_bubble.size.x * 0.5, -132 - _bubble.size.y)
+	_place_bubble()
+
+func _place_bubble() -> void:
+	if _bubble == null or not _bubble.visible or _sprites.is_empty():
+		return
+	var index: int = clampi(bubble_speaker, 0, _sprites.size() - 1)
+	var at: Vector2 = _sprites[index].position
+	var art_height: float = CharacterArt.height(_people[index], "standing" if is_moving() else pose)
+	_bubble.position = at + Vector2(-_bubble.size.x * 0.5, -art_height - 10 - _bubble.size.y)
+	var canvas_width: float = get_viewport_rect().size.x
+	var x: float = _bubble.global_position.x
+	_bubble.position.x += clampf(x, 8, maxf(8, canvas_width-8-_bubble.size.x))-x
 
 
 func set_highlight(on: bool) -> void:
@@ -123,6 +143,10 @@ func set_highlight(on: bool) -> void:
 
 ## Viền sáng dưới chân khi được chọn và thanh kiên nhẫn trên đầu (xanh -> vàng -> đỏ).
 func _draw() -> void:
+	if _bubble != null and _bubble.visible:
+		var tail: Vector2 = _bubble.position + Vector2(_bubble.size.x * 0.5, _bubble.size.y)
+		if not _sprites.is_empty(): tail.x = clampf(_sprites[clampi(bubble_speaker,0,_sprites.size()-1)].position.x, _bubble.position.x+8, _bubble.position.x+_bubble.size.x-8)
+		draw_colored_polygon(PackedVector2Array([tail + Vector2(-6, 0), tail + Vector2(6, 0), tail + Vector2(0, 8)]), _bubble_background)
 	# Bóng tiếp đất giữ bước chân và vị trí sofa rõ khi thân người chuyển động.
 	for sprite in _sprites:
 		draw_set_transform(sprite.position + Vector2(0, 1), 0, Vector2(1, 0.22))
@@ -173,11 +197,13 @@ func is_moving() -> bool:
 
 
 func _update_appearance() -> void:
-	var active_pose: String = "standing" if is_moving() else pose
+	var active_pose: String = "carrying" if carrying else ("standing" if is_moving() else pose)
 	for i in _sprites.size():
 		var person: String = _people[i]
 		var texture: Texture2D
-		if is_moving():
+		if carrying:
+			texture = CharacterArt.texture(person, active_pose, _facing)
+		elif is_moving():
 			texture = Motion.walk_texture(person, int(_walk_distance / 26.0) + i * 2, _facing)
 		else:
 			var expression: String = ""
@@ -285,5 +311,32 @@ func advance(delta: float) -> void:
 			_sprites[i].flip_h = _look_left and _people[i] != "owner"
 		else:
 			_sprites[i].flip_h = pose == "seated" and seated_faces_left
-		_sprites[i].position = base + Vector2(0, bob)
+		if pose == "seated" and not is_moving():
+			var contact: Vector2 = CharacterArt.seat_contact(_people[i], _sprites[i].texture)
+			if seated_faces_left: contact.x = -contact.x
+			_sprites[i].position = base - contact.rotated(tilt)
+		else:
+			_sprites[i].position = base + Vector2(0, bob)
 		_sprites[i].rotation = tilt
+
+	_place_bubble()
+
+
+func save_view() -> Dictionary:
+	var points: Array = []
+	for point in _path:
+		points.append([point.x, point.y])
+	return {"position": [position.x, position.y], "path": points, "facing": _facing, "left": _look_left, "pose": pose, "carrying": carrying, "place": place_key}
+
+func restore_view(saved: Dictionary) -> void:
+	var at: Array = saved.get("position", [position.x, position.y])
+	position = Vector2(float(at[0]), float(at[1]))
+	_path = []
+	for point in saved.get("path", []):
+		_path.append(Vector2(float(point[0]), float(point[1])))
+	_facing = saved.get("facing", "front")
+	_look_left = saved.get("left", false)
+	pose = saved.get("pose", "standing")
+	carrying = saved.get("carrying", false)
+	place_key = saved.get("place", "")
+	_update_appearance()

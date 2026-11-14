@@ -1,23 +1,74 @@
 [
   {
     "id": "sound",
-    "name": "Dàn loa mới",
+    "name": "Dàn âm thanh",
     "cost": 4000000,
-    "max_level": 2,
-    "effect": "Mọi nhóm khách +5 hài lòng khi vào phòng (mỗi cấp)."
+    "cost_growth_percent": 170,
+    "max_level": 6,
+    "effect": "Mỗi cấp thêm 5 hài lòng nhờ âm thanh khi khách vào phòng."
   },
   {
     "id": "spare_mics",
-    "name": "Micro dự phòng",
+    "name": "Micro không dây",
     "cost": 1500000,
-    "max_level": 1,
-    "effect": "Giảm hơn một nửa số lần micro trục trặc."
+    "cost_growth_percent": 180,
+    "max_level": 6,
+    "effect": "Mỗi cấp giảm thêm nguy cơ micro trục trặc; cấp đầu giảm hơn một nửa."
   },
   {
     "id": "cart",
-    "name": "Xe đẩy phục vụ",
+    "name": "Dụng cụ phục vụ",
     "cost": 2000000,
-    "max_level": 1,
-    "effect": "Khách chịu chờ món lâu hơn 6 phút."
+    "cost_growth_percent": 170,
+    "max_level": 6,
+    "effect": "Mỗi cấp cho khách thêm 6 phút chờ đồ trước khi phàn nàn."
+  },
+  {
+    "id": "aircon",
+    "name": "Điều hòa",
+    "cost": 3000000,
+    "cost_growth_percent": 175,
+    "max_level": 6,
+    "effect": "Mỗi cấp giảm 12% nguy cơ phòng nóng và 5% chi phí bật làm mát."
+  },
+  {
+    "id": "soundproof",
+    "name": "Cách âm",
+    "cost": 5000000,
+    "cost_growth_percent": 180,
+    "max_level": 6,
+    "effect": "Mỗi cấp thêm 2 hài lòng khi vào phòng nhờ cách âm tốt hơn."
+  },
+  {
+    "id": "cleaning",
+    "name": "Thiết bị vệ sinh",
+    "cost": 2500000,
+    "cost_growth_percent": 170,
+    "max_level": 6,
+    "effect": "Mỗi cấp rút ngắn 1 phút dọn phòng; nhanh nhất 2 phút."
+  },
+  {
+    "id": "staff_training",
+    "name": "Đào tạo nhân viên",
+    "cost": 3000000,
+    "cost_growth_percent": 180,
+    "max_level": 6,
+    "effect": "Mỗi cấp tăng 8% tốc độ đi lại và làm việc của nhân viên."
+  },
+  {
+    "id": "marketing",
+    "name": "Quảng bá quán",
+    "cost": 4000000,
+    "cost_growth_percent": 180,
+    "max_level": 6,
+    "effect": "Mỗi cấp tăng 5% lượng khách từ ngày 2; không tăng khách ca hướng dẫn."
+  },
+  {
+    "id": "lighting",
+    "name": "Đèn và nội thất",
+    "cost": 3500000,
+    "cost_growth_percent": 175,
+    "max_level": 6,
+    "effect": "Mỗi cấp thêm 2 hài lòng khi khách vào phòng."
   }
 ]

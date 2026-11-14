@@ -1,5 +1,5 @@
 {
- "_note": "Câu hát tự sáng tác cho game, không lấy từ bài hát có thật. age: young | middle | senior. family khớp với gu nhạc của nhóm (bolero | nhac_tre | remix).",
+ "_note": "Câu tự sáng tác xen trích đoạn rất ngắn của bài thật. Các bài đang nổi còn xuất hiện trong thoại chọn bài. Lọc theo tuổi người cầm mic và gu nhạc; xem docs/MUSIC_AND_DIALOGUE.md.",
  "age_names": {
   "young": "Người trẻ",
   "middle": "Trung niên",
@@ -58,7 +58,15 @@
   "nho_co_huong": "Nhớ Cố Hương",
   "mua_lua_chin": "Mùa Lúa Chín",
   "tinh_gia": "Tình Già",
-  "chuyen_xe_ve_que": "Chuyến Xe Về Quê"
+  "chuyen_xe_ve_que": "Chuyến Xe Về Quê",
+  "dung_lam_trai_tim_anh_dau": "Đừng Làm Trái Tim Anh Đau",
+  "mang_tien_ve_cho_me": "Mang Tiền Về Cho Mẹ",
+  "co_chac_yeu_la_day": "Có Chắc Yêu Là Đây",
+  "em_xinh_mono": "Em Xinh",
+  "thanh_pho_buon": "Thành Phố Buồn",
+  "duong_tinh_doi_nga": "Đường Tình Đôi Ngả",
+  "doi_toi_co_don": "Đời Tôi Cô Đơn",
+  "long_me": "Lòng Mẹ"
  },
  "lines": [
   {
@@ -546,6 +554,102 @@
    "mood": "hoài niệm",
    "song_id": "chuyen_xe_ve_que",
    "text": "Hàng cau trước ngõ, đứng đợi bao mùa…"
+  },
+  {
+   "id": "dung_lam_trai_tim_anh_dau_young_excerpt",
+   "song_id": "dung_lam_trai_tim_anh_dau",
+   "age": "young",
+   "genre": "nhạc trẻ",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "text": "Đừng làm trái tim anh đau",
+   "excerpt": true
+  },
+  {
+   "id": "mang_tien_ve_cho_me_young_excerpt",
+   "song_id": "mang_tien_ve_cho_me",
+   "age": "young",
+   "genre": "nhạc trẻ",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "text": "Mang tiền về cho mẹ, đừng mang ưu phiền về cho mẹ.",
+   "excerpt": true
+  },
+  {
+   "id": "co_chac_yeu_la_day_young_excerpt",
+   "song_id": "co_chac_yeu_la_day",
+   "age": "young",
+   "genre": "nhạc trẻ",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "text": "Có chắc yêu là đây",
+   "excerpt": true
+  },
+  {
+   "id": "em_xinh_mono_young_excerpt",
+   "song_id": "em_xinh_mono",
+   "age": "young",
+   "genre": "nhạc trẻ",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "text": "Em xinh, em xinh",
+   "excerpt": true
+  },
+  {
+   "id": "thanh_pho_buon_middle_excerpt",
+   "song_id": "thanh_pho_buon",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "text": "Thành phố nào nhớ không em",
+   "excerpt": true,
+   "ages": [
+    "middle",
+    "senior"
+   ]
+  },
+  {
+   "id": "duong_tinh_doi_nga_middle_excerpt",
+   "song_id": "duong_tinh_doi_nga",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "text": "Đường vào tim em ôi băng giá",
+   "excerpt": true,
+   "ages": [
+    "middle",
+    "senior"
+   ]
+  },
+  {
+   "id": "doi_toi_co_don_middle_excerpt",
+   "song_id": "doi_toi_co_don",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "text": "Đời tôi cô đơn nên yêu ai cũng cô đơn",
+   "excerpt": true,
+   "ages": [
+    "middle",
+    "senior"
+   ]
+  },
+  {
+   "id": "long_me_middle_excerpt",
+   "song_id": "long_me",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "text": "Lòng mẹ bao la như biển Thái Bình dạt dào",
+   "excerpt": true,
+   "ages": [
+    "middle",
+    "senior"
+   ]
   }
  ]
 }
