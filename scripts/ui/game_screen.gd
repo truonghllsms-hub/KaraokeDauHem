@@ -14,6 +14,7 @@ const Music = preload("res://scripts/ui/music_manager.gd")
 const MusicSettings = preload("res://scripts/ui/music_settings.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 ## Màn hình chính đặt khóa này trên Engine trước khi chuyển cảnh để báo "Tiếp tục" từ bản lưu.
+const SaveSlots = preload("res://scripts/ui/save_slots.gd")
 const LOAD_META: String = "karaoke_load_save"
 
 const KIND_COLOR: Dictionary = {"info": UI.TEXT, "good": UI.GOOD, "bad": UI.BAD, "money": UI.GOLD}
@@ -82,11 +83,15 @@ func _ready() -> void:
 		return
 
 	var load_notice: String = ""
+	var saved_view: Dictionary = {}
 	if Engine.has_meta(LOAD_META) and Engine.get_meta(LOAD_META):
 		Engine.set_meta(LOAD_META, false)
-		var loaded: Dictionary = Simulation.create_from_save(data)
+		var path: String = str(Engine.get_meta("karaoke_load_path", SaveManager.DEFAULT_PATH))
+		if path == "": path = SaveManager.DEFAULT_PATH
+		var loaded: Dictionary = Simulation.create_from_save(data, path)
 		if loaded["ok"]:
 			sim = loaded["sim"]
+			saved_view = loaded.get("view", {})
 			load_notice = loaded["notice"] if loaded["notice"] != "" else "Đã tải bản lưu: đêm %d, số dư %s." % [sim.state.day, Money.format(sim.state.money)]
 		else:
 			load_notice = loaded["error"] + " Bắt đầu ván mới."
@@ -98,12 +103,13 @@ func _ready() -> void:
 		if error != "":
 			_set_notice("Không lưu được: " + error, "bad"))
 	_build_ui()
+	venue.restore_view(saved_view)
 	sim.message.connect(_on_message)
 	sim.night_ended.connect(_on_night_ended)
 	sim.bill_paid.connect(_on_bill_paid)
 	_on_message("Chào chủ quán! Mục tiêu đêm nay: %s. Bấm \"MỞ CỬA ĐÓN KHÁCH\" để bắt đầu." % sim.goal_text(), "info")
 	if load_notice != "":
-		_on_message(load_notice, "good" if sim.state.day > 1 or sim.state.phase == "SUMMARY" else "bad")
+		_on_message(load_notice, "bad" if load_notice.contains("Bắt đầu ván mới") else "good")
 	if sim.state.phase == "SUMMARY" and not sim.last_summary().is_empty():
 		_last_summary = sim.last_summary()
 		call_deferred("_show_summary")
@@ -302,6 +308,16 @@ func _build_ui() -> void:
 	_reference_frame.add_child(_rating_button)
 	_reference_frame.add_child(_debt_button)
 	_reference_frame.add_child(_tutorial_panel)
+	var save_button: Button = UI.button("Lưu", 18, UI.GOLD)
+	save_button.position = Vector2(16, 97)
+	save_button.size = Vector2(90, 34)
+	save_button.icon = preload("res://assets/icons/save.svg")
+	save_button.expand_icon = true
+	save_button.add_theme_constant_override("icon_max_width", 20)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		save_button.add_theme_stylebox_override(state, UI.box(Color("#f3e8be"), Color("#cdb87a"), 1, 4))
+	save_button.pressed.connect(_show_saves)
+	_reference_frame.add_child(save_button)
 	_music_button = UI.button("Nhạc", 18, UI.GOLD)
 	_music_button.name = "MusicButton"
 	_music_button.position = Vector2(928, 97)
@@ -1133,11 +1149,38 @@ func _show_lancan() -> void:
 
 
 func _show_menu() -> void:
-	_show_overlay("menu", "MENU", "Game đang tạm dừng.\nGame tự lưu sau mỗi lần tổng kết đêm. Về màn hình chính giữa ca sẽ mất tiến trình của đêm đang chơi.\n\nPhím tắt: Space tạm dừng · 1/2/3 đổi tốc độ · Esc mở menu.", [
+	_show_overlay("menu", "QUÁN ĐANG TẠM DỪNG", "Lưu tiến trình vào một trong 3 ô riêng để quay lại đúng ca đang chơi. Game vẫn tự lưu sau tổng kết đêm.", [
 		["Chơi tiếp", _close_overlay],
+		["Lưu game", _show_saves],
+		["Tải game", _show_loads],
 		["Nhạc nền & âm lượng", _show_music],
-		["Về màn hình chính", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")],
+		["Về màn hình chính", _confirm_exit],
 	])
+
+func _show_saves() -> void:
+	var slots = SaveSlots.new()
+	slots.data = sim.data
+	slots.saving = true
+	slots.selected.connect(func(path: String) -> void:
+		var error: String = sim.save_game(path, venue.save_view())
+		if error == "":
+			_show_overlay("menu", "ĐÃ LƯU GAME", "Đêm %d · %s\nBạn có thể tiếp tục từ mục Tải game ở màn hình ngoài quán." % [sim.state.day, Clock.time_text(sim.clock.minute)], [["Chơi tiếp", _close_overlay], ["Về màn hình chính", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")]])
+		else:
+			_show_overlay("menu", "CHƯA LƯU ĐƯỢC", error, [["Quay lại", _show_saves]]))
+	_show_overlay("menu", "LƯU GAME", "Chọn một ô lưu. Ô đã có dữ liệu sẽ yêu cầu bấm thêm lần nữa để ghi đè.", [["Quay lại", _show_menu]], slots)
+
+func _show_loads() -> void:
+	var slots = SaveSlots.new()
+	slots.data = sim.data
+	slots.selected.connect(func(path: String) -> void:
+		_show_overlay("menu", "TẢI BẢN LƯU NÀY?", "Tiến trình chưa lưu trong ca hiện tại sẽ được thay bằng bản đã chọn.", [["Tải game", func() -> void:
+			Engine.set_meta(LOAD_META, true)
+			Engine.set_meta("karaoke_load_path", path)
+			get_tree().reload_current_scene()], ["Quay lại", _show_loads]]))
+	_show_overlay("menu", "TẢI GAME", "Chọn bản tự lưu hoặc một ô đã lưu thủ công.", [["Quay lại", _show_menu]], slots)
+
+func _confirm_exit() -> void:
+	_show_overlay("menu", "VỀ MÀN HÌNH CHÍNH?", "Bạn muốn lưu ca đang chơi trước khi ra ngoài quán?", [["Lưu game", _show_saves], ["Về, không lưu", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")], ["Chơi tiếp", _close_overlay]])
 
 
 ## Cửa sổ nổi. Khi mở, đồng hồ tự tạm dừng; khi đóng, chạy lại đúng tốc độ trước đó.

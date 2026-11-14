@@ -410,13 +410,16 @@ func last_summary() -> Dictionary:
 
 # ---------------------------------------------------------------- Lưu và tải
 
-## Lưu ở mốc chuẩn bị hoặc sau tổng kết. Trả về "" nếu thành công.
-func save_game(path: String = SaveManager.DEFAULT_PATH) -> String:
+## Lưu đầy đủ ca hiện tại và trạng thái hình ảnh tùy chọn. Trả về "" nếu thành công.
+func save_game(path: String = SaveManager.DEFAULT_PATH, view_state: Dictionary = {}) -> String:
 	var error: String = ""
 	if not SaveManager.SAVEABLE_PHASES.has(state.phase):
-		error = "Chỉ lưu được trước khi mở cửa hoặc sau tổng kết đêm."
+		error = "Không thể lưu ở trạng thái hiện tại."
 	else:
-		error = SaveManager.write_snapshot(SaveManager.make_snapshot(state, rng), path)
+		var snapshot: Dictionary = SaveManager.make_snapshot(state, rng)
+		snapshot["clock"] = {"minute": clock.minute, "speed": clock.speed, "paused": clock.paused, "accum": clock._accum}
+		snapshot["view"] = view_state.duplicate(true)
+		error = SaveManager.write_snapshot(snapshot, path)
 	game_saved.emit(path, error)
 	return error
 
@@ -444,6 +447,11 @@ func restore(snapshot: Dictionary) -> String:
 	clock.reset()
 	if state.phase == "SUMMARY":
 		clock.minute = Clock.NIGHT_MINUTES
+	elif state.phase == "OPEN":
+		clock.minute = int(snapshot["clock"]["minute"])
+	clock.set_speed(int(snapshot.get("clock", {}).get("speed", 1)))
+	clock.paused = bool(snapshot.get("clock", {}).get("paused", false))
+	clock._accum = clampf(float(snapshot.get("clock", {}).get("accum", 0.0)), 0.0, 2.0)
 	var problems: Array = check_invariants()
 	if not problems.is_empty():
 		return "Bản lưu không nhất quán: " + problems[0]
@@ -459,7 +467,7 @@ static func create_from_save(p_data: Dictionary, path: String = SaveManager.DEFA
 	var error: String = sim.restore(loaded["snapshot"])
 	if error != "":
 		return {"ok": false, "sim": null, "error": error, "used_backup": loaded["used_backup"], "notice": ""}
-	return {"ok": true, "sim": sim, "error": "", "used_backup": loaded["used_backup"], "notice": loaded["notice"]}
+	return {"ok": true, "sim": sim, "error": "", "used_backup": loaded["used_backup"], "notice": loaded["notice"], "view": loaded["snapshot"].get("view", {})}
 
 
 func theft_risk_active() -> bool:

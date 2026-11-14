@@ -1019,3 +1019,42 @@ func _draw() -> void:
 		for point in _seating(room["id"])["stools"]:
 			var seat: Vector2 = point - _floor_offset() - Vector2(0, 10)
 			draw_style_box(UI.box(Color("#8b7844"), Color("#50351f"), 2, 6), Rect2(seat - Vector2(23, 8), Vector2(46, 20)))
+
+
+func save_view() -> Dictionary:
+	var staff: Dictionary = {}
+	for staff_id in _staff_actors:
+		staff[staff_id] = _staff_actors[staff_id].save_view()
+	var tasks: Array = []
+	for task in _tasks:
+		tasks.append(_save_task(task))
+	return {"owner": _owner.save_view(), "staff": staff, "tasks": tasks, "current": _save_task(_current_task), "cleaning": _cleaning_room, "time": _anim_time, "floor": current_floor}
+
+func _save_task(task: Dictionary) -> Dictionary:
+	var copy: Dictionary = task.duplicate(true)
+	if copy.get("position") is Vector2:
+		copy["position"] = [copy["position"].x, copy["position"].y]
+	return copy
+
+func _restore_task(task: Dictionary) -> Dictionary:
+	var copy: Dictionary = task.duplicate(true)
+	if copy.get("position") is Array:
+		copy["position"] = Vector2(float(copy["position"][0]), float(copy["position"][1]))
+	return copy
+
+func restore_view(saved: Dictionary) -> void:
+	if saved.is_empty():
+		return
+	advance_actors(0.0)
+	_anim_time = float(saved.get("time", 0.0))
+	_current_task = _restore_task(saved.get("current", {}))
+	_tasks = []
+	for task in saved.get("tasks", []):
+		_tasks.append(_restore_task(task))
+	_cleaning_room = saved.get("cleaning", "")
+	if saved.has("owner"):
+		_owner.restore_view(saved["owner"])
+	for staff_id in saved.get("staff", {}):
+		if _staff_actors.has(staff_id):
+			_staff_actors[staff_id].restore_view(saved["staff"][staff_id])
+	set_floor(int(saved.get("floor", 1)))

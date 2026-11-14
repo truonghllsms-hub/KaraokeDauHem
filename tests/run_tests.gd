@@ -707,7 +707,15 @@ func test_save_load() -> void:
 	sim.open_doors()
 	for i in 30:
 		bot_minute(sim)
-	check(sim.save_game(path).contains("Chỉ lưu được") and not FileAccess.file_exists(path), "Giữa ca: từ chối lưu")
+	var mid_path: String = path + ".mid"
+	check(sim.save_game(mid_path) == "", "Giữa ca: lưu đầy đủ tiến trình")
+	var mid: Dictionary = Simulation.create_from_save(_data, mid_path)
+	check(mid["ok"] and mid["sim"].clock.minute == sim.clock.minute and state_text(mid["sim"]) == state_text(sim), "Tải giữa ca: giữ đồng hồ, khách, phòng, hóa đơn và ngẫu nhiên")
+	for i in 5:
+		bot_minute(sim)
+		bot_minute(mid["sim"])
+	check(state_text(mid["sim"]) == state_text(sim), "Chơi tiếp sau tải giữa ca cho cùng diễn biến")
+	DirAccess.remove_absolute(mid_path)
 	while sim.state.phase == "OPEN":
 		bot_minute(sim)
 	var saved_events: Array = []
@@ -774,7 +782,7 @@ func test_save_load() -> void:
 	check(SaveManager.validate(ghost, _data).contains("phòng không tồn tại"), "Phòng lạ: bị từ chối")
 	var midshift: Dictionary = snapshot.duplicate(true)
 	midshift["state"]["phase"] = "OPEN"
-	check(SaveManager.validate(midshift, _data) != "", "Bản lưu giữa ca: bị từ chối")
+	check(SaveManager.validate(midshift, _data) != "", "Bản lưu giữa ca thiếu đồng hồ hợp lệ: bị từ chối")
 	var fresh = new_sim(5)
 	var money: int = fresh.state.money
 	check(fresh.restore(rich) != "" and fresh.state.money == money and fresh.state.day == 1, "Tải thất bại không làm bẩn ván đang chơi")

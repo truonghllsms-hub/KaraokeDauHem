@@ -290,3 +290,23 @@ func advance(delta: float) -> void:
 			_sprites[i].flip_h = pose == "seated" and seated_faces_left
 		_sprites[i].position = base + Vector2(0, bob)
 		_sprites[i].rotation = tilt
+
+
+func save_view() -> Dictionary:
+	var points: Array = []
+	for point in _path:
+		points.append([point.x, point.y])
+	return {"position": [position.x, position.y], "path": points, "facing": _facing, "left": _look_left, "pose": pose, "carrying": carrying, "place": place_key}
+
+func restore_view(saved: Dictionary) -> void:
+	var at: Array = saved.get("position", [position.x, position.y])
+	position = Vector2(float(at[0]), float(at[1]))
+	_path = []
+	for point in saved.get("path", []):
+		_path.append(Vector2(float(point[0]), float(point[1])))
+	_facing = saved.get("facing", "front")
+	_look_left = saved.get("left", false)
+	pose = saved.get("pose", "standing")
+	carrying = saved.get("carrying", false)
+	place_key = saved.get("place", "")
+	_update_appearance()
