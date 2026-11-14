@@ -52,6 +52,8 @@ func _run() -> void:
 		venue.advance_actors(0.05)
 		if venue._owner.carrying: break
 	check(venue._owner.carrying and party["bill_items"].is_empty(), "Save test starts while carrying undelivered order")
+	var guest_position: Vector2 = venue._group_actors[party["id"]].position
+	var group_id: int = party["id"]
 	var position_before: Vector2 = venue._owner.position
 	sim.clock.paused = true
 	game._show_saves()
@@ -75,6 +77,7 @@ func _run() -> void:
 	sim.service.enabled = false
 	sim.staff.enabled = false
 	check(sim.state.phase == "OPEN" and venue._owner.carrying and venue._owner.position.distance_to(position_before) < 2, "Load restores owner position and carried tray")
+	check(venue._group_actors[group_id].position.distance_to(guest_position) < 2, "Paused load restores guest location without a new entrance walk")
 	check(not venue._current_task.is_empty() and venue._current_task.get("picked", false), "Load restores in-flight delivery stage")
 	advance(15)
 	var restored_party: Dictionary = sim.state.groups[0]

@@ -1022,13 +1022,19 @@ func _draw() -> void:
 
 
 func save_view() -> Dictionary:
+	var groups: Dictionary = {}
+	for group_id in _group_actors:
+		groups[str(group_id)] = _group_actors[group_id].save_view()
+	var hosts: Dictionary = {}
+	for host_id in _host_actors:
+		hosts[host_id] = _host_actors[host_id].save_view()
 	var staff: Dictionary = {}
 	for staff_id in _staff_actors:
 		staff[staff_id] = _staff_actors[staff_id].save_view()
 	var tasks: Array = []
 	for task in _tasks:
 		tasks.append(_save_task(task))
-	return {"owner": _owner.save_view(), "staff": staff, "tasks": tasks, "current": _save_task(_current_task), "cleaning": _cleaning_room, "time": _anim_time, "floor": current_floor}
+	return {"owner": _owner.save_view(), "staff": staff, "groups": groups, "hosts": hosts, "tasks": tasks, "current": _save_task(_current_task), "cleaning": _cleaning_room, "time": _anim_time, "floor": current_floor}
 
 func _save_task(task: Dictionary) -> Dictionary:
 	var copy: Dictionary = task.duplicate(true)
@@ -1054,6 +1060,12 @@ func restore_view(saved: Dictionary) -> void:
 	_cleaning_room = saved.get("cleaning", "")
 	if saved.has("owner"):
 		_owner.restore_view(saved["owner"])
+	for group_id in saved.get("groups", {}):
+		if _group_actors.has(int(group_id)):
+			_group_actors[int(group_id)].restore_view(saved["groups"][group_id])
+	for host_id in saved.get("hosts", {}):
+		if _host_actors.has(host_id):
+			_host_actors[host_id].restore_view(saved["hosts"][host_id])
 	for staff_id in saved.get("staff", {}):
 		if _staff_actors.has(staff_id):
 			_staff_actors[staff_id].restore_view(saved["staff"][staff_id])
