@@ -15,6 +15,7 @@ const CharacterArt = preload("res://scripts/ui/character_art.gd")
 const EMPTY_FLOOR = preload("res://assets/topdown/unequipped_floor.webp")
 const MAP_STANDARD = preload("res://assets/topdown/floor1_final.webp")
 const MAP_VIP = preload("res://assets/topdown/floor2_final.webp")
+const LobbyNavigation = preload("res://scripts/ui/lobby_navigation.gd")
 const VehicleArt = preload("res://scripts/ui/vehicle_art.gd")
 const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
 const Money = preload("res://scripts/core/money.gd")
@@ -35,7 +36,7 @@ const GATE: Vector2 = Vector2(515, 1084)
 const STAIR1: Vector2 = Vector2(515, 300)
 const STAIR2: Vector2 = Vector2(515, 1700)
 const OWNER_HOME: Vector2 = Vector2(410, 1000)
-const PICKUP: Vector2 = Vector2(110, 1070)
+const PICKUP: Vector2 = Vector2(170, 925)
 const HOST_SLOTS: Array = [Vector2(650, 960), Vector2(735, 960), Vector2(820, 960), Vector2(905, 960), Vector2(960, 1015), Vector2(960, 1070)]
 const QUEUE_SLOTS: Array = [Vector2(460, 1010), Vector2(460, 1065), Vector2(580, 1010), Vector2(580, 1065)]
 const STREET: Vector2 = Vector2(515, 1280)
@@ -397,7 +398,7 @@ func _route(from: Vector2, to: Vector2) -> Array:
 	if finish >= 2 and to.x < 400 and to.y < 1030:
 		points.append(Vector2(430, to.y))
 	points.append(to)
-	return points
+	return LobbyNavigation.avoid(from, points)
 
 
 # ---------------------------------------------------------------- Thao tác của người chơi
@@ -712,15 +713,15 @@ func _sync_groups() -> void:
 			var request_text: String = "Em ơi, cho anh %d bạn vào giao lưu nhé!" % group.get("host_requested_count", 1) if sim.hosts.needs_staff(group) else ""
 			var room_now = sim.rooms.get_room(group["room_id"])
 			if room_now != null and not room_now["request"].is_empty():
-				request_text = _request_chat(room_now["request"])
+				request_text = _request_chat(room_now["request"], group)
 			# Cảnh báo luôn ưu tiên hơn câu hát trang trí.
 			if request_text == "" and room_now != null and room_now["request"].is_empty():
 				_show_line(actor, "g:%d" % group_id)
 			else:
 				var kind: String = room_now["request"].get("kind", "HOST")
-				var colors: Dictionary = {"ORDER": Color("#ffe28c"), "MIC": Color("#ffaba3"), "HOT": Color("#ffcd8a"), "EXTEND": Color("#a6e4fa")}
+				var colors: Dictionary = {"ORDER": Color("#996000"), "MIC": Color("#b52f37"), "HOT": Color("#a75209"), "EXTEND": Color("#236aa2")}
 				actor.bubble_speaker = int(room_now["request"].get("id", 0)) % group["size"]
-				actor.set_bubble(_wrap_line(request_text), Color("#3f302c"), colors.get(kind, UI.PINK), colors.get(kind, Color("#ffc0e5")))
+				actor.set_bubble(_wrap_line(request_text), Color.WHITE, colors.get(kind, UI.PINK), colors.get(kind, Color("#b03d72")))
 
 	for group_id in _group_actors.keys():
 		if alive.has(group_id):
@@ -729,10 +730,10 @@ func _sync_groups() -> void:
 		_group_actors.erase(group_id)
 		if actor.place_key.begins_with("queue"):
 			actor.mood = "angry"
-			actor.set_bubble("Thôi về!", Color(1.0, 0.85, 0.85), UI.BAD)
+			actor.set_bubble("Thôi về!", Color.WHITE, UI.BAD, Color.BLACK)
 		else:
 			actor.mood = "happy"
-			actor.set_bubble("Cảm ơn nha!", Color(0.88, 1.0, 0.9), UI.GOOD)
+			actor.set_bubble("Cảm ơn nhé!", Color.WHITE, UI.GOOD, Color.BLACK)
 		actor.patience_ratio = -1.0
 		actor.set_clickable(false)
 		actor.set_highlight(false)
@@ -940,9 +941,9 @@ func _show_line(actor, key: String) -> void:
 		actor.set_bubble("")
 		return
 	if song:
-		actor.set_bubble(_wrap_line(text), Color("#344532"), Color("#a2b579"), Color.WHITE)
+		actor.set_bubble(_wrap_line(text), Color.WHITE, Color("#a2b579"), Color.BLACK)
 	else:
-		actor.set_bubble(_wrap_line(text), Color("#3f302c"), UI.BORDER, Color.WHITE)
+		actor.set_bubble(_wrap_line(text), Color.WHITE, UI.BORDER, Color.BLACK)
 
 
 ## Ngắt câu dài thành hai dòng ở khoảng trắng gần giữa.
@@ -1101,6 +1102,11 @@ func restore_view(saved: Dictionary) -> void:
 	_cleaning_room = saved.get("cleaning", "")
 	if saved.has("owner"):
 		_owner.restore_view(saved["owner"])
+		_owner.position = LobbyNavigation.free_point(_owner.position)
+		if _current_task.get("kind", "") == "deliver" and not _current_task.get("picked", false):
+			_owner.walk_to(_route(_owner.position, PICKUP))
+		elif _owner.is_moving():
+			_owner.walk_to(_route(_owner.position, _owner._path.back()))
 	for group_id in saved.get("groups", {}):
 		if _group_actors.has(int(group_id)):
 			_group_actors[int(group_id)].restore_view(saved["groups"][group_id])
@@ -1110,12 +1116,14 @@ func restore_view(saved: Dictionary) -> void:
 	for staff_id in saved.get("staff", {}):
 		if _staff_actors.has(staff_id):
 			_staff_actors[staff_id].restore_view(saved["staff"][staff_id])
+			_staff_actors[staff_id].position = LobbyNavigation.free_point(_staff_actors[staff_id].position)
+			_staff_actors[staff_id].place_key = ""
 	if _thief_actor != null and not saved.get("thief", {}).is_empty():
 		_thief_actor.restore_view(saved["thief"])
 	set_floor(int(saved.get("floor", 1)))
 
 
-func _request_chat(request: Dictionary) -> String:
+func _request_text(request: Dictionary) -> String:
 	match request.get("kind", ""):
 		"MIC": return "Em ơi, mic hỏng em ơi!"
 		"HOT": return "Em ơi, phòng nóng quá!"
@@ -1153,3 +1161,17 @@ func begin_day() -> void:
 	_leaving.clear()
 	_lines.clear()
 	advance_actors(0)
+
+
+func _request_chat(request: Dictionary, group: Dictionary = {}) -> String:
+	var text: String = _request_text(request)
+	if group.is_empty(): return text
+	var speaker: int = int(request.get("id", 0)) % group["size"]
+	var person: String = group["sprites"][speaker % group["sprites"].size()]
+	var age: String = sim.data["lyrics"]["sprite_age"].get(person, "middle")
+	var female: bool = sim.data["customers"]["sprite_genders"].get(person, "male") == "female"
+	var self_name: String = "bác" if age == "senior" else (("chị" if female else "anh") if age == "middle" else "tụi mình")
+	text = text.replace("anh chị", self_name).replace("cho anh", "cho " + self_name).replace("phòng anh", "phòng " + self_name)
+	if age == "senior": text = text.replace("Em ơi", "Cháu ơi").replace("nhé em", "nhé cháu")
+	elif age == "young": text = text.replace("Em ơi", "Bạn ơi").replace("nhé em", "nhé bạn")
+	return text

@@ -2,12 +2,15 @@ extends RefCounted
 ## Five stations anchored to the L sofa, with a close companion beside each guest.
 static func build(rect: Rect2, guests: int, companions: int) -> Dictionary:
 	assert(guests >= 1 and guests <= 5 and companions >= 0 and companions <= guests)
+	var floor_two: bool = rect.position.y >= 1400
+	var row: int = int((rect.position.y - (1464 if floor_two else 64)) / 400)
+	var cushion_y: float = ([192.0, 169.0, 163.0][clampi(row, 0, 2)] if floor_two else [179.0, 165.0][clampi(row, 0, 1)])
 	var stations: Array = [
-		[Vector2(106, 205), Vector2(148, 205)],
-		[Vector2(196, 205), Vector2(238, 205)],
-		[Vector2(286, 205), Vector2(328, 205)],
-		[Vector2(70, 290), Vector2(108, 290)],
-		[Vector2(70, 375), Vector2(108, 375)],
+		[Vector2(96, cushion_y), Vector2(138, cushion_y)],
+		[Vector2(186, cushion_y), Vector2(228, cushion_y)],
+		[Vector2(276, cushion_y), Vector2(318, cushion_y)],
+		[Vector2(54, 260), Vector2(86, 260)],
+		[Vector2(54, 342), Vector2(86, 342)],
 	]
 	var selected: Array = [[1], [0, 2], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4]][guests - 1]
 	var guest_points: Array = []

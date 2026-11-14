@@ -1,4 +1,6 @@
 extends SceneTree
+const Art = preload("res://scripts/ui/character_art.gd")
+const Nav = preload("res://scripts/ui/lobby_navigation.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 var failures: int = 0
 var game
@@ -38,6 +40,16 @@ func _run() -> void:
 	check(sim.state.staff.is_empty() and not sim.state.guard_hired, "New game has no hired staff or guard")
 	venue.advance_actors(0)
 	check(venue._bikes.all(func(b): return not b.visible), "Empty venue has no parked bikes")
+	for pair in [[Vector2(170,925), Vector2(260,1095)], [Vector2(250,940), Vector2(410,1000)], [Vector2(430,1060), Vector2(170,925)]]:
+		var start: Vector2 = pair[0]
+		var path: Array = venue._route(start, pair[1])
+		var clear: bool = true
+		for point in path:
+			for sample in 41:
+				var at: Vector2 = start.lerp(point, sample/40.0)
+				clear = clear and not Rect2(140,960,220,108).has_point(at) and not Rect2(43,885,95,183).has_point(at)
+			start = point
+		check(clear, "Lobby route goes around counter and fridge")
 	await shot("e01_empty")
 	sim.economy.record("TEST", 40000000, "experience_fixture")
 	sim.equip_room("room_03")
@@ -61,19 +73,39 @@ func _run() -> void:
 	venue._on_line_spoken({"host_id": "", "speaker_index": 2, "group_id": party["id"], "reply_text": "", "text": "♪ Hát vang một đêm thật vui", "kind": "SONG"})
 	venue.advance_actors(0)
 	var actor = venue._group_actors[party["id"]]
-	check(actor._bubble.get_theme_color("font_color") == Color.WHITE and actor.bubble_speaker == 2, "Song bubble is white and follows actual speaker")
+	for i in actor._sprites.size():
+		var sprite: Sprite2D = actor._sprites[i]
+		var contact: Vector2 = Art.seat_contact(actor._people[i], sprite.texture)
+		if sprite.flip_h: contact.x = -contact.x
+		var actual: Vector2 = actor.position + sprite.position + contact.rotated(sprite.rotation)
+		check(actual.distance_to(plan["guests"][i]) < 1, "Guest hip contact stays on cushion while singing")
+	for host_id in venue._host_actors:
+		var host_actor = venue._host_actors[host_id]
+		var sprite: Sprite2D = host_actor._sprites[0]
+		var contact: Vector2 = Art.seat_contact(host_actor._people[0], sprite.texture)
+		if sprite.flip_h: contact.x = -contact.x
+		var actual: Vector2 = host_actor.position + sprite.position + contact.rotated(sprite.rotation)
+		check(actual.distance_to(venue._host_position("room_02", host_id)) < 1, "Companion hip contact matches paired cushion")
+	check(actor._bubble.get_theme_color("font_color") == Color.BLACK and actor.bubble_speaker == 2, "Song bubble has black text on white and follows actual speaker")
 	await shot("e02_seated_song")
 	var room: Dictionary = sim.rooms.get_room("room_02")
 	sim.service._open(room, {"kind": "MIC", "text": "Micro"}, sim.clock.minute, 100)
 	venue.advance_actors(0)
-	check(actor._bubble.text.contains("mic hỏng") and actor._bubble.get_theme_color("font_color") != Color.WHITE and not venue._room_ui["room_02"]["request"].visible, "Broken mic becomes customer speech with distinct color")
+	check(actor._bubble.text.contains("mic hỏng") and actor._bubble.get_theme_color("font_color") != Color.BLACK and not venue._room_ui["room_02"]["request"].visible, "Broken mic becomes customer speech with distinct color")
 	await shot("e03_mic_chat")
 	sim.fix_mic("room_02")
 	sim.service._open(room, {"kind": "ORDER", "product_id": "da", "quantity": 1, "price": 15000, "text": "Đá"}, sim.clock.minute, 100)
 	venue.advance_actors(0)
-	check(actor._bubble.text.contains("thêm đá") and actor._bubble.get_theme_color("font_color") == Color("#ffe28c"), "Drinks request speaks in amber")
+	check(actor._bubble.text.contains("thêm đá") and actor._bubble.get_theme_color("font_color") == Color("#996000"), "Drinks request speaks in amber")
 	await shot("e04_order_chat")
-	sim.deliver_order("room_02")
+	venue._add_task({"kind": "deliver", "room_id": "room_02"})
+	for i in 400:
+		venue.advance_actors(0.05)
+		if venue._owner.carrying: break
+	check(venue._owner.carrying and venue._owner.position.y < 948 and venue._owner.position.distance_to(venue.PICKUP) < 25, "Owner collects behind counter without crossing desk")
+	await shot("e04b_behind_counter")
+	advance(15)
+	check(room["request"].is_empty(), "Order reaches room after safe return route")
 	sim.state.day = 3
 	check(sim.security.spawn(sim.clock.minute), "Thief targets a real parked vehicle")
 	advance(1)

@@ -494,7 +494,7 @@ func loan_info() -> Dictionary:
 	var balance: Dictionary = data["balance"]
 	return {
 		"principal": state.loan_principal, "limit": finance.credit_limit(), "available": finance.available_credit(),
-		"rate_permille": balance["loan_rate_permille_per_night"], "min_principal_percent": balance["loan_min_principal_percent"],
+		"rate_permille": balance["loan_rate_permille_per_day"], "min_principal_percent": balance["loan_min_principal_percent"],
 		"next_payment": finance.next_payment(), "step": balance["loan_step"], "negative_nights": state.negative_nights,
 		"bankrupt": state.bankrupt, "can_change": state.phase != "OPEN" and not state.bankrupt,
 	}

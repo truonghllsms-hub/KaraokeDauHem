@@ -307,7 +307,12 @@ func advance(delta: float) -> void:
 			_sprites[i].flip_h = _look_left and _people[i] != "owner"
 		else:
 			_sprites[i].flip_h = pose == "seated" and seated_faces_left
-		_sprites[i].position = base + Vector2(0, bob)
+		if pose == "seated" and not is_moving():
+			var contact: Vector2 = CharacterArt.seat_contact(_people[i], _sprites[i].texture)
+			if seated_faces_left: contact.x = -contact.x
+			_sprites[i].position = base - contact.rotated(tilt)
+		else:
+			_sprites[i].position = base + Vector2(0, bob)
 		_sprites[i].rotation = tilt
 
 	_place_bubble()

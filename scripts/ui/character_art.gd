@@ -143,3 +143,15 @@ static func height(person: String, pose: String = "standing") -> float:
 
 static func staff_sprite(member: Dictionary) -> String:
 	return {"staff_1": "janitor_m", "staff_2": "janitor_f", "staff_3": "server_f", "staff_4": "server_m", "staff_5": "reception_f", "staff_6": "reception_m"}.get(member.get("id", ""), member.get("sprite", "server_m"))
+
+
+## Contact point at the back of the hips, measured within the seated artwork.
+## Keeping this on the cushion avoids different leg lengths making people float.
+static func seat_contact(person: String, texture: Texture2D) -> Vector2:
+	var anchor: Vector2 = Vector2(0.30, 0.79)
+	if person.begins_with("lancan_"):
+		anchor = Vector2(0.32, 0.70)
+	elif person.begins_with("middle_m_") or person.begins_with("young_m_"):
+		anchor = Vector2(0.34, 0.78)
+	var ratio: float = height(person, "seated") / texture.get_height()
+	return Vector2((anchor.x-0.5)*texture.get_width(), (anchor.y-1.0)*texture.get_height()) * ratio

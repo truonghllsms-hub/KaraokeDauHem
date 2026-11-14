@@ -120,7 +120,7 @@ const BALANCE_KEYS: Array = [
 	"arrival_per_half_star_percent",
 	"arrival_min_percent",
 	"arrival_max_percent",
-	"loan_rate_permille_per_night",
+	"loan_rate_permille_per_day",
 	"loan_min_principal_percent",
 	"credit_base",
 	"credit_equipment_percent",

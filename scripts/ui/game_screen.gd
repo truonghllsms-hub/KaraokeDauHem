@@ -233,7 +233,7 @@ func _build_ui() -> void:
 	_debt_button.add_theme_constant_override("icon_max_width", 25)
 	_debt_button.clip_text = true
 	_debt_button.z_index = 5
-	_debt_button.tooltip_text = "Vay ngân hàng để lắp thêm phòng sớm. Bấm để vay hoặc trả nợ."
+	_debt_button.tooltip_text = "Bốc bát họ để lắp thêm phòng sớm. Bấm để bốc họ hoặc trả nợ."
 	# Nút đặc màu để dễ thấy.
 	_debt_button.add_theme_font_override("font", UI.BOLD_FONT)
 	_debt_button.add_theme_color_override("font_color", Color("#fff6d8"))
@@ -591,7 +591,7 @@ func _show_venue_panel() -> void:
 		var loan: Dictionary = sim.loan_info()
 		if info["missing_money"] > 0 and loan["can_change"] and loan["available"] >= info["missing_money"]:
 			var borrow: int = mini(loan["available"], ((info["missing_money"] + 999999) / 1000000) * 1000000)
-			buttons.append(["Vay %s để lắp" % Money.format(borrow), func() -> void:
+			buttons.append(["Bốc %s để lắp" % Money.format(borrow), func() -> void:
 				var reason: String = sim.take_loan(borrow)
 				_show_venue_panel()
 				_report(reason)])
@@ -669,11 +669,11 @@ func _refresh() -> void:
 	_rating_button.tooltip_text = "Đánh giá sao của khách (khác danh tiếng /100). Khách đến: %d%% bình thường. Bấm để xem nhận xét." % sim.customers.arrival_percent()
 	_debt_button.get_theme_stylebox("normal").bg_color = Color("#b0473c") if state.money < 0 else Color("#6d7d42")
 	if state.money < 0:
-		_debt_button.text = "SỐ DƯ ÂM! Vay gỡ"
+		_debt_button.text = "SỐ DƯ ÂM! Bốc họ"
 	elif state.loan_principal > 0:
 		_debt_button.text = "Nợ %s" % Money.format(state.loan_principal)
 	else:
-		_debt_button.text = "Vay ngân hàng"
+		_debt_button.text = "Bốc bát họ"
 	_refresh_tutorial()
 	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Bấm Tầng 1 / Tầng 2 để đổi tầng" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
@@ -806,10 +806,10 @@ func _show_summary() -> void:
 	lines.append("LỢI NHUẬN ĐÊM NAY: %s      Số dư: %s" % [Money.format(summary["profit"]), Money.format(sim.state.money)])
 	if summary.get("bankrupt", false):
 		lines.append("")
-		lines.append("QUÁN ĐÃ PHÁ SẢN: số dư âm %d đêm liền. Ngân hàng thu hồi quán." % sim.data["balance"]["bankrupt_after_negative_nights"])
+		lines.append("QUÁN ĐÃ PHÁ SẢN: số dư âm %d đêm liền. Chủ họ siết quán." % sim.data["balance"]["bankrupt_after_negative_nights"])
 	elif summary.get("negative_nights", 0) > 0:
 		lines.append("")
-		lines.append("CẢNH BÁO NỢ: số dư đang âm. Nếu hết đêm mai vẫn âm, quán sẽ phá sản. Có thể vay thêm ở Thu chi hoặc cắt chi phí.")
+		lines.append("CẢNH BÁO NỢ: số dư đang âm. Nếu hết đêm mai vẫn âm, quán sẽ phá sản. Có thể bốc họ thêm ở Thu chi hoặc cắt chi phí.")
 	if summary.has("night_rating_text"):
 		lines.append("")
 		var before: int = summary["rating_before_x10"]
@@ -836,7 +836,7 @@ func _show_summary() -> void:
 		])
 		return
 	_show_overlay("summary", "TỔNG KẾT ĐÊM %d" % summary["day"], "\n".join(lines), [
-		["Vay ngân hàng", _show_loan],
+		["Bốc bát họ", _show_loan],
 		["Sang đêm tiếp theo", _advance_day],
 	], _upgrade_list(_show_summary))
 
@@ -908,24 +908,24 @@ func _show_loan() -> void:
 	metrics.add_child(UI.metric("Số dư hiện tại", Money.format(sim.state.money), UI.GOOD if sim.state.money >= 0 else UI.BAD))
 	metrics.add_child(UI.metric("Dư nợ", Money.format(loan["principal"]), UI.GOLD))
 	metrics.add_child(UI.metric("Hạn mức", Money.format(loan["limit"]), UI.INFO))
-	metrics.add_child(UI.metric("Còn có thể vay", Money.format(loan["available"]), UI.GOOD))
+	metrics.add_child(UI.metric("Còn có thể bốc họ", Money.format(loan["available"]), UI.GOOD))
 	content.add_child(metrics)
 	var lines: Array = [
-		"Lãi %d,%d%% mỗi đêm · trả tối thiểu %d%% tiền gốc." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]],
-		"Ngân hàng tự thu cuối đêm. Lắp thêm phòng sẽ tăng hạn mức theo 50% giá trị thiết bị.",
+		"Lãi %d,%d%% mỗi ngày · trả tối thiểu %d%% tiền gốc." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]],
+		"Chủ họ thu cuối mỗi ca; một ca là một ngày tính lãi. Lắp thêm phòng sẽ tăng hạn mức theo 50% giá trị thiết bị.",
 	]
 	if loan["principal"] > 0:
 		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
 	lines.append("")
-	lines.append("⚠ Số dư âm sau quyết toán %d đêm liền là PHÁ SẢN. Đừng vay quá sức trả." % sim.data["balance"]["bankrupt_after_negative_nights"])
+	lines.append("⚠ Số dư âm sau quyết toán %d đêm liền là PHÁ SẢN. Đừng bốc họ quá sức trả." % sim.data["balance"]["bankrupt_after_negative_nights"])
 	if not loan["can_change"]:
-		lines.append("(Đang mở cửa: chỉ vay hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
+		lines.append("(Đang mở cửa: chỉ bốc họ hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
 	var buttons: Array = []
 	if loan["can_change"]:
 		for amount in [loan["step"], loan["step"] * 2]:
 			var value: int = mini(amount, loan["available"])
-			if value > 0 and not buttons.any(func(b: Array) -> bool: return b[0] == "Vay %s" % Money.format(value)):
-				buttons.append(["Vay %s" % Money.format(value), func() -> void:
+			if value > 0 and not buttons.any(func(b: Array) -> bool: return b[0] == "Bốc %s" % Money.format(value)):
+				buttons.append(["Bốc %s" % Money.format(value), func() -> void:
 					var reason: String = sim.take_loan(value)
 					_show_loan()
 					_report(reason)])
@@ -945,7 +945,7 @@ func _show_loan() -> void:
 	var note: Label = UI.label("\n\n".join(lines), 22, UI.TEXT)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(note)
-	_show_overlay("ledger", "VAY NGÂN HÀNG", "Vay để mở rộng quán, trả dần bằng tiền lời mỗi đêm.", buttons, content)
+	_show_overlay("ledger", "BỐC BÁT HỌ", "Nhận đủ tiền, đóng lãi theo ngày và trả dần tiền gốc.", buttons, content)
 
 
 ## Hướng dẫn từng bước cho hai đêm tập và lần đầu gặp trộm. Mỗi mẹo hiện đúng lúc, bấm "Đã hiểu" để ẩn.
@@ -988,10 +988,10 @@ func _tutorial_step() -> Array:
 				return ["d1_rating", "Mỗi nhóm trả tiền xong sẽ để lại đánh giá sao (góc phải). Nhiều sao thì khách tới đông hơn."]
 	if state.day == 2 and state.phase == "PREP":
 		if any_locked_floor1:
-			return ["d2_expand", "Đêm tập 2 · Muốn đón nhiều khách hơn? Bấm một phòng \"Chưa lắp thiết bị\" để lắp. Thiếu tiền thì bấm \"Vay ngân hàng\" ở góc trái. Nhớ vào Kho nhập thêm hàng."]
+			return ["d2_expand", "Đêm tập 2 · Muốn đón nhiều khách hơn? Bấm một phòng \"Chưa lắp thiết bị\" để lắp. Thiếu tiền thì bấm \"Bốc bát họ\" ở góc trái. Nhớ vào Kho nhập thêm hàng."]
 		return ["d2_staff", "Đêm tập 2 · Vào Nhân sự để thuê phục vụ (mang món) hoặc lễ tân (tự xếp khách vào phòng)."]
 	if state.money < 0:
-		return ["negative", "Số dư đang âm! Nếu hết đêm sau vẫn âm, quán phá sản. Bấm nút đỏ ở góc trái để vay gỡ, hoặc cắt bớt chi phí."]
+		return ["negative", "Số dư đang âm! Nếu hết đêm sau vẫn âm, quán phá sản. Bấm nút đỏ ở góc trái để bốc họ gỡ, hoặc cắt bớt chi phí."]
 	return []
 
 
@@ -1083,19 +1083,19 @@ func _show_ledger() -> void:
 	lines.append("Số dư hiện tại: %s" % Money.format(sim.state.money))
 	var loan: Dictionary = sim.loan_info()
 	lines.append("")
-	lines.append("VAY NGÂN HÀNG")
-	lines.append("Dư nợ: %s · hạn mức %s (còn vay được %s)" % [Money.format(loan["principal"]), Money.format(loan["limit"]), Money.format(loan["available"])])
-	lines.append("Lãi %d,%d%%/đêm trên dư nợ; cuối mỗi đêm tự trả lãi và %d%% gốc. Lắp thêm phòng thì hạn mức tăng." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]])
+	lines.append("BỐC BÁT HỌ")
+	lines.append("Dư nợ: %s · hạn mức %s (còn bốc họ được %s)" % [Money.format(loan["principal"]), Money.format(loan["limit"]), Money.format(loan["available"])])
+	lines.append("Lãi %d,%d%%/ngày trên dư nợ; cuối mỗi đêm tự trả lãi và %d%% gốc. Lắp thêm phòng thì hạn mức tăng." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]])
 	if loan["principal"] > 0:
 		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
 	lines.append("Cảnh báo: số dư âm sau quyết toán %d đêm liền là phá sản." % sim.data["balance"]["bankrupt_after_negative_nights"])
 	if not loan["can_change"]:
-		lines.append("(Chỉ vay hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
+		lines.append("(Chỉ bốc họ hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
 	var buttons: Array = []
 	if loan["can_change"]:
 		var step_amount: int = mini(loan["step"], loan["available"])
 		if step_amount > 0:
-			buttons.append(["Vay %s" % Money.format(step_amount), func() -> void:
+			buttons.append(["Bốc %s" % Money.format(step_amount), func() -> void:
 				var reason: String = sim.take_loan(step_amount)
 				_show_ledger()
 				_report(reason)])
@@ -1107,7 +1107,7 @@ func _show_ledger() -> void:
 					_show_ledger()
 					_report(reason)])
 	buttons.append(["Đóng", _close_overlay])
-	_show_overlay("ledger", "THU CHI & VAY", "\n".join(lines), buttons)
+	_show_overlay("ledger", "THU CHI & BÁT HỌ", "\n".join(lines), buttons)
 
 
 func _show_lancan() -> void:

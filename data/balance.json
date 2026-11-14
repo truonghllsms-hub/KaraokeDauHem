@@ -128,7 +128,6 @@
   "arrival_per_half_star_percent": 15,
   "arrival_min_percent": 65,
   "arrival_max_percent": 145,
-  "loan_rate_permille_per_night": 25,
   "loan_min_principal_percent": 10,
   "credit_base": 10000000,
   "credit_equipment_percent": 50,
@@ -151,5 +150,6 @@
   "tutorial_arrival_percent": [
     55,
     75
-  ]
+  ],
+  "loan_rate_permille_per_day": 35
 }

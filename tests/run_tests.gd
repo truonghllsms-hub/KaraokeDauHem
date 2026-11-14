@@ -980,15 +980,15 @@ func test_ambience() -> void:
 	probe.assign_group(seniors["id"], "room_01")
 	var age_of: Dictionary = {}
 	for line in lyrics["lines"]:
-		age_of["♪ %s ♪" % line["text"]] = line["age"]
+		age_of["♪ %s ♪" % line["text"]] = line.get("ages", [line["age"]])
 	for i in 400:
 		probe.ambience.reset()
 		probe.ambience._rng.seed = i
 		probe.ambience._song(probe.rooms.get_room("room_01"), seniors, 10)
 	for event in picked:
 		total += 1
-		match_age += 1 if age_of[event["text"]] == "senior" else 0
-	check(total == 400 and match_age > 240 and match_age < 400, "Khách lớn tuổi thích bolero: đa số hát nhạc xưa nhưng vẫn có lúc hát bài khác (%d/400)" % match_age)
+		match_age += 1 if age_of[event["text"]].has("senior") else 0
+	check(total == 400 and match_age == 400, "Khách lớn tuổi nhận câu hát đúng nhóm tuổi, ưu tiên kho bolero (%d/400)" % match_age)
 
 	# Micro hỏng: không hát, chỉ có câu phản ứng; có Lan can thì người đó đỡ lời.
 	events.clear()
@@ -1022,7 +1022,7 @@ func test_ambience() -> void:
 
 
 func test_finance() -> void:
-	print("Vay ngân hàng và phá sản")
+	print("Bốc bát họ và phá sản")
 	var balance: Dictionary = _data["balance"]
 	var sim = new_sim()
 	var info: Dictionary = sim.loan_info()
@@ -1031,7 +1031,7 @@ func test_finance() -> void:
 	check(sim.take_loan(info["limit"] + 1).contains("Vượt hạn mức"), "Không vay quá hạn mức")
 	check(sim.take_loan(5000000) == "" and sim.state.money == money + 5000000 and sim.state.loan_principal == 5000000, "Vay 5.000.000đ: tiền vào ngay, ghi dư nợ")
 	var due: Dictionary = sim.finance.next_payment()
-	check(due["interest"] == 125000 and due["principal"] == 500000, "Cuối đêm phải trả lãi 2,5% (125.000đ) và 10% gốc (500.000đ)")
+	check(due["interest"] == 175000 and due["principal"] == 500000, "Cuối đêm phải trả lãi 3,5% (175.000đ) và 10% gốc (500.000đ)")
 	sim.equip_room("room_05")
 	check(sim.loan_info()["limit"] == balance["credit_base"] + 3000000, "Lắp thiết bị nâng hạn mức vay (50% giá trị thiết bị)")
 	sim.open_doors()
@@ -1039,8 +1039,12 @@ func test_finance() -> void:
 	money = sim.state.money
 	step(sim, 360)
 	var summary: Dictionary = sim.state.history[0]
-	check(summary["loan_interest"] == 125000 and summary["loan_principal_paid"] == 500000 and summary["loan_balance"] == 4500000, "Cuối đêm tự trả lãi và một phần gốc")
-	check(summary["profit"] == -operating_cost(sim) - 125000, "Lãi vay tính vào chi phí; trả gốc thì không")
+	check(summary["loan_interest"] == 175000 and summary["loan_principal_paid"] == 500000 and summary["loan_balance"] == 4500000, "Cuối đêm tự trả lãi và một phần gốc")
+	check(summary["profit"] == -operating_cost(sim) - 175000, "Lãi vay tính vào chi phí; trả gốc thì không")
+	var settled_money: int = sim.state.money
+	var settled_principal: int = sim.state.loan_principal
+	var repeat: Dictionary = sim.finance.settle_night(1)
+	check(repeat["interest"] == 0 and sim.state.money == settled_money and sim.state.loan_principal == settled_principal, "Một ngày chỉ chốt họ một lần, không trừ gốc hoặc lãi lặp")
 	check(sim.economy.ledger_matches_balance(), "Sổ khớp sau khi trả nợ")
 	check(sim.repay_loan(1000000) == "" and sim.state.loan_principal == 3500000, "Trả bớt nợ gốc sau tổng kết")
 	check(sim.repay_loan(99000000) == "" and sim.state.loan_principal == 0, "Trả hết nợ (không trả quá dư nợ)")

@@ -36,7 +36,7 @@ python3 -m http.server 8060 --directory build/web
 - Màn hình vào game là mặt tiền quán buổi tối, có Chơi mới, Tiếp tục, Tải game và Cài đặt. Menu trong game có 3 ô lưu thủ công, giữ được ca đang chơi và công việc giao đồ dở; bản tự lưu cuối đêm tách riêng. Bản lưu trên trình duyệt/thiết bị hiện tại.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Game tự lưu cuối đêm; có nhạc nền nhẹ với nút tắt, chọn bài và chỉnh âm lượng riêng.
 - Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
-- Câu hát có bong bóng chữ trắng trên người đang hát; gọi đồ, hỏng mic và yêu cầu khác dùng chữ màu riêng.
+- Câu hát có bong bóng nền trắng, chữ đen trên người đang hát; gọi đồ, hỏng mic và yêu cầu khác dùng chữ màu riêng.
 - Bảng tổng kết ghim nút sang đêm ở cuối bảng, luôn có thể chuyển sang đêm mới sau khi đóng bảng.
 - Mỗi nhóm có tối đa 5 khách. Các phòng gọn có 5 cặp chỗ ngồi cố định, bổ sung ghế đơn khi gọi nhiều nhân viên: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
 
@@ -69,9 +69,11 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 - Hội toàn nam gọi nữ trong khoảng 90% trường hợp, 10% gọi nam; hội toàn nữ gọi nam. Cặp đôi và gia đình không gọi. Nhóm hỗn hợp có thể gọi nhân viên bất kỳ.
 - Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá năm người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
 - Mỗi đêm có mục tiêu; tổng kết có thu chi, lời nhận xét của khách và ba món đầu tư.
+- Bốc bát họ nhận đủ tiền; lãi 3,5%/ngày trong game, thu một lần cuối ca và trả dần gốc.
+- Đường lấy hàng vòng qua lối sau quầy, tránh quầy và tủ lạnh; vị trí ngồi neo theo hông trên mặt đệm của từng tầng/hàng ghế.
 - Ván mới chưa có nhân viên: chủ quán tự làm rồi tuyển người.
 - Nhân viên có hình riêng theo vai trò: tạp vụ, phục vụ, lễ tân. Chủ quán và phục vụ đến tủ lạnh lấy đồ, bưng khay đến phòng rồi trở lại tay không.
-- Hai đêm hướng dẫn, khách quen, đánh giá, vay ngân hàng, phá sản và tiếp tục từ bản tự lưu cuối đêm.
+- Hai đêm hướng dẫn, khách quen, đánh giá, bốc bát họ, phá sản và tiếp tục từ bản tự lưu cuối đêm.
 - Ba bản nhạc nhẹ của Kevin MacLeod (CC BY 4.0); ghi nguồn trong Cài đặt và `assets/audio/CREDITS.txt`.
 - Ba nâng cấp: dàn loa, micro dự phòng, xe đẩy phục vụ.
 

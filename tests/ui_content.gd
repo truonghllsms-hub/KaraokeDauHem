@@ -63,9 +63,9 @@ func _run() -> void:
 	_check(_venue._room_ui["room_03"]["center"].text.begins_with("CHƯA LẮP THIẾT BỊ") and _venue._room_ui["room_03"]["status"].text == "CHƯA LẮP", "Phòng chưa trang bị ghi \"Chưa lắp thiết bị\", không còn \"Khóa\"")
 	_check(_game._rating_button.text == "Chưa có đánh giá" and _game._rating_button.icon != null, "Chưa có khách: huy hiệu ghi \"Chưa có đánh giá\"")
 	_check(_game._tutorial_panel.visible and _game._tutorial_key == "d1_open" and _game._tutorial_label.text.contains("MỞ CỬA"), "Đêm tập 1: khung hướng dẫn chỉ cách mở cửa")
-	_check(_game._debt_button.visible and _game._debt_button.text.contains("Vay ngân hàng"), "Nút Vay ngân hàng luôn hiện ở góc trái")
+	_check(_game._debt_button.visible and _game._debt_button.text.contains("Bốc bát họ"), "Nút Bốc bát họ luôn hiện ở góc trái")
 	_game._debt_button.pressed.emit()
-	_check(_game._overlay_kind == "ledger" and _game._overlay.find_children("*", "Label", true, false).any(func(l): return l.text == "VAY NGÂN HÀNG"), "Bấm nút vay: mở bảng vay riêng")
+	_check(_game._overlay_kind == "ledger" and _game._overlay.find_children("*", "Label", true, false).any(func(l): return l.text == "BỐC BÁT HỌ"), "Bấm nút vay: mở bảng vay riêng")
 	await _shot("c01b_bang_vay")
 	_game._close_overlay()
 	await _shot("c01_chuan_bi")
@@ -98,7 +98,7 @@ func _run() -> void:
 	_game._show_ledger()
 	var loan_button: Button = null
 	for node in _game._overlay.find_children("*", "Button", true, false):
-		if node.text.begins_with("Vay "):
+		if node.text.begins_with("Bốc "):
 			loan_button = node
 	_check(loan_button != null, "Bảng Thu chi có nút vay ngân hàng")
 	money = _sim.state.money
@@ -188,9 +188,9 @@ func _run() -> void:
 	_check(_sim.state.rating_count == count, "Mở lại tổng kết không nhân đôi đánh giá")
 	var loan_from_summary: Button = null
 	for node in _game._overlay.find_children("*", "Button", true, false):
-		if node.text == "Vay ngân hàng":
+		if node.text == "Bốc bát họ":
 			loan_from_summary = node
-	_check(loan_from_summary != null, "Bảng tổng kết có nút Vay ngân hàng")
+	_check(loan_from_summary != null, "Bảng tổng kết có nút Bốc bát họ")
 	loan_from_summary.pressed.emit()
 	var close_loan: Button = null
 	for node in _game._overlay.find_children("*", "Button", true, false):

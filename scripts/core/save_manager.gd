@@ -17,7 +17,7 @@ const STATE_FIELDS: Array = [
 ]
 ## Trường thêm sau; bản lưu cũ thiếu thì dùng giá trị mặc định.
 const OPTIONAL_DEFAULTS: Dictionary = {
-	"loan_principal": 0, "loan_counter": 0, "negative_nights": 0, "bankrupt": false, "thief": {}, "floor2_unlocked": true,
+	"loan_principal": 0, "loan_last_settled_day": 0, "loan_counter": 0, "negative_nights": 0, "bankrupt": false, "thief": {}, "floor2_unlocked": true,
 }
 const SAVEABLE_PHASES: Array = ["PREP", "OPEN", "SUMMARY"]
 const MANUAL_PATHS: Array = ["user://karaoke_slot_1.json", "user://karaoke_slot_2.json", "user://karaoke_slot_3.json"]
