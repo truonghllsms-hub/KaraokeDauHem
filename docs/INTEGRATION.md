@@ -1,5 +1,11 @@
 # Tích hợp giao diện cho các tính năng nội dung
 
+> **Trạng thái (nhánh `claude/integrate-content`):** đã nối lên giao diện hai tầng: nhãn "Chưa lắp thiết bị" và nút
+> "Lắp thiết bị — …đ", lý do xếp phòng kèm giá dự kiến, huy hiệu điểm sao dưới thanh trên cùng (bấm xem nhận xét),
+> câu hát ♪ và thoại trên đầu nhân vật, nhân viên phục vụ đi lại, tuyển ở Nhân sự → Phục vụ, tổng kết có điểm sao,
+> tự lưu cuối đêm và nút Tiếp tục. Kiểm tra bằng `tests/ui_content.gd`. Biểu tượng ★ của danh tiếng trong thanh trên
+> cùng vẫn giữ vì kiểm thử khớp tranh đã duyệt yêu cầu giữ nguyên điểm ảnh; huy hiệu sao luôn ghi "/5".
+
 Nhánh nội dung chỉ sửa `data/`, `scripts/core/`, `scripts/systems/`, `tests/` và tài liệu. Mọi tính năng
 dưới đây đã chạy trong mô phỏng và có kiểm thử; phần giao diện còn chờ nối. Các hàm và trường cũ vẫn giữ
 nguyên, nên giao diện hiện tại vẫn chạy (đã kiểm tra bằng `ui_smoke`, `ui_redesign`, `ui_reference`).

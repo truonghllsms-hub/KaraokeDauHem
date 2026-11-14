@@ -1,0 +1,170 @@
+extends SceneTree
+## Kiểm tra giao diện cho đợt nội dung: phòng chưa lắp thiết bị, lý do xếp phòng, điểm sao,
+## câu hát trên đầu nhân vật, nhân viên phục vụ, tổng kết và Tiếp tục từ bản lưu. Chụp ảnh vào thư mục chỉ định.
+## Chạy: xvfb-run godot --path . --resolution 1024x1536 --script res://tests/ui_content.gd -- <thư_mục_ảnh>
+
+const SaveManager = preload("res://scripts/core/save_manager.gd")
+
+var _out_dir: String = "user://ui_content"
+var _errors: int = 0
+var _game
+var _sim
+var _venue
+
+
+func _initialize() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.size() > 0:
+		_out_dir = args[0]
+	DirAccess.make_dir_recursive_absolute(_out_dir)
+	_run()
+
+
+func _check(ok: bool, label: String) -> void:
+	print(("  ok   " if ok else "  LỖI  ") + label)
+	if not ok:
+		_errors += 1
+
+
+func _tick(minutes: int) -> void:
+	for i in minutes:
+		if _sim.state.phase == "OPEN":
+			_sim.step_minute()
+		for j in 4:
+			_venue._line_clock += 0.5
+			_venue.advance_actors(0.5)
+	_game._refresh()
+
+
+func _shot(name: String) -> void:
+	await process_frame
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(_out_dir.path_join(name + ".png"))
+
+
+func _open_game() -> void:
+	_game = load("res://scenes/game.tscn").instantiate()
+	root.add_child(_game)
+	await process_frame
+	_sim = _game.sim
+	_venue = _game.venue
+
+
+func _run() -> void:
+	for leftover in [SaveManager.DEFAULT_PATH, SaveManager.backup_path(SaveManager.DEFAULT_PATH)]:
+		if FileAccess.file_exists(leftover):
+			DirAccess.remove_absolute(leftover)
+	await _open_game()
+	_sim.clock.toggle_pause()
+	_game._refresh()
+	_venue.advance_actors(0.0)
+	_check(_venue._btn_open.visible, "Giai đoạn chuẩn bị: nút MỞ CỬA ĐÓN KHÁCH hiện rõ")
+	_check(_venue._room_ui["room_03"]["center"].text.begins_with("CHƯA LẮP THIẾT BỊ") and _venue._room_ui["room_03"]["status"].text == "CHƯA LẮP", "Phòng chưa trang bị ghi \"Chưa lắp thiết bị\", không còn \"Khóa\"")
+	_check(_game._rating_button.text == "★ Chưa có đánh giá", "Chưa có khách: huy hiệu ghi \"Chưa có đánh giá\"")
+	await _shot("c01_chuan_bi")
+
+	_venue.selected_room = "room_03"
+	_game._show_venue_panel()
+	var body: String = _game._lbl_detail.text
+	_check(body.contains("THIẾT BỊ SẼ LẮP") and body.contains("LỢI ÍCH") and body.contains("Chi phí lắp: 4.000.000đ"), "Bảng phòng: thiết bị, lợi ích và chi phí lắp")
+	_check(_game._btn_unlock.text == "Lắp thiết bị — 4.000.000đ" and not _game._btn_unlock.disabled, "Nút \"Lắp thiết bị — 4.000.000đ\"")
+	await _shot("c02_bang_phong")
+	_game._close_overlay()
+	var money: int = _sim.state.money
+	_check(_sim.equip_room("room_03") == "" and _sim.state.money == money - 4000000, "Lắp thiết bị trừ tiền đúng một lần")
+	_venue.advance_actors(0.0)
+	_check(not _venue._room_ui["room_03"]["dimmer"].visible, "Lắp xong: hiện nội thất")
+	_venue.selected_room = "room_05"
+	_game._refresh_detail()
+	_check(_game._lbl_detail.text.contains("tầng 2") and _game._btn_unlock.disabled, "VIP khi tầng 2 chưa mở: nêu điều kiện, khóa nút lắp")
+	_venue.selected_room = ""
+	_sim.hire_staff("staff_2")
+
+	_venue._btn_open.pressed.emit()
+	_check(_sim.state.phase == "OPEN", "Bấm nút mở cửa thì quán mở")
+	while _sim.customers.waiting_groups().is_empty():
+		_tick(1)
+	_tick(1)
+	var first: Dictionary = _sim.customers.waiting_groups()[0]
+	_venue.on_group_pressed(first["id"])
+	_tick(0)
+	_venue.advance_actors(0.0)
+	var label01: String = _venue._room_ui["room_01"]["center"].text
+	_check(label01.begins_with("XẾP ĐƯỢC · dự kiến") or label01.begins_with("Khách chê đắt") or label01.begins_with("Thiếu chỗ"), "Chọn nhóm: phòng hiện giá dự kiến hoặc lý do ngắn (%s)" % label01.replace("\n", " / "))
+	_check(_venue._room_ui["room_04"]["center"].text == "Chưa lắp thiết bị", "Phòng chưa lắp thiết bị: lý do đúng khi đang chọn nhóm")
+	await _shot("c03_chon_nhom")
+
+	# Chơi tiếp: bot xếp khách, giao món; nhân viên phục vụ tự lo phần còn lại.
+	var lines_seen: int = 0
+	var song_bubble: bool = false
+	var staff_moved: bool = false
+	var shot_singing: bool = false
+	while _sim.state.phase == "OPEN":
+		for group in _sim.customers.waiting_groups():
+			for room in _sim.state.rooms:
+				if _sim.preview_assign(group["id"], room["id"])["reason"] == "":
+					_sim.assign_group(group["id"], room["id"])
+					break
+		for room in _sim.state.rooms:
+			if not room["request"].is_empty() and room["request"]["kind"] in ["HOT", "EXTEND"]:
+				_sim.answer_request(room["id"], "ac" if room["request"]["kind"] == "HOT" else "decline")
+		_tick(1)
+		lines_seen = _venue._lines.size()
+		for actor in _venue._group_actors.values():
+			if actor._bubble.visible and actor._bubble.text.begins_with("♪"):
+				song_bubble = true
+				if not shot_singing and _sim.clock.minute > 60:
+					shot_singing = true
+					await _shot("c04_dang_hat")
+		for actor in _venue._staff_actors.values():
+			staff_moved = staff_moved or actor.position.distance_to(_venue.STAFF_SLOTS[0]) > 80
+	_check(lines_seen > 0 and song_bubble, "Khách đang hát có bóng câu hát ♪ trên đầu")
+	_check(staff_moved, "Nhân viên phục vụ đi lại trên bản đồ khi có việc")
+	_check(_game._overlay_kind == "summary", "Hết đêm: hiện bảng tổng kết")
+	var summary_text: String = ""
+	for node in _game._overlay.find_children("*", "Label", true, false):
+		summary_text += node.text
+	_check(summary_text.contains("ĐÁNH GIÁ SAO") and summary_text.contains("Đêm nay:") and summary_text.contains("Đã tự lưu"), "Tổng kết có điểm sao của đêm và báo đã tự lưu")
+	_check(_game._rating_button.text.begins_with("★ ") and _game._rating_button.text.contains("/5"), "Huy hiệu hiện điểm sao trung bình (%s)" % _game._rating_button.text)
+	var count: int = _sim.state.rating_count
+	await _shot("c05_tong_ket")
+	_game._close_overlay()
+	_game._show_summary()
+	_check(_sim.state.rating_count == count, "Mở lại tổng kết không nhân đôi đánh giá")
+	_game._close_overlay()
+	_game._show_reviews()
+	await _shot("c06_nhan_xet")
+	_game._close_overlay()
+	_game._show_waiters()
+	await _shot("c07_phuc_vu")
+	_game._close_overlay()
+	_check(SaveManager.has_save(), "Đã có bản lưu sau tổng kết")
+	var saved_money: int = _sim.state.money
+	var saved_rating: String = _sim.rating_text()
+	_game.queue_free()
+	await process_frame
+
+	# Tiếp tục từ màn hình chính.
+	var menu = load("res://scenes/main_menu.tscn").instantiate()
+	root.add_child(menu)
+	await process_frame
+	var resume: Button = null
+	for node in menu.find_children("*", "Button", true, false):
+		if node.text == "Tiếp tục":
+			resume = node
+	_check(resume != null and not resume.disabled, "Màn hình chính: nút Tiếp tục bật khi có bản lưu")
+	Engine.set_meta("karaoke_load_save", true)
+	menu.queue_free()
+	await process_frame
+	await _open_game()
+	_check(_sim.state.money == saved_money and _sim.rating_text() == saved_rating and _sim.state.staff.size() == 2, "Tiếp tục: đúng số dư, điểm sao và nhân viên")
+	_check(_sim.state.phase == "SUMMARY" and _sim.rooms.get_room("room_03")["state"] != "LOCKED", "Tiếp tục về đúng mốc cuối đêm, phòng đã lắp vẫn còn")
+	await process_frame
+	_check(_game._overlay_kind == "summary", "Tiếp tục: mở lại bảng tổng kết để sang đêm mới")
+	await _shot("c08_tiep_tuc")
+	for leftover in [SaveManager.DEFAULT_PATH, SaveManager.backup_path(SaveManager.DEFAULT_PATH)]:
+		if FileAccess.file_exists(leftover):
+			DirAccess.remove_absolute(leftover)
+	print("ui_content: %d lỗi" % _errors)
+	quit(1 if _errors > 0 else 0)

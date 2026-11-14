@@ -2,6 +2,11 @@ extends Control
 ## Màn hình chính.
 
 const UI = preload("res://scripts/ui/ui_kit.gd")
+const SaveManager = preload("res://scripts/core/save_manager.gd")
+const LOAD_META: String = "karaoke_load_save"
+
+var _new_game: Button
+var _confirm_overwrite: bool = false
 
 
 func _ready() -> void:
@@ -33,13 +38,16 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 18)
 	column.add_child(spacer)
 
-	var new_game: Button = UI.button("Chơi mới", 22, UI.PURPLE)
-	new_game.pressed.connect(_on_new_game)
-	column.add_child(new_game)
+	_new_game = UI.button("Chơi mới", 22, UI.PURPLE)
+	_new_game.pressed.connect(_on_new_game)
+	column.add_child(_new_game)
 
 	var resume: Button = UI.button("Tiếp tục", 22)
-	resume.disabled = true
-	resume.tooltip_text = "Chưa có bản lưu. Tính năng lưu game sẽ có ở Giai đoạn 6."
+	resume.disabled = not SaveManager.has_save()
+	resume.tooltip_text = "Tiếp tục từ lần tự lưu gần nhất (cuối đêm)." if not resume.disabled else "Chưa có bản lưu. Game tự lưu sau mỗi lần tổng kết đêm."
+	resume.pressed.connect(func() -> void:
+		Engine.set_meta(LOAD_META, true)
+		get_tree().change_scene_to_file("res://scenes/game.tscn"))
 	column.add_child(resume)
 
 	var settings: Button = UI.button("Cài đặt", 22)
@@ -57,4 +65,10 @@ func _ready() -> void:
 
 
 func _on_new_game() -> void:
+	# Đã có bản lưu: hỏi lại một lần vì đêm đầu tiên kết thúc sẽ ghi đè bản lưu cũ.
+	if SaveManager.has_save() and not _confirm_overwrite:
+		_confirm_overwrite = true
+		_new_game.text = "Bấm lần nữa: chơi mới, ghi đè bản lưu cũ"
+		return
+	Engine.set_meta(LOAD_META, false)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")

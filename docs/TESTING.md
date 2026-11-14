@@ -48,6 +48,17 @@ In kết quả từng đêm (phục vụ, bỏ về, thu chi, danh tiếng, sao,
 | `ui_smoke.gd`, `ui_redesign.gd`, `ui_reference.gd` | Đều qua: giao diện hiện tại vẫn chạy với luật mới |
 | `playtest.gd` 3 seed × 7 đêm | Không vi phạm bất biến; danh tiếng không còn chạm 100 sau 5 đêm; mục tiêu đêm lúc đạt lúc trượt |
 
+## Giao diện cho đợt nội dung
+
+```bash
+xvfb-run -a godot --path . --rendering-driver opengl3 --audio-driver Dummy --resolution 1024x1536 --script res://tests/ui_content.gd -- /tmp/anh
+```
+
+22 điều kiện: phòng chưa lắp thiết bị, bảng thiết bị/lợi ích/chi phí, lắp trừ tiền một lần, khóa VIP khi tầng 2 chưa mở,
+nút mở cửa, lý do xếp phòng, câu hát ♪ trên đầu khách, nhân viên phục vụ đi lại, tổng kết có điểm sao, không nhân đôi
+đánh giá, nút Tiếp tục tải đúng bản lưu. Lần chạy 14/11/2026: 0 lỗi; cùng lúc `run_tests` 352 kiểm tra, `party_rules`,
+`two_floors`, `ui_smoke`, `ui_redesign`, `ui_reference`, `ui_characters`, `ui_fixed_sizes` đều 0 lỗi.
+
 ## Kịch bản chơi thử bằng tay
 
 1. "Chơi mới" → "Kho hàng" xem tồn → "MỞ CỬA ĐÓN KHÁCH" → phím `3` tua tới khi có khách.

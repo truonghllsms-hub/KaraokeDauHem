@@ -10,6 +10,9 @@ const UI = preload("res://scripts/ui/ui_kit.gd")
 const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
 const VenueView = preload("res://scripts/ui/venue_view.gd")
+const SaveManager = preload("res://scripts/core/save_manager.gd")
+## Màn hình chính đặt khóa này trên Engine trước khi chuyển cảnh để báo "Tiếp tục" từ bản lưu.
+const LOAD_META: String = "karaoke_load_save"
 
 const KIND_COLOR: Dictionary = {"info": UI.TEXT, "good": UI.GOOD, "bad": UI.BAD, "money": UI.GOLD}
 const LATER_TEXT: String = "Sẽ có ở giai đoạn sau."
@@ -51,6 +54,7 @@ var _reference_scroll_picture: TextureRect
 var _scroll_used: bool = false
 var _last_speed_skin: int = -1
 var _last_pause_skin: bool = false
+var _rating_button: Button
 
 
 
@@ -66,13 +70,32 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	var game_seed: int = randi()
-	sim = Simulation.new(data, game_seed)
+	var load_notice: String = ""
+	if Engine.has_meta(LOAD_META) and Engine.get_meta(LOAD_META):
+		Engine.set_meta(LOAD_META, false)
+		var loaded: Dictionary = Simulation.create_from_save(data)
+		if loaded["ok"]:
+			sim = loaded["sim"]
+			load_notice = loaded["notice"] if loaded["notice"] != "" else "Đã tải bản lưu: đêm %d, số dư %s." % [sim.state.day, Money.format(sim.state.money)]
+		else:
+			load_notice = loaded["error"] + " Bắt đầu ván mới."
+	if sim == null:
+		sim = Simulation.new(data, randi())
+	# Tự lưu sau mỗi lần tổng kết đêm.
+	sim.autosave_path = SaveManager.DEFAULT_PATH
+	sim.game_saved.connect(func(_path: String, error: String) -> void:
+		if error != "":
+			_set_notice("Không lưu được: " + error, "bad"))
 	_build_ui()
 	sim.message.connect(_on_message)
 	sim.night_ended.connect(_on_night_ended)
 	sim.bill_paid.connect(_on_bill_paid)
 	_on_message("Chào chủ quán! Mục tiêu đêm nay: %s. Bấm \"MỞ CỬA ĐÓN KHÁCH\" để bắt đầu." % sim.goal_text(), "info")
+	if load_notice != "":
+		_on_message(load_notice, "good" if sim.state.day > 1 or sim.state.phase == "SUMMARY" else "bad")
+	if sim.state.phase == "SUMMARY" and not sim.last_summary().is_empty():
+		_last_summary = sim.last_summary()
+		call_deferred("_show_summary")
 	_refresh()
 
 
@@ -173,6 +196,13 @@ func _build_ui() -> void:
 		button.pressed.connect(func() -> void: sim.clock.set_speed(speed))
 		_reference_frame.add_child(button)
 		_speed_buttons[speed] = button
+	_rating_button = UI.button("", 22, UI.GOLD)
+	_rating_button.name = "RatingBadge"
+	_rating_button.position = Vector2(756, 146)
+	_rating_button.size = Vector2(258, 46)
+	_rating_button.z_index = 5
+	_rating_button.tooltip_text = "Đánh giá sao của khách (khác với danh tiếng /100). Bấm để xem nhận xét."
+	_rating_button.pressed.connect(_show_reviews)
 	_map_scroll = ScrollContainer.new()
 	_map_scroll.name = "VenueScroll"
 	_map_scroll.position = Vector2(0, 140)
@@ -205,6 +235,7 @@ func _build_ui() -> void:
 	add_child(_task_label)
 	add_child(_notice_label)
 	_reference_frame.add_child(_build_bottom_bar())
+	_reference_frame.add_child(_rating_button)
 	call_deferred("_fit_map")
 	call_deferred("_show_starting_rooms")
 
@@ -319,11 +350,49 @@ func _build_bottom_bar() -> Control:
 
 
 func _show_staff() -> void:
-	_show_overlay("ledger", "NHÂN SỰ", "Nhân viên giao lưu và bảo vệ được quản lý tại đây. Khu sofa ở sảnh là chỗ nhân viên ngồi chờ.", [
+	_show_overlay("ledger", "NHÂN SỰ", "Nhân viên phục vụ, giao lưu và bảo vệ được quản lý tại đây. Khu sofa ở sảnh là chỗ nhân viên ngồi chờ.", [
+		["Phục vụ", _show_waiters],
 		["Giao lưu âm nhạc", _show_lancan],
 		["Bảo vệ", _show_guard],
 		["Đóng", _close_overlay],
 	])
+
+
+func _show_waiters() -> void:
+	var balance: Dictionary = sim.data["balance"]
+	var lines: Array = ["Nhân viên phục vụ tự đi dọn phòng, giao món và đổi micro khi chủ quán chưa kịp làm (sau 2–3 phút). Mỗi người làm một việc; mệt thì chậm lại và xin nghỉ.", ""]
+	for member in sim.state.staff:
+		var task: Dictionary = member["task"]
+		var doing: String = "Đang rảnh"
+		if not task.is_empty():
+			doing = VenueView.STAFF_BUBBLE.get(task["kind"], task["kind"])
+			if task.get("room_id", "") != "":
+				doing += " · " + sim.rooms.get_room(task["room_id"])["name"]
+		lines.append("• %s · tốc độ %d%% · năng lượng %d/100 · %s · đã làm %d việc · lương %s/đêm" % [member["name"], member["speed"], member["energy"], doing, member["tasks_done"], Money.format(member["wage"])])
+	var buttons: Array = []
+	var candidates: Array = sim.staff.candidates()
+	if not candidates.is_empty():
+		lines.append("")
+		lines.append("ỨNG VIÊN (phí tuyển %s, tối đa %d người):" % [Money.format(balance["staff_hire_cost"]), balance["staff_max"]])
+		for def in candidates:
+			var staff_id: String = def["id"]
+			lines.append("• %s · tốc độ %d%% · lương %s/đêm · %s" % [def["name"], def["speed"], Money.format(def["wage"]), def["about"]])
+			buttons.append(["Tuyển " + def["name"], func() -> void:
+				var reason: String = sim.hire_staff(staff_id)
+				_show_waiters()
+				_report(reason)])
+	buttons.append(["Đóng", _close_overlay])
+	_show_overlay("ledger", "NHÂN VIÊN PHỤC VỤ", "\n".join(lines), buttons)
+
+
+func _show_reviews() -> void:
+	var lines: Array = [sim.rating_text(), "Mỗi nhóm đã thanh toán để lại một đánh giá theo mức hài lòng cuối lượt. Danh tiếng (/100) là mức độ quán được biết đến, tính riêng.", ""]
+	var reviews: Array = sim.recent_reviews(12)
+	if reviews.is_empty():
+		lines.append("Chưa có khách nào đánh giá.")
+	for review in reviews:
+		lines.append("%s  Đêm %d · %s · %s\n      \"%s\"" % ["★".repeat(review["stars"]) + "☆".repeat(5 - review["stars"]), review["day"], review["who"], review["room_name"], review["text"]])
+	_show_overlay("ledger", "ĐÁNH GIÁ CỦA KHÁCH", "\n".join(lines), [["Đóng", _close_overlay]])
 
 
 func _show_venue_panel() -> void:
@@ -335,7 +404,7 @@ func _show_venue_panel() -> void:
 			_report(sim.open_doors())])
 	if _btn_unlock.visible:
 		buttons.append([_btn_unlock.text, func() -> void:
-			var reason: String = sim.unlock_room(venue.selected_room)
+			var reason: String = sim.equip_room(venue.selected_room)
 			_show_venue_panel()
 			_report(reason)])
 	if _price_row.visible:
@@ -402,6 +471,8 @@ func _refresh() -> void:
 	_fit_hud_text(_hud_rep, "%d/100" % state.reputation, 30)
 	_hud_clock.visible = state.day != 1 or sim.clock.minute != 0
 	_fit_hud_text(_hud_clock, "Đêm %d · %s" % [state.day, Clock.time_text(sim.clock.minute)], 29)
+	var rating: String = sim.rating_text()
+	_rating_button.text = rating.replace(" đánh giá", "") if rating.begins_with("★") else "★ Chưa có đánh giá"
 	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Bấm Tầng 1 / Tầng 2 để đổi tầng" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
 
@@ -433,7 +504,20 @@ func _refresh_detail() -> void:
 		]
 	elif venue.selected_room != "":
 		var room = sim.rooms.get_room(venue.selected_room)
-		text = "%s %s\nSức chứa %d người · %s/giờ\nÂm thanh cấp %d" % [room["name"].to_upper(), VenueView.STATE_TEXT[room["state"]], room["capacity"], Money.format(room["price_per_hour"]), room["sound"]]
+		var info: Dictionary = sim.room_info(room["id"])
+		text = "%s · %s · %s\nSức chứa %d người · %s/giờ\nÂm thanh cấp %d · cách âm cấp %d" % [room["name"].to_upper(), info["tier_name"], info["status_text"] if room["state"] == "LOCKED" else VenueView.STATE_TEXT[room["state"]], room["capacity"], Money.format(room["price_per_hour"]), room["sound"], room["soundproof"]]
+		if room["state"] == "LOCKED":
+			text += "\n\nTHIẾT BỊ SẼ LẮP\n• " + "\n• ".join(info["equipment"])
+			text += "\n\nLỢI ÍCH\n• " + "\n• ".join(info["perks"])
+			text += "\n\nChi phí lắp: %s" % Money.format(info["equip_cost"])
+			if info["upkeep_per_night"] > 0:
+				text += " · vận hành thêm %s/đêm" % Money.format(info["upkeep_per_night"])
+			if info["missing_money"] > 0:
+				text += "\nCòn thiếu %s." % Money.format(info["missing_money"])
+			if info["locked_reason"] != "":
+				text += "\n" + info["locked_reason"]
+			elif sim.state.phase != "PREP":
+				text += "\nChỉ lắp được trước giờ mở cửa."
 		var occupant = sim.customers.get_group(room["group_id"]) if room["group_id"] != 0 else null
 		if occupant != null:
 			text += "\n\nKhách: %s · %d người · %s\nĐặc điểm: %s\nHài lòng: %d/100\n\nTạm tính:\n  Phòng: %s" % [
@@ -452,8 +536,8 @@ func _refresh_detail() -> void:
 		if not show_unlock and sim.state.phase != "PREP" and occupant == null:
 			text += "\n(Chỉ chỉnh giá được trước khi mở cửa.)"
 		if show_unlock:
-			_btn_unlock.text = "Mở phòng (%s)" % Money.format(room["unlock_cost"])
-			_btn_unlock.disabled = not sim.economy.can_afford(room["unlock_cost"])
+			_btn_unlock.text = sim.room_info(room["id"])["equip_button_text"]
+			_btn_unlock.disabled = not sim.room_info(room["id"])["can_equip_now"]
 	_lbl_detail.text = text
 	_price_row.visible = show_price
 	_btn_unlock.visible = show_unlock
@@ -493,7 +577,7 @@ func _on_bill_paid(bill: Dictionary) -> void:
 	if bill["discount"] > 0:
 		lines.append("Giảm %d%% tiền phòng: -%s" % [bill["discount_percent"], Money.format(bill["discount"])])
 	lines.append("TỔNG: %s (làm tròn 1.000đ)" % Money.format(bill["total"]))
-	lines.append("Hài lòng %d/100 · \"%s\"" % [bill["satisfaction"], bill["comment"]])
+	lines.append("%s · hài lòng %d/100 · \"%s\"" % ["★".repeat(bill.get("stars", 0)) + "☆".repeat(5 - bill.get("stars", 0)), bill["satisfaction"], bill["comment"]])
 	_lbl_bill.text = "\n".join(lines)
 
 
@@ -514,15 +598,22 @@ func _show_summary() -> void:
 	if summary["discounts"] > 0 or summary["compensation"] > 0:
 		lines.append("          Giảm giá xin lỗi -%s · Đền xe -%s (%d vụ mất xe)" % [Money.format(summary["discounts"]), Money.format(summary["compensation"]), summary["thefts"]])
 	lines.append("LỢI NHUẬN ĐÊM NAY: %s      Số dư: %s" % [Money.format(summary["profit"]), Money.format(sim.state.money)])
+	if summary.has("night_rating_text"):
+		lines.append("")
+		var before: int = summary["rating_before_x10"]
+		var after: int = summary["rating_after_x10"]
+		lines.append("ĐÁNH GIÁ SAO   Đêm nay: %s" % summary["night_rating_text"])
+		lines.append("               Cả quán: %s%s" % [summary["rating_text"], "" if before == 0 else " (trước đó %d,%d)" % [before / 10, before % 10]])
 	if not summary["comments"].is_empty():
 		lines.append("")
 		lines.append("KHÁCH NÓI GÌ")
 		for comment in summary["comments"]:
-			lines.append("  %s (%d/100): \"%s\"" % [comment["who"], comment["satisfaction"], comment["text"]])
+			lines.append("  %s %s: \"%s\"" % ["★".repeat(comment.get("stars", 0)), comment["who"], comment["text"]])
 	if summary["day"] + 1 == sim.data["balance"]["theft_start_day"] and not sim.state.guard_hired:
 		lines.append("")
 		lines.append("Hàng xóm nhắn: dạo này khu mình hay mất xe. Từ đêm mai nên thuê bảo vệ (nút Bảo vệ).")
 	lines.append("")
+	lines.append("Đã tự lưu tiến trình.")
 	lines.append("CHỌN MỘT MÓN ĐẦU TƯ CHO ĐÊM MAI (không bắt buộc):")
 	_show_overlay("summary", "TỔNG KẾT ĐÊM %d" % summary["day"], "\n".join(lines), [
 		["Sang đêm tiếp theo", func() -> void:
@@ -699,7 +790,7 @@ func _show_lancan() -> void:
 
 
 func _show_menu() -> void:
-	_show_overlay("menu", "MENU", "Game đang tạm dừng.\nChưa có tính năng lưu: về màn hình chính sẽ mất tiến trình hiện tại.\n\nPhím tắt: Space tạm dừng · 1/2/3 đổi tốc độ · Esc mở menu.", [
+	_show_overlay("menu", "MENU", "Game đang tạm dừng.\nGame tự lưu sau mỗi lần tổng kết đêm. Về màn hình chính giữa ca sẽ mất tiến trình của đêm đang chơi.\n\nPhím tắt: Space tạm dừng · 1/2/3 đổi tốc độ · Esc mở menu.", [
 		["Chơi tiếp", _close_overlay],
 		["Về màn hình chính", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")],
 	])

@@ -39,13 +39,18 @@ const STREET: Vector2 = Vector2(515, 1280)
 const BIKE_SLOTS: Array = [Vector2(140, 1210), Vector2(260, 1210), Vector2(720, 1210), Vector2(350, 1210), Vector2(800, 1210), Vector2(430, 1210)]
 const GUARD_POS: Vector2 = Vector2(900, 1220)
 const MAX_TASKS: int = 5
+## Chỗ nhân viên phục vụ đứng chờ việc (cạnh quầy) và thời gian hiện một câu hát/thoại (giây thực).
+const STAFF_SLOTS: Array = [Vector2(330, 935), Vector2(250, 935), Vector2(170, 935)]
+const LINE_SECONDS: float = 4.5
+const REPLY_AFTER: float = 2.2
+const STAFF_BUBBLE: Dictionary = {"CLEAN": "Đi dọn phòng", "DELIVER": "Mang món tới!", "FIX": "Đổi micro mới", "REST": "Nghỉ xíu..."}
 
 const STATE_TEXT: Dictionary = {
-	"LOCKED": "[KHÓA]", "AVAILABLE": "[TRỐNG]", "OCCUPIED": "[ĐANG HÁT]",
+	"LOCKED": "[CHƯA LẮP]", "AVAILABLE": "[TRỐNG]", "OCCUPIED": "[ĐANG HÁT]",
 	"DIRTY": "[BẨN]", "CLEANING": "[ĐANG DỌN]", "BROKEN": "[HỎNG]",
 }
 const STATE_BLOCK: Dictionary = {
-	"LOCKED": "Chưa mở", "OCCUPIED": "Đang có khách", "DIRTY": "Đang bẩn", "CLEANING": "Đang dọn", "BROKEN": "Đang hỏng",
+	"LOCKED": "Chưa lắp thiết bị", "OCCUPIED": "Đang có khách", "DIRTY": "Đang bẩn", "CLEANING": "Đang dọn", "BROKEN": "Đang hỏng",
 }
 const STATE_COLOR: Dictionary = {
 	"LOCKED": UI.MUTED, "AVAILABLE": UI.GOOD, "OCCUPIED": UI.PINK,
@@ -81,6 +86,10 @@ var _lbl_tasks: Label
 var _lbl_yard: Label
 var _anim_time: float = 0.0
 var _toast_until: int = 0
+var _staff_actors: Dictionary = {}
+## Câu hát/thoại đang hiện: khóa "g:<id nhóm>" hoặc "h:<id nhân viên>" -> {text, reply, reply_key, at}.
+var _lines: Dictionary = {}
+var _line_clock: float = 0.0
 
 ## Hàng việc của chủ quán: {"kind": "seat"|"clean"|"deliver"|"fix"|"goto", ...}
 var _tasks: Array = []
@@ -130,19 +139,23 @@ func setup(p_sim) -> void:
 	_actors.add_child(_owner)
 
 	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 1195, 830, 48), true)
-	_lbl_toast.clip_text = true
+	_lbl_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_lbl_toast.size = Vector2(830, 64)
+	_lbl_toast.position.y = 1182
+	_lbl_toast.add_theme_font_size_override("font_size", 19)
 	_lbl_toast.visible = false
 	_lbl_toast.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 5))
 	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 1050, 290, 32), true)
 	_lbl_tasks.visible = false
 
-	_btn_open = UI.button("MỞ CỬA ĐÓN KHÁCH", 18, UI.PINK)
-	_btn_open.position = Vector2(345, 1020)
+	_btn_open = UI.button("▶  MỞ CỬA ĐÓN KHÁCH", 28, UI.PINK)
+	_btn_open.position = Vector2(330, 1006)
 	_btn_open.visible = false
-	_btn_open.size = Vector2(290, 56)
+	_btn_open.size = Vector2(360, 72)
 	_btn_open.pressed.connect(func() -> void: report.emit(sim.open_doors()))
 	add_child(_btn_open)
 	_build_floor_controls()
+	sim.line_spoken.connect(_on_line_spoken)
 
 
 func set_toast(text: String, color: Color) -> void:
@@ -268,7 +281,8 @@ func _build_room(room: Dictionary, index: int) -> void:
 	var dimmer: ColorRect = ColorRect.new()
 	dimmer.position = Vector2(0, 65)
 	dimmer.size = Vector2(ROOM_W, ROOM_H - 65)
-	dimmer.color = Color(0.15, 0.10, 0.07, 0.48)
+	# Phòng chưa lắp thiết bị: sàn trống, che hết nội thất vẽ sẵn.
+	dimmer.color = Color("#cdb790")
 	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(dimmer)
 	var furniture: Control = Control.new()
@@ -516,6 +530,9 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	var scaled: float = delta * sim.clock.speed if sim.clock.is_running() else 0.0
+	# Câu hát hiện theo giây thực (đọc kịp ở mọi tốc độ) và dừng khi tạm dừng.
+	if sim.clock.is_running():
+		_line_clock += delta
 	advance_actors(scaled)
 
 
@@ -524,6 +541,7 @@ func advance_actors(delta: float) -> void:
 	_anim_time += delta
 	_sync_groups()
 	_sync_hosts()
+	_sync_staff(delta)
 	_update_owner()
 	_owner.visible = sim.state.phase != "PREP"
 	_owner.advance(delta)
@@ -541,7 +559,7 @@ func advance_actors(delta: float) -> void:
 	_refresh_yard()
 	_refresh_floor_controls()
 	_apply_actor_visibility()
-	_btn_open.visible = false
+	_btn_open.visible = sim.state.phase == "PREP" and current_floor == 1
 	if _lbl_toast.visible and Time.get_ticks_msec() > _toast_until:
 		_lbl_toast.visible = false
 	var count: int = task_count()
@@ -630,7 +648,13 @@ func _sync_groups() -> void:
 		else:
 			actor.patience_ratio = -1.0
 			actor.mood = "angry" if group["satisfaction"] < 55 else "happy"
-			actor.set_bubble(sim.hosts.request_label(group), Color(1.0, 0.9, 0.97), UI.PINK)
+			var request_text: String = sim.hosts.request_label(group)
+			var room_now = sim.rooms.get_room(group["room_id"])
+			# Cảnh báo luôn ưu tiên hơn câu hát trang trí.
+			if request_text == "" and room_now != null and room_now["request"].is_empty():
+				_show_line(actor, "g:%d" % group_id)
+			else:
+				actor.set_bubble(request_text, Color(1.0, 0.9, 0.97), UI.PINK)
 
 	for group_id in _group_actors.keys():
 		if alive.has(group_id):
@@ -687,7 +711,78 @@ func _sync_hosts() -> void:
 		elif host["state"] == "RESTING":
 			actor.set_bubble("Nghỉ xíu...", Color(0.9, 0.93, 1.0), UI.INFO)
 		else:
-			actor.set_bubble("")
+			_show_line(actor, "h:" + host_id)
+
+
+func _sync_staff(delta: float) -> void:
+	for i in sim.state.staff.size():
+		var member: Dictionary = sim.state.staff[i]
+		var staff_id: String = member["id"]
+		var actor = _staff_actors.get(staff_id)
+		if actor == null:
+			actor = Actor.new()
+			actor.setup([member.get("sprite", "waiter_m")])
+			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
+			actor.position = STAFF_SLOTS[i % STAFF_SLOTS.size()]
+			actor.speed = 300.0
+			actor.set_clickable(false)
+			actor.set_tooltip("Nhân viên phục vụ %s" % member["name"])
+			_actors.add_child(actor)
+			_staff_actors[staff_id] = actor
+		var task: Dictionary = member["task"]
+		var working: bool = not task.is_empty() and task["kind"] != "REST"
+		var key: String = task["room_id"] if working else "idle"
+		if actor.place_key != key:
+			actor.place_key = key
+			var target: Vector2 = _work_position(task["room_id"]) + Vector2(60, 0) if working else STAFF_SLOTS[i % STAFF_SLOTS.size()]
+			actor.walk_to(_route(actor.position, target))
+		actor.pose = "standing"
+		actor.mood = "tired" if member["energy"] < 40 else "neutral"
+		actor.set_bubble(STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
+		actor.visible = sim.state.phase != "PREP"
+		actor.advance(delta)
+
+
+## Một câu hát hoặc câu thoại vừa phát trong phòng (xem AmbienceSystem).
+func _on_line_spoken(event: Dictionary) -> void:
+	var key: String = "h:" + event["host_id"] if event["speaker_index"] < 0 else "g:%d" % event["group_id"]
+	var reply_key: String = ""
+	if event["reply_text"] != "":
+		reply_key = "h:" + event["reply_host_id"] if event["reply_host_id"] != "" else key
+	_lines[key] = {"text": event["text"], "reply": event["reply_text"], "reply_key": reply_key, "at": _line_clock, "song": event["kind"] == "SONG"}
+
+
+func _show_line(actor, key: String) -> void:
+	var text: String = ""
+	var song: bool = false
+	for line_key in _lines:
+		var line: Dictionary = _lines[line_key]
+		var age: float = _line_clock - line["at"]
+		if line_key == key and age < (REPLY_AFTER if line["reply_key"] == key else LINE_SECONDS):
+			text = line["text"]
+			song = line["song"]
+		elif line["reply_key"] == key and age >= REPLY_AFTER and age < REPLY_AFTER + LINE_SECONDS:
+			text = line["reply"]
+			song = line["song"]
+	if text == "":
+		actor.set_bubble("")
+		return
+	if song:
+		actor.set_bubble(_wrap_line(text), Color(0.97, 0.92, 1.0), UI.PURPLE)
+	else:
+		actor.set_bubble(_wrap_line(text), Color(1, 1, 1, 0.96), UI.BORDER)
+
+
+## Ngắt câu dài thành hai dòng ở khoảng trắng gần giữa.
+static func _wrap_line(text: String) -> String:
+	if text.length() <= 30:
+		return text
+	var middle: int = text.length() / 2
+	for offset in middle:
+		for at in [middle + offset, middle - offset]:
+			if at > 0 and at < text.length() and text[at] == " ":
+				return text.substr(0, at) + "\n" + text.substr(at + 1)
+	return text
 
 
 func _apply_actor_visibility() -> void:
@@ -698,6 +793,8 @@ func _apply_actor_visibility() -> void:
 		actor.visible = sim.state.phase != "PREP" and _world_floor(actor.position) == current_floor
 	for actor in _leaving:
 		actor.visible = _world_floor(actor.position) == current_floor
+	for actor in _staff_actors.values():
+		actor.visible = sim.state.phase != "PREP" and _world_floor(actor.position) == current_floor
 	_guard.visible = current_floor == 1 and sim.state.guard_hired and sim.state.phase != "PREP"
 	for bike in _bikes:
 		bike.visible = bike.visible and current_floor == 1
@@ -719,7 +816,10 @@ func _refresh_rooms() -> void:
 		var color: Color = UI.TEXT
 		var border: Color = UI.GOLD if selected_room == room["id"] else Color.TRANSPARENT
 		if locked:
-			center = "CHƯA MỞ\n%s" % Money.format(room["unlock_cost"])
+			var info: Dictionary = sim.room_info(room["id"])
+			center = "CHƯA LẮP THIẾT BỊ\n%s\nLắp: %s" % [info["tier_name"], Money.format(info["equip_cost"])]
+			if info["floor_locked"]:
+				center += "\n(cần mở tầng 2)"
 		elif room["state"] == "DIRTY":
 			center = "Bấm để dọn"
 		elif room["state"] == "CLEANING":
@@ -727,10 +827,19 @@ func _refresh_rooms() -> void:
 		if selected_group != 0:
 			var preview: Dictionary = sim.preview_assign(selected_group, room["id"])
 			border = UI.GOOD if preview["reason"] == "" else UI.BAD
-			center = "XẾP ĐƯỢC" if preview["reason"] == "" else preview["reason"]
+			if preview["reason"] == "":
+				center = "XẾP ĐƯỢC · dự kiến %s" % Money.format(preview["estimate"])
+				if preview["over_budget"]:
+					center += "\nHơi đắt với nhóm: -%d hài lòng" % sim.data["balance"]["price_over_budget_penalty"]
+					border = UI.GOLD
+			else:
+				center = preview.get("block_text", preview["reason"])
 			color = border
 		ui["center"].text = center
 		ui["center"].visible = center != ""
+		# Phòng chưa lắp thiết bị: khung chữ nằm giữa sàn trống, không đè lên phòng bên cạnh.
+		ui["center"].position = Vector2(68, 150) if locked and selected_group == 0 else Vector2(90, 300)
+		ui["center"].size = Vector2(310, 120) if locked and selected_group == 0 else Vector2(270, 80)
 		ui["center"].add_theme_color_override("font_color", color)
 		ui["center"].add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 6))
 		var bar: ProgressBar = ui["bar"]

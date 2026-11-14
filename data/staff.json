@@ -6,7 +6,8 @@
     "speed": 100,
     "wage": 300000,
     "starter": true,
-    "about": "Nhanh nhẹn vừa phải, làm lâu năm ở quán."
+    "about": "Nhanh nhẹn vừa phải, làm lâu năm ở quán.",
+    "sprite": "waiter_m"
   },
   {
     "id": "staff_2",
@@ -15,7 +16,8 @@
     "speed": 125,
     "wage": 380000,
     "starter": false,
-    "about": "Tay chân lẹ, bưng bê thoăn thoắt."
+    "about": "Tay chân lẹ, bưng bê thoăn thoắt.",
+    "sprite": "waiter_f"
   },
   {
     "id": "staff_3",
@@ -24,6 +26,7 @@
     "speed": 80,
     "wage": 240000,
     "starter": false,
-    "about": "Chậm mà chắc, lương mềm."
+    "about": "Chậm mà chắc, lương mềm.",
+    "sprite": "waiter_m"
   }
 ]
