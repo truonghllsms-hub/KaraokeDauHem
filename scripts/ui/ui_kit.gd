@@ -52,6 +52,7 @@ static func button(text: String, size: int = 16, accent: Color = PURPLE) -> Butt
 	node.text = text
 	node.focus_mode = Control.FOCUS_NONE
 	node.add_theme_font_size_override("font_size", size)
+	node.add_theme_font_override("font", BOLD_FONT)
 	node.add_theme_color_override("font_color", TEXT)
 	node.add_theme_color_override("font_hover_color", TEXT)
 	node.add_theme_color_override("font_pressed_color", GOLD)
@@ -74,3 +75,24 @@ static func progress(color: Color) -> ProgressBar:
 	node.add_theme_stylebox_override("background", back)
 	node.add_theme_stylebox_override("fill", fill)
 	return node
+
+
+static func section(title: String, subtitle: String = "") -> VBoxContainer:
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.add_child(label(title, 26, TEXT, true))
+	if subtitle != "":
+		var note: Label = label(subtitle, 19, MUTED)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(note)
+	return column
+
+static func metric(title: String, value: String, accent: Color = GOOD) -> PanelContainer:
+	var card: PanelContainer = panel(Color("#fff8e8"), Color("#d6be94"))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.add_child(label(title, 19, MUTED))
+	column.add_child(label(value, 25, accent, true))
+	card.add_child(column)
+	return card

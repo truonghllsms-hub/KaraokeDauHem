@@ -16,6 +16,8 @@ const ROLE_JOBS: Dictionary = {"janitor": ["CLEAN"], "waiter": ["FIX", "DELIVER"
 
 ## Tắt để kiểm thử từng kịch bản mà không có nhân viên tự làm việc.
 var enabled: bool = true
+## The live venue acknowledges arrivals; headless simulation retains timed travel.
+var visual_delivery: bool = false
 ## Simulation gán: (group_id, room_id) -> Dictionary như preview_assign; (group_id, room_id) -> String như assign_group.
 var seat_preview: Callable = Callable()
 var seat_assign: Callable = Callable()
@@ -204,11 +206,12 @@ func _take_job(member: Dictionary, now: int) -> void:
 		base = balance["staff_fix_minutes"]
 	member["task"] = {
 		"kind": best["kind"], "room_id": best_room["id"], "request_id": best["request_id"], "group_id": 0,
-		"phase": "TRAVEL", "start": now, "end": now + _duration(member, base),
+		"phase": "PICKUP" if best["kind"] == "DELIVER" else "TRAVEL", "start": now, "end": now + maxi(2, _duration(member, base)),
+		"pickup_at": now + 1, "pickup_confirmed": false,
 	}
 	match best["kind"]:
 		"DELIVER":
-			_notify.call("%s ra quầy lấy món cho %s." % [member["name"], best_room["name"]], "info")
+			_notify.call("%s ra tủ lạnh lấy món cho %s." % [member["name"], best_room["name"]], "info")
 		"FIX":
 			_notify.call("%s mang micro mới tới %s." % [member["name"], best_room["name"]], "info")
 		"CLEAN":
@@ -294,14 +297,51 @@ func _advance(member: Dictionary, now: int) -> void:
 	if room == null or room["request"].is_empty() or room["request"]["id"] != task["request_id"]:
 		member["task"] = {}
 		return
-	if now < task["end"]:
-		return
 	if task["kind"] == "DELIVER":
-		_service.deliver_order(room, now)
-		_finish(member, balance["staff_energy_deliver"])
+		if visual_delivery:
+			return # Arrival commands below are authoritative in the live venue.
+		if task["phase"] in ["PICKUP", "TRAVEL"]:
+			if now >= task.get("pickup_at", task["start"] + 1):
+				task["phase"] = "CARRY"
+				task["pickup_confirmed"] = true
+			return
+		if now >= task["end"]:
+			_service.deliver_order(room, now)
+			_finish(member, balance["staff_energy_deliver"])
 	else:
-		_service.fix_mic(room, now)
-		_finish(member, balance["staff_energy_fix"])
+		if now >= task["end"]:
+			_service.fix_mic(room, now)
+			_finish(member, balance["staff_energy_fix"])
+
+func confirm_pickup(staff_id: String, request_id: int) -> bool:
+	var member = get_member(staff_id)
+	if member == null:
+		return false
+	var task: Dictionary = member["task"]
+	if not _current_delivery(task, request_id) or task["phase"] != "PICKUP":
+		return false
+	task["pickup_confirmed"] = true
+	task["phase"] = "CARRY"
+	return true
+
+func confirm_delivery(staff_id: String, request_id: int, now: int) -> bool:
+	var member = get_member(staff_id)
+	if member == null:
+		return false
+	var task: Dictionary = member["task"]
+	if not _current_delivery(task, request_id) or task["phase"] != "CARRY" or not task.get("pickup_confirmed", false):
+		return false
+	var room = _rooms.get_room(task["room_id"])
+	if _service.deliver_order(room, now) != "":
+		return false
+	_finish(member, _data["balance"]["staff_energy_deliver"])
+	return true
+
+func _current_delivery(task: Dictionary, request_id: int) -> bool:
+	if task.is_empty() or task.get("kind", "") != "DELIVER" or task.get("request_id", -1) != request_id:
+		return false
+	var room = _rooms.get_room(task["room_id"])
+	return room != null and room["state"] == "OCCUPIED" and room["request"].get("id", -1) == request_id and room["request"].get("kind", "") == "ORDER"
 
 
 func _finish(member: Dictionary, energy_cost: int) -> void:

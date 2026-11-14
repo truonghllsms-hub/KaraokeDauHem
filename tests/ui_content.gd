@@ -61,7 +61,7 @@ func _run() -> void:
 	_venue.advance_actors(0.0)
 	_check(_venue._btn_open.visible, "Giai đoạn chuẩn bị: nút MỞ CỬA ĐÓN KHÁCH hiện rõ")
 	_check(_venue._room_ui["room_03"]["center"].text.begins_with("CHƯA LẮP THIẾT BỊ") and _venue._room_ui["room_03"]["status"].text == "CHƯA LẮP", "Phòng chưa trang bị ghi \"Chưa lắp thiết bị\", không còn \"Khóa\"")
-	_check(_game._rating_button.text == "★ Chưa có đánh giá", "Chưa có khách: huy hiệu ghi \"Chưa có đánh giá\"")
+	_check(_game._rating_button.text == "Chưa có đánh giá" and _game._rating_button.icon != null, "Chưa có khách: huy hiệu ghi \"Chưa có đánh giá\"")
 	_check(_game._tutorial_panel.visible and _game._tutorial_key == "d1_open" and _game._tutorial_label.text.contains("MỞ CỬA"), "Đêm tập 1: khung hướng dẫn chỉ cách mở cửa")
 	_check(_game._debt_button.visible and _game._debt_button.text.contains("Vay ngân hàng"), "Nút Vay ngân hàng luôn hiện ở góc trái")
 	_game._debt_button.pressed.emit()
@@ -180,7 +180,7 @@ func _run() -> void:
 	for node in _game._overlay.find_children("*", "Label", true, false):
 		summary_text += node.text
 	_check(summary_text.contains("ĐÁNH GIÁ SAO") and summary_text.contains("Đêm nay:") and summary_text.contains("Đã tự lưu"), "Tổng kết có điểm sao của đêm và báo đã tự lưu")
-	_check(_game._rating_button.text.begins_with("★ ") and _game._rating_button.text.contains("/5"), "Huy hiệu hiện điểm sao trung bình (%s)" % _game._rating_button.text)
+	_check(_game._rating_button.icon != null and _game._rating_button.text.contains("/5"), "Huy hiệu hiện điểm sao trung bình (%s)" % _game._rating_button.text)
 	var count: int = _sim.state.rating_count
 	await _shot("c05_tong_ket")
 	_game._close_overlay()

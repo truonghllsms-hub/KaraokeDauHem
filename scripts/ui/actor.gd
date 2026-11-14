@@ -20,6 +20,7 @@ signal pressed
 
 var speed: float = 190.0
 var place_key: String = ""
+var carrying: bool = false
 var singing: bool = false
 var pose: String = "standing"
 var seated_faces_left: bool = false
@@ -173,11 +174,13 @@ func is_moving() -> bool:
 
 
 func _update_appearance() -> void:
-	var active_pose: String = "standing" if is_moving() else pose
+	var active_pose: String = "carrying" if carrying else ("standing" if is_moving() else pose)
 	for i in _sprites.size():
 		var person: String = _people[i]
 		var texture: Texture2D
-		if is_moving():
+		if carrying:
+			texture = CharacterArt.texture(person, active_pose, _facing)
+		elif is_moving():
 			texture = Motion.walk_texture(person, int(_walk_distance / 26.0) + i * 2, _facing)
 		else:
 			var expression: String = ""

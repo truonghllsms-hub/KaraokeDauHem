@@ -10,6 +10,8 @@ const UI = preload("res://scripts/ui/ui_kit.gd")
 const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
 const VenueView = preload("res://scripts/ui/venue_view.gd")
+const Music = preload("res://scripts/ui/music_manager.gd")
+const MusicSettings = preload("res://scripts/ui/music_settings.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 ## Màn hình chính đặt khóa này trên Engine trước khi chuyển cảnh để báo "Tiếp tục" từ bản lưu.
 const LOAD_META: String = "karaoke_load_save"
@@ -60,10 +62,14 @@ var _tutorial_panel: PanelContainer
 var _tutorial_label: Label
 var _tutorial_key: String = ""
 var _tutorial_hidden: Dictionary = {}
+var _music
+var _music_button: Button
+var _help_button: Button
 
 
 
 func _ready() -> void:
+	_music = Music.ensure(get_tree())
 	var background: ColorRect = ColorRect.new()
 	background.color = UI.BG
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -203,15 +209,23 @@ func _build_ui() -> void:
 		_speed_buttons[speed] = button
 	_rating_button = UI.button("", 22, UI.GOLD)
 	_rating_button.name = "RatingBadge"
-	_rating_button.position = Vector2(756, 146)
-	_rating_button.size = Vector2(258, 46)
+	_rating_button.position = Vector2(772, 149)
+	_rating_button.custom_minimum_size = Vector2(236, 44)
+	_rating_button.size = Vector2(236, 44)
+	_rating_button.icon = preload("res://assets/icons/star.svg")
+	_rating_button.add_theme_constant_override("icon_max_width", 25)
+	_rating_button.clip_text = true
 	_rating_button.z_index = 5
 	_rating_button.tooltip_text = "Đánh giá sao của khách (khác với danh tiếng /100). Bấm để xem nhận xét."
 	_rating_button.pressed.connect(_show_reviews)
 	_debt_button = UI.button("", 20, UI.GOOD)
 	_debt_button.name = "DebtBadge"
-	_debt_button.position = Vector2(10, 146)
-	_debt_button.size = Vector2(250, 46)
+	_debt_button.position = Vector2(16, 149)
+	_debt_button.custom_minimum_size = Vector2(236, 44)
+	_debt_button.size = Vector2(236, 44)
+	_debt_button.icon = preload("res://assets/icons/bank.svg")
+	_debt_button.add_theme_constant_override("icon_max_width", 25)
+	_debt_button.clip_text = true
 	_debt_button.z_index = 5
 	_debt_button.tooltip_text = "Vay ngân hàng để lắp thêm phòng sớm. Bấm để vay hoặc trả nợ."
 	# Nút đặc màu để dễ thấy.
@@ -225,21 +239,29 @@ func _build_ui() -> void:
 	# Khung hướng dẫn cho người mới, nằm trên thanh điều hướng.
 	_tutorial_panel = UI.panel(Color("#fff6d8"), UI.GOLD)
 	_tutorial_panel.name = "TutorialPanel"
-	_tutorial_panel.position = Vector2(20, 1286)
-	_tutorial_panel.size = Vector2(984, 110)
-	_tutorial_panel.custom_minimum_size = Vector2(984, 0)
+	_tutorial_panel.position = Vector2(18, 1278)
+	_tutorial_panel.size = Vector2(988, 112)
+	_tutorial_panel.custom_minimum_size = Vector2(988, 0)
 	_tutorial_panel.z_index = 6
 	_tutorial_panel.visible = false
 	var tutorial_row: HBoxContainer = HBoxContainer.new()
 	tutorial_row.add_theme_constant_override("separation", 12)
 	_tutorial_panel.add_child(tutorial_row)
-	_tutorial_label = UI.label("", 21, UI.TEXT, true)
+	_tutorial_label = UI.label("", 22, UI.TEXT)
 	_tutorial_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tutorial_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_tutorial_label.custom_minimum_size = Vector2(780, 0)
+	_tutorial_label.custom_minimum_size = Vector2(748, 0)
 	tutorial_row.add_child(_tutorial_label)
-	var tutorial_close: Button = UI.button("Đã hiểu", 20, UI.GOLD)
-	tutorial_close.custom_minimum_size = Vector2(130, 56)
+	var tutorial_icon: TextureRect = TextureRect.new()
+	tutorial_icon.texture = preload("res://assets/icons/help.svg")
+	tutorial_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tutorial_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tutorial_icon.custom_minimum_size = Vector2(40, 48)
+	tutorial_row.move_child(_tutorial_label, 0)
+	tutorial_row.add_child(tutorial_icon)
+	tutorial_row.move_child(tutorial_icon, 0)
+	var tutorial_close: Button = UI.button("Thu gọn", 20, UI.GOLD)
+	tutorial_close.custom_minimum_size = Vector2(130, 52)
 	tutorial_close.pressed.connect(func() -> void:
 		_tutorial_hidden[_tutorial_key] = true
 		_tutorial_panel.visible = false)
@@ -258,6 +280,7 @@ func _build_ui() -> void:
 	_map_scroll.add_child(_map_stage)
 	venue = VenueView.new()
 	venue.setup(sim)
+	sim.staff.visual_delivery = true
 	venue.report.connect(_report)
 	venue.hint.connect(func(text: String) -> void: _set_notice(text, "info"))
 	venue.choice_requested.connect(_show_choice)
@@ -279,6 +302,29 @@ func _build_ui() -> void:
 	_reference_frame.add_child(_rating_button)
 	_reference_frame.add_child(_debt_button)
 	_reference_frame.add_child(_tutorial_panel)
+	_music_button = UI.button("Nhạc", 18, UI.GOLD)
+	_music_button.name = "MusicButton"
+	_music_button.position = Vector2(928, 97)
+	_music_button.custom_minimum_size = Vector2(80, 34)
+	_music_button.size = Vector2(80, 34)
+	_music_button.icon = preload("res://assets/icons/music.svg")
+	_music_button.add_theme_constant_override("icon_max_width", 18)
+	_music_button.add_theme_stylebox_override("normal", UI.box(Color("#f3e8be"), Color("#cdb87a"), 1, 4))
+	_music_button.tooltip_text = "Nhạc nền · bật/tắt, âm lượng và chọn bài"
+	_music_button.pressed.connect(_show_music)
+	_reference_frame.add_child(_music_button)
+	_help_button = UI.button("Hướng dẫn", 18, UI.GOLD)
+	_help_button.name = "TutorialReopen"
+	_help_button.position = Vector2(18, 1340)
+	_help_button.custom_minimum_size = Vector2(156, 46)
+	_help_button.size = Vector2(156, 46)
+	_help_button.icon = preload("res://assets/icons/help.svg")
+	_help_button.add_theme_constant_override("icon_max_width", 24)
+	_help_button.z_index = 6
+	_help_button.pressed.connect(func() -> void:
+		_tutorial_hidden.erase(_tutorial_key)
+		_refresh_tutorial())
+	_reference_frame.add_child(_help_button)
 	call_deferred("_fit_map")
 	call_deferred("_show_starting_rooms")
 
@@ -403,45 +449,111 @@ func _show_staff() -> void:
 
 func _show_waiters() -> void:
 	var balance: Dictionary = sim.data["balance"]
-	var lines: Array = [
-		"• Tạp vụ: dọn phòng bẩn.",
-		"• Phục vụ: mang món, đổi micro hỏng.",
-		"• Lễ tân: đón khách đang chờ và tự xếp vào phòng vừa túi tiền.",
-		"Nhân viên chờ 2–3 phút để chủ quán ra tay trước, rồi tự làm. Mệt thì chậm lại và xin nghỉ. Mỗi vai trò tối đa %d người." % balance["staff_max_per_role"],
-		"",
-	]
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	content.add_child(UI.section("Đang làm tại quán", "Tạp vụ dọn phòng · Phục vụ mang món, đổi micro · Lễ tân đón khách"))
+	var roster: GridContainer = GridContainer.new()
+	roster.columns = 2
+	roster.add_theme_constant_override("h_separation", 14)
+	roster.add_theme_constant_override("v_separation", 14)
 	for member in sim.state.staff:
+		roster.add_child(_staff_card(member, true))
+	content.add_child(roster)
+	content.add_child(UI.section("Tuyển thêm người", "Phí tuyển %s · Tối đa %d người mỗi vai trò" % [Money.format(balance["staff_hire_cost"]), balance["staff_max_per_role"]]))
+	var candidates: GridContainer = GridContainer.new()
+	candidates.columns = 2
+	candidates.add_theme_constant_override("h_separation", 14)
+	candidates.add_theme_constant_override("v_separation", 14)
+	for candidate in sim.staff.candidates():
+		candidates.add_child(_staff_card(candidate, false))
+	content.add_child(candidates)
+	_show_overlay("ledger", "NHÂN VIÊN QUÁN", "Nhân viên chờ 2–3 phút để bạn ra tay trước, rồi tự làm. Mệt thì làm chậm và xin nghỉ.", [["Đóng", _close_overlay]], content)
+
+func _staff_card(member: Dictionary, hired: bool) -> Control:
+	var accent: Color = {"janitor": UI.GOLD, "waiter": UI.INFO, "receptionist": UI.GOOD}.get(member["role"], UI.GOOD)
+	var card: PanelContainer = UI.panel(Color("#fff9e9"), Color("#cfba93"))
+	card.custom_minimum_size = Vector2(360, 0)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	card.add_child(column)
+	var heading: HBoxContainer = HBoxContainer.new()
+	var portrait: TextureRect = TextureRect.new()
+	portrait.texture = CharacterArt.texture(CharacterArt.staff_sprite(member))
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.custom_minimum_size = Vector2(84, 118)
+	heading.add_child(portrait)
+	var identity: VBoxContainer = VBoxContainer.new()
+	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	identity.add_child(UI.label(sim.staff.role_name(member["role"]), 19, accent, true))
+	identity.add_child(UI.label(member["name"], 27, UI.TEXT, true))
+	identity.add_child(UI.label("%s/đêm" % Money.format(member["wage"]), 19, UI.MUTED))
+	heading.add_child(identity)
+	column.add_child(heading)
+	if hired:
 		var task: Dictionary = member["task"]
-		var doing: String = "Đang rảnh"
-		if not task.is_empty():
-			doing = VenueView.STAFF_BUBBLE.get(task["kind"], task["kind"])
-			if task.get("room_id", "") != "":
-				doing += " · " + sim.rooms.get_room(task["room_id"])["name"]
-		lines.append("• %s %s · tốc độ %d%% · năng lượng %d/100 · %s · đã làm %d việc · lương %s/đêm" % [sim.staff.role_name(member["role"]), member["name"], member["speed"], member["energy"], doing, member["tasks_done"], Money.format(member["wage"])])
-	var buttons: Array = []
-	var candidates: Array = sim.staff.candidates()
-	if not candidates.is_empty():
-		lines.append("")
-		lines.append("ỨNG VIÊN (phí tuyển %s):" % Money.format(balance["staff_hire_cost"]))
-		for def in candidates:
-			var staff_id: String = def["id"]
-			lines.append("• %s %s · tốc độ %d%% · lương %s/đêm · %s" % [sim.staff.role_name(def["role"]), def["name"], def["speed"], Money.format(def["wage"]), def["about"]])
-			buttons.append(["Tuyển %s %s" % [sim.staff.role_name(def["role"]).to_lower(), def["name"]], func() -> void:
-				var reason: String = sim.hire_staff(staff_id)
-				_show_waiters()
-				_report(reason)])
-	buttons.append(["Đóng", _close_overlay])
-	_show_overlay("ledger", "NHÂN VIÊN QUÁN", "\n".join(lines), buttons)
+		var doing: String = "Đang rảnh" if task.is_empty() else VenueView.STAFF_BUBBLE.get(task["kind"], "Đang làm việc")
+		if task.get("room_id", "") != "":
+			doing += " · " + sim.rooms.get_room(task["room_id"])["name"]
+		var state: Label = UI.label(doing, 20, accent, true)
+		state.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(state)
+		column.add_child(UI.label("Năng lượng %d/100 · Đã làm %d việc" % [member["energy"], member["tasks_done"]], 18, UI.MUTED))
+		var energy: ProgressBar = UI.progress(accent)
+		energy.max_value = 100
+		energy.value = member["energy"]
+		column.add_child(energy)
+	else:
+		var about: Label = UI.label(member["about"], 19, UI.MUTED)
+		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(about)
+		column.add_child(UI.label("Tốc độ %d%%" % member["speed"], 19, accent, true))
+		var staff_id: String = member["id"]
+		var hire: Button = UI.button("Tuyển %s %s" % [sim.staff.role_name(member["role"]).to_lower(), member["name"]], 20, accent)
+		hire.custom_minimum_size.y = 56
+		hire.clip_text = true
+		hire.disabled = not sim.economy.can_afford(sim.data["balance"]["staff_hire_cost"])
+		hire.pressed.connect(func() -> void:
+			var reason: String = sim.hire_staff(staff_id)
+			_show_waiters()
+			_report(reason))
+		column.add_child(hire)
+	return card
 
 
 func _show_reviews() -> void:
-	var lines: Array = [sim.rating_text(), "Khách đến hiện bằng %d%% bình thường nhờ điểm sao (3,0 sao là bình thường)." % sim.customers.arrival_percent(), ""]
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 16)
+	var metrics: HBoxContainer = HBoxContainer.new()
+	metrics.add_theme_constant_override("separation", 14)
+	metrics.add_child(UI.metric("Đánh giá của khách", sim.rating_text().replace("★", "").strip_edges(), UI.GOLD))
+	metrics.add_child(UI.metric("Lượng khách đến", "%d%%" % sim.customers.arrival_percent(), UI.GOOD))
+	content.add_child(metrics)
 	var reviews: Array = sim.recent_reviews(12)
 	if reviews.is_empty():
-		lines.append("Chưa có khách nào đánh giá.")
+		content.add_child(UI.section("Chưa có nhận xét", "Khách sẽ để lại đánh giá sau khi thanh toán. Phục vụ chu đáo để có thêm khách ghé quán."))
 	for review in reviews:
-		lines.append("%s\n%s  ·  %s · Đêm %d\n%s\n" % [review["who"], "★".repeat(review["stars"]) + "☆".repeat(5 - review["stars"]), review.get("badge", ""), review["day"], review["text"]])
-	_show_overlay("ledger", "ĐÁNH GIÁ TRÊN BẢN ĐỒ", "\n".join(lines), [["Đóng", _close_overlay]])
+		var card: PanelContainer = UI.panel(Color("#fff9e9"), Color("#d8c39d"))
+		var column: VBoxContainer = VBoxContainer.new()
+		column.add_theme_constant_override("separation", 8)
+		column.add_child(UI.label(review["who"], 25, UI.TEXT, true))
+		var stars: HBoxContainer = HBoxContainer.new()
+		for i in 5:
+			var star: TextureRect = TextureRect.new()
+			star.texture = preload("res://assets/icons/star.svg")
+			star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			star.custom_minimum_size = Vector2(25, 25)
+			star.modulate.a = 1.0 if i < review["stars"] else 0.22
+			stars.add_child(star)
+		stars.add_child(UI.label("  Đêm %d · %s" % [review["day"], review.get("badge", "")], 18, UI.MUTED))
+		column.add_child(stars)
+		var quote: Label = UI.label(review["text"], 23, UI.TEXT)
+		quote.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(quote)
+		card.add_child(column)
+		content.add_child(card)
+	_show_overlay("ledger", "ĐÁNH GIÁ TRÊN BẢN ĐỒ", "Điểm sao phản ánh trải nghiệm của khách. Mốc 3,0 sao tương ứng lượng khách bình thường.", [["Đóng", _close_overlay]], content)
 
 
 func _show_venue_panel() -> void:
@@ -530,7 +642,7 @@ func _refresh() -> void:
 	_hud_clock.visible = state.day != 1 or sim.clock.minute != 0
 	_fit_hud_text(_hud_clock, "Đêm %d · %s" % [state.day, Clock.time_text(sim.clock.minute)], 29)
 	var rating: String = sim.rating_text()
-	_rating_button.text = rating.replace(" đánh giá", "") if rating.begins_with("★") else "★ Chưa có đánh giá"
+	_rating_button.text = rating.replace("★", "").strip_edges().replace(" đánh giá", "") if rating.begins_with("★") else "Chưa có đánh giá"
 	_rating_button.tooltip_text = "Đánh giá sao của khách (khác danh tiếng /100). Khách đến: %d%% bình thường. Bấm để xem nhận xét." % sim.customers.arrival_percent()
 	_debt_button.get_theme_stylebox("normal").bg_color = Color("#b0473c") if state.money < 0 else Color("#6d7d42")
 	if state.money < 0:
@@ -538,7 +650,7 @@ func _refresh() -> void:
 	elif state.loan_principal > 0:
 		_debt_button.text = "Nợ %s" % Money.format(state.loan_principal)
 	else:
-		_debt_button.text = "🏦 Vay ngân hàng" if UI.BOLD_FONT.has_char("🏦".unicode_at(0)) else "Vay ngân hàng"
+		_debt_button.text = "Vay ngân hàng"
 	_refresh_tutorial()
 	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Bấm Tầng 1 / Tầng 2 để đổi tầng" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
@@ -770,14 +882,20 @@ func _show_stock() -> void:
 
 func _show_loan() -> void:
 	var loan: Dictionary = sim.loan_info()
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 18)
+	var metrics: GridContainer = GridContainer.new()
+	metrics.columns = 2
+	metrics.add_theme_constant_override("h_separation", 14)
+	metrics.add_theme_constant_override("v_separation", 14)
+	metrics.add_child(UI.metric("Số dư hiện tại", Money.format(sim.state.money), UI.GOOD if sim.state.money >= 0 else UI.BAD))
+	metrics.add_child(UI.metric("Dư nợ", Money.format(loan["principal"]), UI.GOLD))
+	metrics.add_child(UI.metric("Hạn mức", Money.format(loan["limit"]), UI.INFO))
+	metrics.add_child(UI.metric("Còn có thể vay", Money.format(loan["available"]), UI.GOOD))
+	content.add_child(metrics)
 	var lines: Array = [
-		"Vay để lắp thêm phòng sớm, rồi trả dần bằng tiền lời.",
-		"",
-		"Số dư: %s" % Money.format(sim.state.money),
-		"Dư nợ: %s" % Money.format(loan["principal"]),
-		"Hạn mức: %s · còn vay được %s" % [Money.format(loan["limit"]), Money.format(loan["available"])],
-		"Lãi %d,%d%% mỗi đêm. Cuối mỗi đêm ngân hàng tự trừ lãi và %d%% tiền gốc." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]],
-		"Lắp thêm phòng thì hạn mức tăng (50% giá trị thiết bị).",
+		"Lãi %d,%d%% mỗi đêm · trả tối thiểu %d%% tiền gốc." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]],
+		"Ngân hàng tự thu cuối đêm. Lắp thêm phòng sẽ tăng hạn mức theo 50% giá trị thiết bị.",
 	]
 	if loan["principal"] > 0:
 		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
@@ -807,7 +925,10 @@ func _show_loan() -> void:
 			_show_summary()
 		else:
 			_close_overlay()])
-	_show_overlay("ledger", "VAY NGÂN HÀNG", "\n".join(lines), buttons)
+	var note: Label = UI.label("\n\n".join(lines), 22, UI.TEXT)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(note)
+	_show_overlay("ledger", "VAY NGÂN HÀNG", "Vay để mở rộng quán, trả dần bằng tiền lời mỗi đêm.", buttons, content)
 
 
 ## Hướng dẫn từng bước cho hai đêm tập và lần đầu gặp trộm. Mỗi mẹo hiện đúng lúc, bấm "Đã hiểu" để ẩn.
@@ -863,11 +984,13 @@ func _tutorial_step() -> Array:
 
 func _refresh_tutorial() -> void:
 	var step: Array = _tutorial_step()
+	_help_button.visible = not step.is_empty() and _tutorial_hidden.has(step[0]) and _overlay == null
 	if step.is_empty() or _tutorial_hidden.has(step[0]) or _overlay != null:
 		_tutorial_panel.visible = false
 		return
 	_tutorial_key = step[0]
-	_tutorial_label.text = "HƯỚNG DẪN · " + step[1]
+	_tutorial_label.text = step[1]
+	_tutorial_panel.position.y = 214 if step[0] == "thief" else 1394 - maxf(112, _tutorial_panel.get_combined_minimum_size().y)
 	_tutorial_panel.visible = true
 
 
@@ -1012,55 +1135,94 @@ func _show_lancan() -> void:
 func _show_menu() -> void:
 	_show_overlay("menu", "MENU", "Game đang tạm dừng.\nGame tự lưu sau mỗi lần tổng kết đêm. Về màn hình chính giữa ca sẽ mất tiến trình của đêm đang chơi.\n\nPhím tắt: Space tạm dừng · 1/2/3 đổi tốc độ · Esc mở menu.", [
 		["Chơi tiếp", _close_overlay],
+		["Nhạc nền & âm lượng", _show_music],
 		["Về màn hình chính", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")],
 	])
 
 
 ## Cửa sổ nổi. Khi mở, đồng hồ tự tạm dừng; khi đóng, chạy lại đúng tốc độ trước đó.
+func _show_music() -> void:
+	_show_overlay("menu", "NHẠC NỀN", "Một chút nhạc nhẹ cho ca làm ở đầu hẻm.", [["Đóng", _close_overlay]], MusicSettings.new())
+
 func _show_overlay(kind: String, title: String, body: String, buttons: Array, extra: Control = null) -> void:
 	_close_overlay()
 	sim.clock.push_modal()
 	_overlay_kind = kind
 	_overlay = ColorRect.new()
-	_overlay.color = Color(0, 0, 0, 0.65)
+	_overlay.color = Color(0.17, 0.12, 0.07, 0.58)
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.z_index = 50
 	add_child(_overlay)
-
-	var inset: MarginContainer = MarginContainer.new()
-	inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		inset.add_theme_constant_override("margin_" + side, 28)
-	_overlay.add_child(inset)
-	var scroller: ScrollContainer = ScrollContainer.new()
-	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	inset.add_child(scroller)
-	var center: CenterContainer = CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroller.add_child(center)
-	var panel: PanelContainer = UI.panel(UI.PANEL, UI.BORDER)
-	panel.custom_minimum_size.x = minf(820, get_viewport_rect().size.x - 80)
-	center.add_child(panel)
+	var frame: CenterContainer = CenterContainer.new()
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(frame)
+	var panel: PanelContainer = UI.panel(Color("#fff3da"), UI.BORDER)
+	var width: float = minf(900, get_viewport_rect().size.x - 64)
+	var estimate: float = 300 + maxf(body.length() / 55.0, body.count("\n") + 1) * 31 + ceilf(buttons.size() / 2.0) * 76
+	var height: float = minf(1260, get_viewport_rect().size.y - 100) if extra != null else clampf(estimate, 460, minf(1260, get_viewport_rect().size.y - 100))
+	panel.custom_minimum_size = Vector2(width, height)
+	frame.add_child(panel)
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 16)
+	column.add_theme_constant_override("separation", 18)
 	panel.add_child(column)
-	column.add_child(UI.label(title, 38, UI.PURPLE, true))
-	var body_label: Label = UI.label(body, 26, UI.TEXT)
-	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.custom_minimum_size = Vector2(minf(760, get_viewport_rect().size.x - 125), 0)
-	column.add_child(body_label)
-	if extra != null:
-		column.add_child(extra)
-
-	var row: HFlowContainer = HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 10)
-	row.add_theme_constant_override("v_separation", 10)
-	column.add_child(row)
+	var header: HBoxContainer = HBoxContainer.new()
+	var title_label: Label = UI.label(title, 32, UI.PURPLE, true)
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.clip_text = true
+	header.add_child(title_label)
+	var close_action: Callable = _close_overlay
 	for entry in buttons:
-		var button: Button = UI.button(entry[0], 26, UI.GOLD)
+		if entry[0] == "Đóng":
+			close_action = entry[1]
+	var close: Button = UI.button("Đóng", 21, UI.BORDER)
+	close.custom_minimum_size = Vector2(105, 52)
+	close.pressed.connect(close_action)
+	header.add_child(close)
+	column.add_child(header)
+	var line: HSeparator = HSeparator.new()
+	line.add_theme_stylebox_override("separator", UI.box(Color("#dbc6a0"), Color.TRANSPARENT, 0, 0))
+	column.add_child(line)
+	var scroller: ScrollContainer = ScrollContainer.new()
+	scroller.name = "DialogScroll"
+	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroller)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.custom_minimum_size.x = width - 44
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 22)
+	scroller.add_child(content)
+	if body != "":
+		var body_label: Label = UI.label(body, 23, UI.TEXT)
+		body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		content.add_child(body_label)
+	if extra != null:
+		content.add_child(extra)
+	var actions: GridContainer = GridContainer.new()
+	actions.columns = 2 if buttons.size() > 2 else 1
+	actions.add_theme_constant_override("h_separation", 14)
+	actions.add_theme_constant_override("v_separation", 14)
+	for entry in buttons:
+		if entry[0] == "Đóng":
+			continue
+		var button: Button = UI.button(entry[0], 22, UI.GOLD)
+		button.custom_minimum_size = Vector2((width - 62) / 2 if actions.columns == 2 else width - 44, 62)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.clip_text = true
+		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		button.tooltip_text = entry[0]
 		button.pressed.connect(entry[1])
-		row.add_child(button)
+		actions.add_child(button)
+	content.add_child(actions)
+	_fit_dialog.call_deferred(panel, content)
+
+
+func _fit_dialog(panel: PanelContainer, content: VBoxContainer) -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(panel) or not is_instance_valid(content):
+		return
+	panel.custom_minimum_size.y = clampf(content.get_combined_minimum_size().y + 120, 460, minf(1260, get_viewport_rect().size.y - 100))
+	panel.reset_size()
 
 
 func _close_overlay() -> void:

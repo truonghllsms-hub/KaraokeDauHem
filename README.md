@@ -18,6 +18,7 @@ Bản chạy trên trình duyệt (cần export templates 4.5.1; preset "Web" c�
 
 ```bash
 godot --headless --path . --export-release "Web" build/web/index.html
+python3 tools/prepare_web.py
 ```
 
 ```bash
@@ -29,10 +30,10 @@ python3 -m http.server 8060 --directory build/web
 ## Giao diện mới
 
 - Hai trang tầng: tầng 1 có 4 phòng thường (P01–P04), tầng 2 có 6 phòng VIP. P01–P02 mở sẵn; những phòng còn lại mở khóa riêng.
-- Mỗi tầng vừa một màn hình; bấm Tầng 1 / Tầng 2 hoặc cầu thang để chuyển tầng. Mở đủ 4 phòng thường và đạt 60 danh tiếng sẽ mở lối lên tầng 2; mốc này được giữ khi danh tiếng giảm. Nút tầng có số phòng đang cần phục vụ/dọn.
+- Mỗi tầng vừa một màn hình; bấm Tầng 1 / Tầng 2 hoặc cầu thang để chuyển tầng. Có thể lắp thiết bị cho phòng mới khi đủ tiền; danh tiếng giúp thu hút khách. Nút tầng có số phòng đang cần phục vụ/dọn.
 - Tầng 1 có cầu thang cuối hành lang, tủ lạnh cạnh quầy, sofa chờ nhân viên mở rộng và không có bàn. TV cao trên vách để chừa cửa trượt; loa treo tường; không có cây hoặc gối rời trong nhà. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
-- Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
+- Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Game tự lưu cuối đêm; có nhạc nền nhẹ với nút tắt, chọn bài và chỉnh âm lượng riêng.
 - Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
 - Mỗi nhóm có tối đa 5 khách. Các phòng gọn có 5 cặp chỗ ngồi cố định, bổ sung ghế đơn khi gọi nhiều nhân viên: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
 
@@ -64,11 +65,14 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 - Hội toàn nam gọi nữ trong khoảng 90% trường hợp, 10% gọi nam; hội toàn nữ gọi nam. Cặp đôi và gia đình không gọi. Nhóm hỗn hợp có thể gọi nhân viên bất kỳ.
 - Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá năm người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
 - Mỗi đêm có mục tiêu; tổng kết có thu chi, lời nhận xét của khách và ba món đầu tư.
+- Nhân viên có hình riêng theo vai trò: tạp vụ, phục vụ, lễ tân. Chủ quán và phục vụ đến tủ lạnh lấy đồ, bưng khay đến phòng rồi trở lại tay không.
+- Hai đêm hướng dẫn, khách quen, đánh giá, vay ngân hàng, phá sản và tiếp tục từ bản tự lưu cuối đêm.
+- Ba bản nhạc nhẹ của Kevin MacLeod (CC BY 4.0); ghi nguồn trong Cài đặt và `assets/audio/CREDITS.txt`.
 - Ba nâng cấp: dàn loa, micro dự phòng, xe đẩy phục vụ.
 
 ## Hạn chế hiện tại
 
-- Chưa có: lưu/tải, âm thanh, nhân viên phục vụ, giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm, phá sản.
+- Chưa có: giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm.
 - Cân bằng mới ở mức sơ bộ.
 
 ## Cấu trúc

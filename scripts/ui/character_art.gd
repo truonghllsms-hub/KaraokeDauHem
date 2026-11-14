@@ -3,6 +3,8 @@ extends RefCounted
 ## cùng một ID dùng cho ảnh tuyển dụng, đứng, ngồi và các hướng chủ quán.
 
 const SHEETS: Dictionary = {
+	"staff_tasks": preload("res://assets/characters/staff_tasks.webp"),
+	"staff_idle": preload("res://assets/characters/staff_idle.webp"),
 	"new_men": preload("res://assets/characters/new_men_base.webp"),
 	"new_men_seated": preload("res://assets/characters/new_men_seated.webp"),
 	"staff": preload("res://assets/characters/staff.webp"),
@@ -15,6 +17,8 @@ const SHEETS: Dictionary = {
 }
 
 const REGIONS: Dictionary = {
+	"staff_tasks": [Rect2(134, 13, 245, 424), Rect2(553, 16, 279, 421), Rect2(986, 15, 254, 422), Rect2(1423, 11, 229, 425), Rect2(132, 454, 233, 425), Rect2(545, 456, 231, 421), Rect2(967, 458, 242, 420), Rect2(1430, 458, 239, 420)],
+	"staff_idle": [Rect2(171, 13, 182, 485), Rect2(627, 18, 214, 480), Rect2(1127, 15, 216, 482), Rect2(155, 520, 194, 494), Rect2(629, 525, 215, 489), Rect2(1148, 520, 199, 494)],
 	"new_men": [Rect2(119, 15, 241, 424), Rect2(503, 11, 226, 429), Rect2(898, 14, 185, 423), Rect2(168, 448, 184, 377), Rect2(539, 454, 180, 371), Rect2(910, 448, 181, 376), Rect2(168, 838, 179, 401), Rect2(535, 837, 185, 403), Rect2(910, 837, 179, 403)],
 	"new_men_seated": [Rect2(63, 15, 327, 429), Rect2(457, 12, 331, 431), Rect2(911, 17, 290, 427), Rect2(105, 441, 260, 391), Rect2(504, 449, 269, 387), Rect2(908, 445, 260, 391), Rect2(69, 834, 298, 408), Rect2(474, 838, 303, 406), Rect2(878, 837, 302, 405)],
 	"staff": [Rect2(134, 26, 188, 406), Rect2(573, 26, 186, 404), Rect2(1020, 26, 181, 407), Rect2(1457, 26, 182, 408), Rect2(117, 463, 252, 413), Rect2(565, 460, 238, 416), Rect2(988, 470, 247, 402), Rect2(1443, 477, 221, 397)],
@@ -27,6 +31,20 @@ const REGIONS: Dictionary = {
 }
 
 const PEOPLE: Dictionary = {
+	"janitor_m": ["staff_idle", 0],
+	"janitor_f": ["staff_idle", 1],
+	"server_f": ["staff_idle", 2],
+	"server_m": ["staff_idle", 3],
+	"reception_f": ["staff_idle", 4],
+	"reception_m": ["staff_idle", 5],
+	"janitor_m_cleaning": ["staff_tasks", 0],
+	"janitor_f_cleaning": ["staff_tasks", 1],
+	"server_f_carrying": ["staff_tasks", 2],
+	"server_m_carrying": ["staff_tasks", 3],
+	"owner_carrying_front": ["staff_tasks", 4],
+	"owner_carrying_back": ["staff_tasks", 5],
+	"owner_carrying_left": ["staff_tasks", 6],
+	"owner_carrying_right": ["staff_tasks", 7],
 	"lancan_9": ["new_men", 0],
 	"lancan_10": ["new_men", 1],
 	"lancan_11": ["new_men", 2],
@@ -76,7 +94,11 @@ static var _cache: Dictionary = {}
 
 static func texture(person: String, pose: String = "standing", facing: String = "front") -> Texture2D:
 	var key: String = person
-	if person == "owner":
+	if pose == "carrying":
+		key = "owner_carrying_" + facing if person == "owner" else person + "_carrying"
+	elif pose == "cleaning" and person.begins_with("janitor_"):
+		key = person + "_cleaning"
+	elif person == "owner":
 		if pose == "cleaning":
 			key = "owner_cleaning"
 		elif facing != "front":
@@ -103,3 +125,7 @@ static func height(person: String, pose: String = "standing") -> float:
 	if person.begins_with("lancan_"):
 		return 104.0 if pose == "seated" else 120.0
 	return 94.0 if pose == "seated" else 112.0
+
+
+static func staff_sprite(member: Dictionary) -> String:
+	return {"staff_1": "janitor_m", "staff_2": "janitor_f", "staff_3": "server_f", "staff_4": "server_m", "staff_5": "reception_f", "staff_6": "reception_m"}.get(member.get("id", ""), member.get("sprite", "server_m"))

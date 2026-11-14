@@ -11,6 +11,7 @@ const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
+const EMPTY_FLOOR = preload("res://assets/topdown/unequipped_floor.webp")
 const MAP_STANDARD = preload("res://assets/topdown/floor1_final.webp")
 const MAP_VIP = preload("res://assets/topdown/floor2_final.webp")
 const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
@@ -32,7 +33,7 @@ const GATE: Vector2 = Vector2(515, 1084)
 const STAIR1: Vector2 = Vector2(515, 300)
 const STAIR2: Vector2 = Vector2(515, 1700)
 const OWNER_HOME: Vector2 = Vector2(410, 1000)
-const PICKUP: Vector2 = Vector2(420, 1010)
+const PICKUP: Vector2 = Vector2(110, 1070)
 const HOST_SLOTS: Array = [Vector2(650, 960), Vector2(735, 960), Vector2(820, 960), Vector2(905, 960), Vector2(960, 1015), Vector2(960, 1070)]
 const QUEUE_SLOTS: Array = [Vector2(460, 1010), Vector2(460, 1065), Vector2(580, 1010), Vector2(580, 1065)]
 const STREET: Vector2 = Vector2(515, 1280)
@@ -43,9 +44,9 @@ const MAX_TASKS: int = 5
 const STAFF_SLOTS: Array = [Vector2(330, 935), Vector2(250, 935), Vector2(170, 935)]
 ## Chỗ đứng theo vai trò: lễ tân sau quầy, tạp vụ và phục vụ cạnh quầy.
 const ROLE_SLOTS: Dictionary = {
-	"receptionist": [Vector2(250, 975), Vector2(320, 975)],
-	"janitor": [Vector2(110, 935), Vector2(170, 935)],
-	"waiter": [Vector2(330, 925), Vector2(400, 925)],
+	"receptionist": [Vector2(250, 940), Vector2(340, 940)],
+	"janitor": [Vector2(190, 950), Vector2(430, 1060)],
+	"waiter": [Vector2(565, 955), Vector2(565, 1060)],
 }
 const THIEF_FROM: Vector2 = Vector2(980, 1290)
 const LINE_SECONDS: float = 4.5
@@ -92,6 +93,7 @@ var _lbl_toast: Label
 var _lbl_tasks: Label
 var _lbl_yard: Label
 var _anim_time: float = 0.0
+var _fridge_active_until: float = 0.0
 var _toast_until: int = 0
 var _staff_actors: Dictionary = {}
 var _thief_actor = null
@@ -287,11 +289,12 @@ func _build_room(room: Dictionary, index: int) -> void:
 	root.visible = room["floor"] == current_floor
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	var dimmer: ColorRect = ColorRect.new()
-	dimmer.position = Vector2(0, 65)
-	dimmer.size = Vector2(ROOM_W, ROOM_H - 65)
-	# Phòng chưa lắp thiết bị: sàn trống, che hết nội thất vẽ sẵn.
-	dimmer.color = Color("#cdb790")
+	var dimmer: TextureRect = TextureRect.new()
+	dimmer.texture = EMPTY_FLOOR
+	dimmer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	dimmer.stretch_mode = TextureRect.STRETCH_SCALE
+	dimmer.position = Vector2(8, 68)
+	dimmer.size = Vector2(ROOM_W - 16, ROOM_H - 78)
 	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(dimmer)
 	var furniture: Control = Control.new()
@@ -458,6 +461,9 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _add_task(task: Dictionary) -> void:
+	if task["kind"] == "deliver":
+		var order: Dictionary = sim.rooms.get_room(task["room_id"])["request"]
+		task["request_id"] = order.get("id", -1)
 	if sim.state.phase != "OPEN" and task["kind"] != "goto":
 		report.emit("Quán chưa mở cửa.")
 		return
@@ -487,6 +493,11 @@ func _task_target(task: Dictionary) -> Vector2:
 
 
 func _update_owner() -> void:
+	if _current_task.get("kind", "") == "deliver" and not _owner_order_valid(_current_task):
+		_owner.walk_to([])
+		_owner.carrying = false
+		_owner.pose = "standing"
+		_current_task = {}
 	if _cleaning_room != "":
 		if sim.rooms.get_room(_cleaning_room)["state"] == "CLEANING":
 			return
@@ -501,8 +512,12 @@ func _update_owner() -> void:
 			_owner.set_bubble("")
 			return
 		_current_task = _tasks.pop_front()
+		_owner.carrying = false
+		if _current_task["kind"] == "deliver" and not _owner_order_valid(_current_task):
+			_current_task = {}
+			return
 		_owner.walk_to(_route(_owner.position, _task_target(_current_task)))
-		var bubbles: Dictionary = {"seat": "Mời vào phòng!", "clean": "Đi dọn phòng", "deliver": "Lấy món ở quầy", "fix": "Đi đổi micro"}
+		var bubbles: Dictionary = {"seat": "Mời vào phòng!", "clean": "Đi dọn phòng", "deliver": "Đến tủ lạnh lấy đồ", "fix": "Đi đổi micro"}
 		_owner.set_bubble(bubbles.get(_current_task["kind"], ""))
 		return
 
@@ -522,15 +537,28 @@ func _update_owner() -> void:
 				report.emit(reason)
 		"deliver":
 			if not task.get("picked", false):
-				# Chặng hai: bưng món từ quầy tới phòng.
+				if not task.has("pickup_started"):
+					task["pickup_started"] = _anim_time
+					_owner.set_bubble("Lấy đồ ở tủ lạnh")
+					return
+				if _anim_time - task["pickup_started"] < 0.5:
+					return
 				task["picked"] = true
+				_owner.carrying = true
+				_fridge_active_until = _anim_time + 0.8
 				_owner.walk_to(_route(_owner.position, _work_position(task["room_id"])))
 				_owner.set_bubble("Mang món tới!")
 				return
+			_owner.carrying = false
 			report.emit(sim.deliver_order(task["room_id"]))
 		"fix":
 			report.emit(sim.fix_mic(task["room_id"]))
 	_current_task = {}
+
+
+func _owner_order_valid(task: Dictionary) -> bool:
+	var room = sim.rooms.get_room(task.get("room_id", ""))
+	return room != null and room["state"] == "OCCUPIED" and room["request"].get("kind", "") == "ORDER" and room["request"].get("id", -1) == task.get("request_id", room["request"].get("id", -1))
 
 
 # ---------------------------------------------------------------- Đồng bộ với mô phỏng
@@ -735,30 +763,46 @@ func _sync_staff(delta: float) -> void:
 		var actor = _staff_actors.get(staff_id)
 		if actor == null:
 			actor = Actor.new()
-			actor.setup([member.get("sprite", "waiter_m")])
+			actor.setup([CharacterArt.staff_sprite(member)])
 			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 			actor.position = _staff_slot(member, i)
 			actor.speed = 300.0
 			actor.set_clickable(false)
-			actor.set_tooltip("Nhân viên phục vụ %s" % member["name"])
+			actor.set_tooltip("%s %s" % [sim.staff.role_name(member["role"]), member["name"]])
 			_actors.add_child(actor)
 			_staff_actors[staff_id] = actor
 		var task: Dictionary = member["task"]
 		var working: bool = not task.is_empty() and task["kind"] != "REST"
-		var key: String = task["room_id"] if working else "idle"
+		var delivery: bool = working and task["kind"] == "DELIVER"
+		var phase: String = task.get("phase", "")
+		var key: String = "%s:%s:%s:%d" % [task["room_id"], task["kind"], phase, task.get("request_id", 0)] if working else "idle"
 		if actor.place_key != key:
 			actor.place_key = key
+			actor.set_meta("pickup_wait", 0.0)
 			var target: Vector2 = _staff_slot(member, i)
 			if working:
-				target = _work_position(task["room_id"]) + Vector2(60, 0)
-				if task["kind"] == "SEAT":
+				target = _work_position(task["room_id"])
+				if delivery and phase == "PICKUP":
+					target = PICKUP
+				elif task["kind"] == "SEAT":
 					target = QUEUE_SLOTS[0] + Vector2(-70, 0)
 			actor.walk_to(_route(actor.position, target))
-		actor.pose = "standing"
+		actor.carrying = delivery and phase == "CARRY" and task.get("pickup_confirmed", false)
+		actor.pose = "cleaning" if working and task["kind"] == "CLEAN" and phase == "WORK" else "standing"
 		actor.mood = "tired" if member["energy"] < 40 else "neutral"
-		actor.set_bubble(STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
+		actor.set_bubble(("Đến tủ lạnh" if phase == "PICKUP" else "Mang đồ tới phòng") if delivery else STAFF_BUBBLE.get(task.get("kind", ""), ""), Color(0.9, 0.97, 1.0), UI.INFO)
 		actor.visible = sim.state.phase != "PREP"
 		actor.advance(delta)
+		if delivery and not actor.is_moving() and delta > 0.0:
+			var request_id: int = task["request_id"]
+			if phase == "PICKUP" and actor.position.distance_to(PICKUP) < 2.0:
+				var waited: float = actor.get_meta("pickup_wait", 0.0) + delta
+				actor.set_meta("pickup_wait", waited)
+				if waited >= 0.5 and sim.staff.confirm_pickup(staff_id, request_id):
+					_fridge_active_until = _anim_time + 0.8
+			elif phase == "CARRY":
+				if sim.staff.confirm_delivery(staff_id, request_id, sim.clock.minute):
+					actor.carrying = false
 
 
 func _staff_slot(member: Dictionary, index: int) -> Vector2:
@@ -925,10 +969,10 @@ func _refresh_rooms() -> void:
 		ui["center"].text = center
 		ui["center"].visible = center != ""
 		# Phòng chưa lắp thiết bị: khung chữ nằm giữa sàn trống, không đè lên phòng bên cạnh.
-		ui["center"].position = Vector2(68, 150) if locked and selected_group == 0 else Vector2(90, 300)
-		ui["center"].size = Vector2(310, 120) if locked and selected_group == 0 else Vector2(270, 80)
+		ui["center"].position = Vector2(63, 155) if locked and selected_group == 0 else Vector2(90, 300)
+		ui["center"].size = Vector2(320, 116) if locked and selected_group == 0 else Vector2(270, 80)
 		ui["center"].add_theme_color_override("font_color", color)
-		ui["center"].add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 6))
+		ui["center"].add_theme_stylebox_override("normal", UI.box(Color("#fff5dd", 0.95), Color("#b48b4c"), 2, 14))
 		var bar: ProgressBar = ui["bar"]
 		bar.visible = false
 		if room["state"] == "OCCUPIED":
@@ -967,6 +1011,8 @@ func _draw() -> void:
 		var source_rows: Array = [0, 490, 900, MAP_VIP.get_height()]
 		for row in 3:
 			draw_texture_rect_region(MAP_VIP, Rect2(0, MAP_Y + row * ROOM_H, 1024, ROOM_H), Rect2(0, source_rows[row], MAP_VIP.get_width(), source_rows[row + 1] - source_rows[row]))
+	if current_floor == 1 and _anim_time < _fridge_active_until:
+		draw_style_box(UI.box(Color(1.0, 0.92, 0.5, 0.2), UI.GOLD, 2, 0), Rect2(45, 885, 94, 180))
 	for room in sim.state.rooms:
 		if room["floor"] != current_floor or room["state"] != "OCCUPIED":
 			continue
