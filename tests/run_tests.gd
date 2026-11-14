@@ -415,9 +415,13 @@ func test_yard_and_goals() -> void:
 	check(first["comments"].size() == 3 and first["thefts"] == 0, "Tổng kết có 3 lời nhận xét, đêm 1 không mất xe")
 	check(first["wages"] == wage_ti, "Chưa thuê bảo vệ: chỉ trả lương tạp vụ")
 
-	# Đêm 2: trộm rón rén vào bãi, không ai đuổi thì mất xe.
+	# Đêm 3 (hết đêm tập): trộm rón rén vào bãi, không ai đuổi thì mất xe.
 	sim.next_day()
-	check(sim.theft_risk_active(), "Từ đêm 2 có trộm")
+	check(not sim.theft_risk_active(), "Đêm 2 vẫn là đêm tập, chưa có trộm")
+	sim.open_doors()
+	step(sim, 400)
+	sim.next_day()
+	check(sim.theft_risk_active(), "Từ đêm 3 có trộm")
 	sim.open_doors()
 	check(sim.chase_thief().contains("Không có trộm"), "Không có trộm thì không đuổi")
 	var victim = sim.customers.add_group("friends", 3, 90, 0)
@@ -466,8 +470,8 @@ func test_yard_and_goals() -> void:
 	check(sim.state.thief["state"] == "CAUGHT" and sim.state.night["thefts"] == 2, "Bảo vệ bắt được trộm")
 	balance["guard_catch_percent"] = saved
 	step(sim, 400)
-	var second: Dictionary = sim.state.history[1]
-	check(second["wages"] == wage_ti + balance["guard_wage"] and second["compensation"] == 2 * balance["theft_compensation"] and second["thieves_caught"] == 2, "Tổng kết đêm 2: lương bảo vệ, tiền đền hai xe, hai lần bắt trộm")
+	var second: Dictionary = sim.state.history[2]
+	check(second["wages"] == wage_ti + balance["guard_wage"] and second["compensation"] == 2 * balance["theft_compensation"] and second["thieves_caught"] == 2, "Tổng kết đêm 3: lương bảo vệ, tiền đền hai xe, hai lần bắt trộm")
 	check(second["profit"] == second["room_revenue"] - second["wages"] - second["operating"] - second["compensation"], "Lợi nhuận = thu - lương - vận hành - đền xe")
 	check(sim.state.thief.is_empty() and sim.economy.ledger_matches_balance(), "Kết ca không còn trộm, số dư khớp sổ")
 
@@ -1062,6 +1066,14 @@ func test_finance() -> void:
 func test_reviews_and_arrivals() -> void:
 	print("Đánh giá kiểu Google Maps và lượng khách theo sao")
 	var sim = new_sim(55)
+	check(sim.customers.is_tutorial_night() and sim.customers.tutorial_percent() == 55, "Đêm 1 là đêm tập: khách tới bằng 55%")
+	sim.state.day = 2
+	check(sim.customers.tutorial_percent() == 75, "Đêm 2: khách tới bằng 75%")
+	sim.state.day = 3
+	check(not sim.customers.is_tutorial_night() and sim.customers.tutorial_percent() == 100 and sim.theft_risk_active(), "Từ đêm 3: khách bình thường và bắt đầu có trộm")
+	sim.state.day = 2
+	check(not sim.theft_risk_active(), "Hai đêm tập không có trộm")
+	sim.state.day = 1
 	check(sim.customers.arrival_percent() == 100, "Chưa có đánh giá: lượng khách bình thường")
 	sim.state.rating_sum = 45
 	sim.state.rating_count = 10

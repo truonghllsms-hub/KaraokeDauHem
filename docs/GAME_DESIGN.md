@@ -164,6 +164,11 @@ Lưu ở giai đoạn chuẩn bị hoặc sau tổng kết (tự lưu được).
 
 ## Đợt cân bằng kinh tế (14/11/2026)
 
+### Hai đêm tập
+Đêm 1 khách tới bằng 55%, đêm 2 bằng 75% so với bình thường; trộm xe bắt đầu từ đêm 3. Khung "HƯỚNG DẪN" phía trên thanh điều hướng
+chỉ từng bước đúng lúc (mở cửa, chọn nhóm, chọn phòng, giao món, đổi micro, dọn phòng, lắp phòng, vay, thuê nhân viên, đuổi trộm);
+bấm "Đã hiểu" để ẩn. Nút "Vay ngân hàng" luôn ở góc trái (đỏ khi số dư âm); bảng phòng có nút "Vay … để lắp" khi thiếu tiền.
+
 ### Mở phòng, lượng khách
 - Phòng nào cũng lắp được khi đủ tiền (tầng 2 không cần danh tiếng). Lắp thiết bị chỉ ở giai đoạn chuẩn bị.
 - Lượng khách **không** tăng theo số phòng. Khách đến = mức cơ bản (một nhóm mỗi 12–24 phút) × hệ số sao × hệ số danh tiếng.
@@ -180,7 +185,7 @@ Mặt bằng và điện nước cơ bản 2.000.000đ; mỗi phòng thường �
 - Số dư âm sau quyết toán là cảnh báo; âm 2 đêm liền thì phá sản (hết ván, chơi lại từ đầu).
 
 ### Trộm xe
-Từ đêm 2, trung bình khoảng 30% mỗi giờ có một tên trộm đi chậm vào bãi xe: 7 phút đi tới, 4 phút phá khóa. Bấm vào hắn, chủ quán chạy ra (2 phút); tới kịp thì bắt được. Bảo vệ tự đuổi, bắt được 90%. Mất xe: quán đền 1.000.000đ ngay, −3 danh tiếng, nhóm bị mất −40 hài lòng.
+Từ đêm 3, trung bình khoảng 30% mỗi giờ có một tên trộm đi chậm vào bãi xe: 7 phút đi tới, 4 phút phá khóa. Bấm vào hắn, chủ quán chạy ra (2 phút); tới kịp thì bắt được. Bảo vệ tự đuổi, bắt được 90%. Mất xe: quán đền 1.000.000đ ngay, −3 danh tiếng, nhóm bị mất −40 hài lòng.
 
 ### Nhân viên
 Tạp vụ dọn phòng (có sẵn Tí); phục vụ giao món và đổi micro; lễ tân đón khách chờ và xếp vào phòng đắt nhất mà vẫn vừa túi tiền. Mỗi vai trò tối đa 2 người, phí tuyển 600.000đ.

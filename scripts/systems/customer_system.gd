@@ -144,10 +144,20 @@ func reputation_percent() -> int:
 	return clampi(100 + (_state.reputation - balance["starting_reputation"]) * balance["reputation_arrival_per_point_percent"], balance["reputation_arrival_min_percent"], balance["reputation_arrival_max_percent"])
 
 
-## Tổng lượng khách so với lúc mới mở quán (sao × danh tiếng).
+## Những đêm đầu là đêm tập: khách tới thưa hơn (tutorial_arrival_percent theo từng đêm).
+func tutorial_percent() -> int:
+	var nights: Array = _data["balance"]["tutorial_arrival_percent"]
+	return nights[_state.day - 1] if _state.day <= nights.size() else 100
+
+
+func is_tutorial_night() -> bool:
+	return _state.day <= _data["balance"]["tutorial_arrival_percent"].size()
+
+
+## Tổng lượng khách so với lúc mới mở quán (sao × danh tiếng × đêm tập).
 func demand_percent() -> int:
 	@warning_ignore("integer_division")
-	return arrival_percent() * reputation_percent() / 100
+	return arrival_percent() * reputation_percent() / 100 * tutorial_percent() / 100
 
 
 func remove_group(group: Dictionary) -> void:
@@ -172,7 +182,7 @@ func tick(now: int) -> void:
 		var interval: int = _rng.randi_range(balance["spawn_interval_min"], balance["spawn_interval_max"])
 		@warning_ignore("integer_division")
 		# Lượng khách theo điểm sao và danh tiếng, không theo số phòng: mở phòng chỉ có lời khi đủ khách.
-		_state.next_arrival_minute = now + maxi(1, interval * 10000 / (arrival_percent() * reputation_percent()))
+		_state.next_arrival_minute = now + maxi(1, interval * 1000000 / (arrival_percent() * reputation_percent() * tutorial_percent()))
 
 
 ## Giờ đóng cửa: những nhóm còn chờ ra về, không trừ danh tiếng.

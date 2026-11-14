@@ -62,6 +62,12 @@ func _run() -> void:
 	_check(_venue._btn_open.visible, "Giai đoạn chuẩn bị: nút MỞ CỬA ĐÓN KHÁCH hiện rõ")
 	_check(_venue._room_ui["room_03"]["center"].text.begins_with("CHƯA LẮP THIẾT BỊ") and _venue._room_ui["room_03"]["status"].text == "CHƯA LẮP", "Phòng chưa trang bị ghi \"Chưa lắp thiết bị\", không còn \"Khóa\"")
 	_check(_game._rating_button.text == "★ Chưa có đánh giá", "Chưa có khách: huy hiệu ghi \"Chưa có đánh giá\"")
+	_check(_game._tutorial_panel.visible and _game._tutorial_key == "d1_open" and _game._tutorial_label.text.contains("MỞ CỬA"), "Đêm tập 1: khung hướng dẫn chỉ cách mở cửa")
+	_check(_game._debt_button.visible and _game._debt_button.text.contains("Vay ngân hàng"), "Nút Vay ngân hàng luôn hiện ở góc trái")
+	_game._debt_button.pressed.emit()
+	_check(_game._overlay_kind == "ledger" and _game._overlay.find_children("*", "Label", true, false).any(func(l): return l.text == "VAY NGÂN HÀNG"), "Bấm nút vay: mở bảng vay riêng")
+	await _shot("c01b_bang_vay")
+	_game._close_overlay()
 	await _shot("c01_chuan_bi")
 
 	_venue.selected_room = "room_03"
@@ -107,20 +113,27 @@ func _run() -> void:
 
 	_venue._btn_open.pressed.emit()
 	_check(_sim.state.phase == "OPEN", "Bấm nút mở cửa thì quán mở")
+	_game._refresh()
+	_check(_game._tutorial_key in ["d1_wait", "d1_group"], "Mở cửa xong: hướng dẫn chuyển sang bước tiếp theo")
 	while _sim.customers.waiting_groups().is_empty():
 		_tick(1)
 	_tick(1)
 	var first: Dictionary = _sim.customers.waiting_groups()[0]
+	_game._refresh()
+	_check(_game._tutorial_key == "d1_group", "Có khách chờ: hướng dẫn bấm vào nhóm khách")
+	await _shot("c02c_huong_dan")
 	_venue.on_group_pressed(first["id"])
 	_tick(0)
 	_venue.advance_actors(0.0)
+	_game._refresh()
+	_check(_game._tutorial_key == "d1_room", "Đã chọn nhóm: hướng dẫn bấm phòng viền xanh")
 	var label01: String = _venue._room_ui["room_01"]["center"].text
 	_check(label01.begins_with("XẾP ĐƯỢC · dự kiến") or label01.begins_with("Khách chê đắt") or label01.begins_with("Thiếu chỗ"), "Chọn nhóm: phòng hiện giá dự kiến hoặc lý do ngắn (%s)" % label01.replace("\n", " / "))
 	_check(_venue._room_ui["room_04"]["center"].text == "Chưa lắp thiết bị", "Phòng chưa lắp thiết bị: lý do đúng khi đang chọn nhóm")
 	await _shot("c03_chon_nhom")
 
 	# Trộm xe: bấm vào tên trộm để chủ quán chạy ra đuổi.
-	_sim.state.day = 2
+	_sim.state.day = 3
 	_sim.assign_group(first["id"], "room_01")
 	_check(_sim.security.spawn(_sim.clock.minute), "Tên trộm xuất hiện ở bãi xe")
 	_tick(2)
@@ -173,6 +186,18 @@ func _run() -> void:
 	_game._close_overlay()
 	_game._show_summary()
 	_check(_sim.state.rating_count == count, "Mở lại tổng kết không nhân đôi đánh giá")
+	var loan_from_summary: Button = null
+	for node in _game._overlay.find_children("*", "Button", true, false):
+		if node.text == "Vay ngân hàng":
+			loan_from_summary = node
+	_check(loan_from_summary != null, "Bảng tổng kết có nút Vay ngân hàng")
+	loan_from_summary.pressed.emit()
+	var close_loan: Button = null
+	for node in _game._overlay.find_children("*", "Button", true, false):
+		if node.text == "Đóng":
+			close_loan = node
+	close_loan.pressed.emit()
+	_check(_game._overlay_kind == "summary", "Đóng bảng vay thì quay lại bảng tổng kết")
 	_game._close_overlay()
 	_game._show_reviews()
 	await _shot("c06_nhan_xet")

@@ -140,6 +140,7 @@ const BALANCE_KEYS: Array = [
 	"reputation_arrival_per_point_percent",
 	"reputation_arrival_min_percent",
 	"reputation_arrival_max_percent",
+	"tutorial_arrival_percent",
 ]
 const STAFF_KEYS: Array = ["id", "name", "role", "speed", "wage", "starter", "about"]
 const STAFF_ROLES: Array = ["janitor", "waiter", "receptionist"]

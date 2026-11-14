@@ -56,6 +56,10 @@ var _last_speed_skin: int = -1
 var _last_pause_skin: bool = false
 var _rating_button: Button
 var _debt_button: Button
+var _tutorial_panel: PanelContainer
+var _tutorial_label: Label
+var _tutorial_key: String = ""
+var _tutorial_hidden: Dictionary = {}
 
 
 
@@ -204,14 +208,42 @@ func _build_ui() -> void:
 	_rating_button.z_index = 5
 	_rating_button.tooltip_text = "Đánh giá sao của khách (khác với danh tiếng /100). Bấm để xem nhận xét."
 	_rating_button.pressed.connect(_show_reviews)
-	_debt_button = UI.button("", 20, UI.BAD)
+	_debt_button = UI.button("", 20, UI.GOOD)
 	_debt_button.name = "DebtBadge"
 	_debt_button.position = Vector2(10, 146)
 	_debt_button.size = Vector2(250, 46)
 	_debt_button.z_index = 5
-	_debt_button.visible = false
-	_debt_button.tooltip_text = "Dư nợ ngân hàng. Bấm để xem và trả nợ."
-	_debt_button.pressed.connect(_show_ledger)
+	_debt_button.tooltip_text = "Vay ngân hàng để lắp thêm phòng sớm. Bấm để vay hoặc trả nợ."
+	# Nút đặc màu để dễ thấy.
+	_debt_button.add_theme_font_override("font", UI.BOLD_FONT)
+	_debt_button.add_theme_color_override("font_color", Color("#fff6d8"))
+	_debt_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	_debt_button.add_theme_stylebox_override("normal", UI.box(Color("#6d7d42"), Color("#4b5a2b"), 2, 6))
+	_debt_button.add_theme_stylebox_override("hover", UI.box(Color("#7d8f4c"), Color("#4b5a2b"), 2, 6))
+	_debt_button.add_theme_stylebox_override("pressed", UI.box(Color("#5b6a36"), Color("#4b5a2b"), 2, 6))
+	_debt_button.pressed.connect(_show_loan)
+	# Khung hướng dẫn cho người mới, nằm trên thanh điều hướng.
+	_tutorial_panel = UI.panel(Color("#fff6d8"), UI.GOLD)
+	_tutorial_panel.name = "TutorialPanel"
+	_tutorial_panel.position = Vector2(20, 1286)
+	_tutorial_panel.size = Vector2(984, 110)
+	_tutorial_panel.custom_minimum_size = Vector2(984, 0)
+	_tutorial_panel.z_index = 6
+	_tutorial_panel.visible = false
+	var tutorial_row: HBoxContainer = HBoxContainer.new()
+	tutorial_row.add_theme_constant_override("separation", 12)
+	_tutorial_panel.add_child(tutorial_row)
+	_tutorial_label = UI.label("", 21, UI.TEXT, true)
+	_tutorial_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tutorial_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tutorial_label.custom_minimum_size = Vector2(780, 0)
+	tutorial_row.add_child(_tutorial_label)
+	var tutorial_close: Button = UI.button("Đã hiểu", 20, UI.GOLD)
+	tutorial_close.custom_minimum_size = Vector2(130, 56)
+	tutorial_close.pressed.connect(func() -> void:
+		_tutorial_hidden[_tutorial_key] = true
+		_tutorial_panel.visible = false)
+	tutorial_row.add_child(tutorial_close)
 	_map_scroll = ScrollContainer.new()
 	_map_scroll.name = "VenueScroll"
 	_map_scroll.position = Vector2(0, 140)
@@ -246,6 +278,7 @@ func _build_ui() -> void:
 	_reference_frame.add_child(_build_bottom_bar())
 	_reference_frame.add_child(_rating_button)
 	_reference_frame.add_child(_debt_button)
+	_reference_frame.add_child(_tutorial_panel)
 	call_deferred("_fit_map")
 	call_deferred("_show_starting_rooms")
 
@@ -418,6 +451,15 @@ func _show_venue_panel() -> void:
 		buttons.append(["MỞ CỬA ĐÓN KHÁCH", func() -> void:
 			_close_overlay()
 			_report(sim.open_doors())])
+	if _btn_unlock.visible and venue.selected_room != "":
+		var info: Dictionary = sim.room_info(venue.selected_room)
+		var loan: Dictionary = sim.loan_info()
+		if info["missing_money"] > 0 and loan["can_change"] and loan["available"] >= info["missing_money"]:
+			var borrow: int = mini(loan["available"], ((info["missing_money"] + 999999) / 1000000) * 1000000)
+			buttons.append(["Vay %s để lắp" % Money.format(borrow), func() -> void:
+				var reason: String = sim.take_loan(borrow)
+				_show_venue_panel()
+				_report(reason)])
 	if _btn_unlock.visible:
 		buttons.append([_btn_unlock.text, func() -> void:
 			var reason: String = sim.equip_room(venue.selected_room)
@@ -490,8 +532,14 @@ func _refresh() -> void:
 	var rating: String = sim.rating_text()
 	_rating_button.text = rating.replace(" đánh giá", "") if rating.begins_with("★") else "★ Chưa có đánh giá"
 	_rating_button.tooltip_text = "Đánh giá sao của khách (khác danh tiếng /100). Khách đến: %d%% bình thường. Bấm để xem nhận xét." % sim.customers.arrival_percent()
-	_debt_button.visible = state.loan_principal > 0 or state.money < 0
-	_debt_button.text = ("Nợ %s" % Money.format(state.loan_principal)) if state.money >= 0 else "SỐ DƯ ÂM!"
+	_debt_button.get_theme_stylebox("normal").bg_color = Color("#b0473c") if state.money < 0 else Color("#6d7d42")
+	if state.money < 0:
+		_debt_button.text = "SỐ DƯ ÂM! Vay gỡ"
+	elif state.loan_principal > 0:
+		_debt_button.text = "Nợ %s" % Money.format(state.loan_principal)
+	else:
+		_debt_button.text = "🏦 Vay ngân hàng" if UI.BOLD_FONT.has_char("🏦".unicode_at(0)) else "Vay ngân hàng"
+	_refresh_tutorial()
 	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Bấm Tầng 1 / Tầng 2 để đổi tầng" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
 
@@ -656,6 +704,7 @@ func _show_summary() -> void:
 		])
 		return
 	_show_overlay("summary", "TỔNG KẾT ĐÊM %d" % summary["day"], "\n".join(lines), [
+		["Vay ngân hàng", _show_loan],
 		["Sang đêm tiếp theo", func() -> void:
 			_close_overlay()
 			_report(sim.next_day())
@@ -717,6 +766,109 @@ func _show_stock() -> void:
 			_report(reason))
 		grid.add_child(buy)
 	_show_overlay("ledger", "KHO HÀNG", "Khách gọi món nào mà kho hết thì mất hài lòng. Hàng được giữ chỗ ngay khi khách gọi; khách hủy thì trả lại kho.\nSố dư: %s." % Money.format(sim.state.money), [["Đóng", _close_overlay]], grid)
+
+
+func _show_loan() -> void:
+	var loan: Dictionary = sim.loan_info()
+	var lines: Array = [
+		"Vay để lắp thêm phòng sớm, rồi trả dần bằng tiền lời.",
+		"",
+		"Số dư: %s" % Money.format(sim.state.money),
+		"Dư nợ: %s" % Money.format(loan["principal"]),
+		"Hạn mức: %s · còn vay được %s" % [Money.format(loan["limit"]), Money.format(loan["available"])],
+		"Lãi %d,%d%% mỗi đêm. Cuối mỗi đêm ngân hàng tự trừ lãi và %d%% tiền gốc." % [loan["rate_permille"] / 10, loan["rate_permille"] % 10, loan["min_principal_percent"]],
+		"Lắp thêm phòng thì hạn mức tăng (50% giá trị thiết bị).",
+	]
+	if loan["principal"] > 0:
+		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
+	lines.append("")
+	lines.append("⚠ Số dư âm sau quyết toán %d đêm liền là PHÁ SẢN. Đừng vay quá sức trả." % sim.data["balance"]["bankrupt_after_negative_nights"])
+	if not loan["can_change"]:
+		lines.append("(Đang mở cửa: chỉ vay hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
+	var buttons: Array = []
+	if loan["can_change"]:
+		for amount in [loan["step"], loan["step"] * 2]:
+			var value: int = mini(amount, loan["available"])
+			if value > 0 and not buttons.any(func(b: Array) -> bool: return b[0] == "Vay %s" % Money.format(value)):
+				buttons.append(["Vay %s" % Money.format(value), func() -> void:
+					var reason: String = sim.take_loan(value)
+					_show_loan()
+					_report(reason)])
+		if loan["principal"] > 0:
+			var repay_amount: int = mini(loan["principal"], maxi(0, sim.state.money))
+			if repay_amount > 0:
+				buttons.append(["Trả nợ %s" % Money.format(repay_amount), func() -> void:
+					var reason: String = sim.repay_loan(repay_amount)
+					_show_loan()
+					_report(reason)])
+	# Mở từ bảng tổng kết thì đóng xong quay lại tổng kết (để còn nút sang đêm sau).
+	buttons.append(["Đóng", func() -> void:
+		if sim.state.phase == "SUMMARY" and not _last_summary.is_empty():
+			_show_summary()
+		else:
+			_close_overlay()])
+	_show_overlay("ledger", "VAY NGÂN HÀNG", "\n".join(lines), buttons)
+
+
+## Hướng dẫn từng bước cho hai đêm tập và lần đầu gặp trộm. Mỗi mẹo hiện đúng lúc, bấm "Đã hiểu" để ẩn.
+func _tutorial_step() -> Array:
+	var state = sim.state
+	if state.bankrupt:
+		return []
+	var waiting: Array = sim.customers.waiting_groups()
+	var any_order: bool = false
+	var any_mic: bool = false
+	var any_dirty: bool = false
+	var any_choice: bool = false
+	var any_locked_floor1: bool = false
+	for room in state.rooms:
+		if not room["request"].is_empty():
+			any_order = any_order or room["request"]["kind"] == "ORDER"
+			any_mic = any_mic or room["request"]["kind"] == "MIC"
+			any_choice = any_choice or room["request"]["kind"] in ["HOT", "EXTEND"]
+		any_dirty = any_dirty or room["state"] == "DIRTY"
+		any_locked_floor1 = any_locked_floor1 or (room["floor"] == 1 and room["state"] == "LOCKED")
+	if not state.thief.is_empty() and sim.security.is_active():
+		return ["thief", "Có kẻ trộm đang rón rén vào bãi xe! Bấm ngay vào hắn để chủ quán chạy ra đuổi. Thuê bảo vệ ở Nhân sự để đỡ phải canh."]
+	if state.day == 1:
+		match state.phase:
+			"PREP":
+				return ["d1_open", "Đêm tập 1 · Chào chủ quán! Hai đêm đầu khách còn thưa để bạn làm quen. Bấm nút ▶ MỞ CỬA ĐÓN KHÁCH ở sảnh để bắt đầu."]
+			"OPEN":
+				if venue.selected_group != 0:
+					return ["d1_room", "Phòng viền xanh là xếp được (có ghi giá dự kiến). Bấm vào phòng đó, chủ quán sẽ dẫn khách vào."]
+				if not waiting.is_empty():
+					return ["d1_group", "Khách đang chờ ở sảnh (thanh trên đầu là độ kiên nhẫn). Bấm vào nhóm khách để chọn."]
+				if any_order:
+					return ["d1_order", "Phòng có nhãn vàng là khách gọi món. Bấm vào phòng: chủ quán ra quầy lấy món rồi mang tới. Giao nhanh thì khách vui hơn."]
+				if any_mic:
+					return ["d1_mic", "Nhãn đỏ là micro hỏng. Bấm vào phòng để đổi micro, để lâu khách sẽ bực và quán phải giảm giá."]
+				if any_choice:
+					return ["d1_choice", "Phòng có yêu cầu đặc biệt (nóng, xin hát thêm). Bấm vào phòng để chọn cách xử lý."]
+				if any_dirty:
+					return ["d1_dirty", "Khách về để lại phòng bẩn. Tạp vụ Tí sẽ tự dọn sau ít phút, hoặc bấm vào phòng để tự dọn ngay."]
+				if state.night["served"] == 0:
+					return ["d1_wait", "Khách sẽ tới cổng sau ít phút. Bấm 2x hoặc 4x ở góc trên để tua nhanh."]
+				return ["d1_rating", "Mỗi nhóm trả tiền xong sẽ để lại đánh giá sao (góc phải). Nhiều sao thì khách tới đông hơn."]
+	if state.day == 2 and state.phase == "PREP":
+		if any_locked_floor1:
+			return ["d2_expand", "Đêm tập 2 · Muốn đón nhiều khách hơn? Bấm một phòng \"Chưa lắp thiết bị\" để lắp. Thiếu tiền thì bấm \"Vay ngân hàng\" ở góc trái. Nhớ vào Kho nhập thêm hàng."]
+		return ["d2_staff", "Đêm tập 2 · Vào Nhân sự để thuê phục vụ (mang món) hoặc lễ tân (tự xếp khách vào phòng)."]
+	if state.day == 3 and state.phase == "PREP":
+		return ["d3_thief", "Hết đêm tập: từ đêm nay khách đông bình thường và bắt đầu có trộm xe. Thấy kẻ lạ ở bãi xe thì bấm vào để đuổi, hoặc thuê bảo vệ ở Nhân sự."]
+	if state.money < 0:
+		return ["negative", "Số dư đang âm! Nếu hết đêm sau vẫn âm, quán phá sản. Bấm nút đỏ ở góc trái để vay gỡ, hoặc cắt bớt chi phí."]
+	return []
+
+
+func _refresh_tutorial() -> void:
+	var step: Array = _tutorial_step()
+	if step.is_empty() or _tutorial_hidden.has(step[0]) or _overlay != null:
+		_tutorial_panel.visible = false
+		return
+	_tutorial_key = step[0]
+	_tutorial_label.text = "HƯỚNG DẪN · " + step[1]
+	_tutorial_panel.visible = true
 
 
 func _show_guard() -> void:

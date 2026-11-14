@@ -65,7 +65,7 @@
   "extend_bonus": 4,
   "extend_decline_penalty": 1,
   "cart_bonus_minutes": 6,
-  "theft_start_day": 2,
+  "theft_start_day": 3,
   "theft_compensation": 1000000,
   "theft_reputation_penalty": 3,
   "guard_wage": 350000,
@@ -147,5 +147,9 @@
   "lancan_tip_house_percent": 50,
   "reputation_arrival_per_point_percent": 2,
   "reputation_arrival_min_percent": 60,
-  "reputation_arrival_max_percent": 200
+  "reputation_arrival_max_percent": 200,
+  "tutorial_arrival_percent": [
+    55,
+    75
+  ]
 }
