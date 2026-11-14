@@ -24,6 +24,7 @@ var singing: bool = false
 var pose: String = "standing"
 var seated_faces_left: bool = false
 var seated_offsets: Array = []
+var portals: Array = []
 var mood: String = "neutral"
 var _facing: String = "front"
 var _look_left: bool = false
@@ -218,6 +219,15 @@ func advance(delta: float) -> void:
 	var remaining: float = speed * delta
 	while remaining > 0.0 and not _path.is_empty():
 		var target: Vector2 = _path[0]
+		var used_portal: bool = false
+		for portal in portals:
+			if position.distance_to(portal[0]) < 1.0 and target.distance_to(portal[1]) < 1.0:
+				position = target
+				_path.pop_front()
+				used_portal = true
+				break
+		if used_portal:
+			continue
 		var distance: float = position.distance_to(target)
 		travelled += minf(distance, remaining)
 		if distance > 0.01:

@@ -1,9 +1,10 @@
 extends RefCounted
 ## Đọc dữ liệu định nghĩa từ res://data một lần và kiểm tra hợp lệ khi khởi động.
 
-const ROOM_KEYS: Array = ["id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
+const ROOM_KEYS: Array = ["floor", "tier", "id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
 const TYPE_KEYS: Array = ["id", "name", "weight", "size_min", "size_max", "budget_per_hour", "patience_min", "patience_max", "music", "greetings", "lancan_chance", "sprites", "trait", "orders_min", "orders_max", "extend_chance", "mic_penalty_mult"]
 const BALANCE_KEYS: Array = [
+	"floor2_min_reputation",
 	"starting_money",
 	"starting_reputation",
 	"queue_limit",
@@ -114,6 +115,8 @@ static func load_all() -> Dictionary:
 			errors.append("rooms.json: cần ít nhất một phòng.")
 		for room in rooms:
 			_require(room, ROOM_KEYS, "rooms.json", errors)
+			if room.get("floor", 0) not in [1, 2] or room.get("tier", "") != ("vip" if room.get("floor", 0) == 2 else "standard"):
+				errors.append("rooms.json: tầng hoặc hạng phòng không hợp lệ.")
 	elif rooms != null:
 		errors.append("rooms.json: phải là một danh sách.")
 

@@ -1,5 +1,5 @@
 extends SceneTree
-## Acceptance test: the initial live screen must reproduce the approved design.
+## Acceptance test: the fixed HUD and navigation retain the approved artwork.
 ## Run at the design resolution with a rendering display: --resolution 1024x1536.
 var errors: int = 0
 
@@ -23,8 +23,8 @@ func _run() -> void:
 	actual.convert(Image.FORMAT_RGBA8)
 	expected.convert(Image.FORMAT_RGBA8)
 	check(actual.get_size() == expected.get_size(), "Capture uses approved 1024x1536 design size")
-	check(actual.get_region(Rect2i(0, 0, 1024, 140)).get_data() == expected.get_region(Rect2i(0, 0, 1024, 140)).get_data() and actual.get_region(Rect2i(0, 1404, 1024, 132)).get_data() == expected.get_region(Rect2i(0, 1404, 1024, 132)).get_data(), "HUD and navigation preserve approved pixels around larger rooms")
-	check(game._map_scroll.scroll_vertical == 1474, "Initial camera shows full-size open rooms, lobby and sidewalk")
+	check(actual.get_region(Rect2i(0, 0, 1024, 140)).get_data() == expected.get_region(Rect2i(0, 0, 1024, 140)).get_data() and actual.get_region(Rect2i(0, 1404, 1024, 132)).get_data() == expected.get_region(Rect2i(0, 1404, 1024, 132)).get_data(), "HUD and navigation preserve approved pixels around two compact floors")
+	check(game._map_scroll.scroll_vertical == 0, "Initial camera shows full-size open rooms, lobby and sidewalk")
 	var fixed_nav: Control = game.find_child("Nav_staff", true, false)
 	check(fixed_nav.get_global_rect() == Rect2(218, 1414, 192, 114), "Staff button hit target follows the artwork")
 	var before: int = game.sim.state.money

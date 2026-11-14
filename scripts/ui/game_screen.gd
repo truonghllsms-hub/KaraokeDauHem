@@ -192,32 +192,9 @@ func _build_ui() -> void:
 	venue.choice_requested.connect(_show_choice)
 	venue.inspect_requested.connect(func(_id: String) -> void: _show_venue_panel())
 	_map_stage.add_child(venue)
-	# Fixed right-edge scroll decoration comes from the same reference atlas.
-	_reference_scroll_picture = ReferenceSkin.image(Rect2(984, 140, 40, 1264), Rect2(984, 140, 40, 1264))
-	_reference_frame.add_child(_reference_scroll_picture)
 	_reference_scroll = VScrollBar.new()
-	_reference_scroll.position = Vector2(987, 174)
-	_reference_scroll.size = Vector2(34, 790)
-	_reference_scroll.custom_minimum_size.x = 34
-	_reference_scroll.max_value = VenueView.VIEW_SIZE.y - 1264
-	_reference_scroll.page = 0
-	var track: StyleBoxFlat = UI.box(Color("#f6e4b5"), UI.TEXT, 2, 2)
-	var handle: StyleBoxFlat = UI.box(UI.PURPLE, UI.TEXT, 2, 2)
-	handle.content_margin_top = 48
-	handle.content_margin_bottom = 48
-	_reference_scroll.add_theme_stylebox_override("scroll", track)
-	_reference_scroll.add_theme_stylebox_override("grabber", handle)
-	_reference_scroll.add_theme_stylebox_override("grabber_highlight", handle)
-	_reference_scroll.add_theme_stylebox_override("grabber_pressed", handle)
-	_reference_scroll.modulate.a = 0.0
-	_reference_scroll.value_changed.connect(func(value: float) -> void:
-		_scroll_used = true
-		_map_scroll.scroll_vertical = int(value))
+	_reference_scroll.visible = false
 	_reference_frame.add_child(_reference_scroll)
-	_map_scroll.get_v_scroll_bar().value_changed.connect(func(value: float) -> void:
-		_reference_scroll.set_value_no_signal(value)
-		if _scroll_used:
-			_reference_scroll.modulate.a = 1.0)
 	var backing: Control = _build_side_panel()
 	backing.visible = false
 	add_child(backing)
@@ -254,8 +231,8 @@ func _fit_map() -> void:
 
 func _show_starting_rooms() -> void:
 	if is_instance_valid(_map_scroll):
-		_map_scroll.scroll_vertical = int(VenueView.ROOM_ROWS[2])
-		_reference_scroll.set_value_no_signal(VenueView.ROOM_ROWS[2])
+		_map_scroll.scroll_vertical = 0
+		_reference_scroll.set_value_no_signal(0)
 
 
 func scroll_to_lobby() -> void:
@@ -425,7 +402,7 @@ func _refresh() -> void:
 	_fit_hud_text(_hud_rep, "%d/100" % state.reputation, 30)
 	_hud_clock.visible = state.day != 1 or sim.clock.minute != 0
 	_fit_hud_text(_hud_clock, "Đêm %d · %s" % [state.day, Clock.time_text(sim.clock.minute)], 29)
-	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Cuộn lên để xem các phòng phía trên" % [venue.task_count(), sim.customers.waiting_groups().size()]
+	_task_label.text = "Việc đang chờ: %d  ·  Khách đợi: %d  ·  Bấm Tầng 1 / Tầng 2 để đổi tầng" % [venue.task_count(), sim.customers.waiting_groups().size()]
 	_refresh_detail()
 
 

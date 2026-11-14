@@ -28,13 +28,13 @@ python3 -m http.server 8060 --directory build/web
 
 ## Giao diện mới
 
-- Bản đồ cuộn dọc: hai dãy đối diện, ba phòng mỗi bên; Phòng 01–02 gần sảnh mở sẵn, Phòng 03–06 mở khóa dần.
-- Cuộn chuột hoặc vuốt trong mặt bằng để đi lên/xuống; vị trí bắt đầu nhìn xuống sảnh theo mẫu đã duyệt. Thanh thông tin và năm nút quản lý luôn đứng yên.
-- Quầy lễ tân bên trái có lối ra bên phải, sofa nhân viên bên phải không có nhãn Lan Can. Bảo vệ ngồi ghế nhựa ở vỉa hè.
+- Hai trang tầng: tầng 1 có 4 phòng thường (P01–P04), tầng 2 có 6 phòng VIP. P01–P02 mở sẵn; những phòng còn lại mở khóa riêng.
+- Mỗi tầng vừa một màn hình; bấm Tầng 1 / Tầng 2 hoặc cầu thang để chuyển tầng. Mở đủ 4 phòng thường và đạt 60 danh tiếng sẽ mở lối lên tầng 2; mốc này được giữ khi danh tiếng giảm. Nút tầng có số phòng đang cần phục vụ/dọn.
+- Tầng 1 có cầu thang cuối hành lang, tủ lạnh cạnh quầy, sofa chờ nhân viên mở rộng và không có bàn. TV cao trên vách để chừa cửa trượt; loa treo tường; không có cây hoặc gối rời trong nhà. Bảo vệ ngồi ghế nhựa ở vỉa hè.
 - **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
 - Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
 - Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
-- Mỗi nhóm có tối đa 5 khách. Phòng rộng hơn với 5 cặp chỗ ngồi cố định trên sofa: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
+- Mỗi nhóm có tối đa 5 khách. Các phòng gọn có 5 cặp chỗ ngồi cố định, bổ sung ghế đơn khi gọi nhiều nhân viên: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
 
 Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
 
@@ -55,14 +55,14 @@ Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việ
 
 ## Tính năng hiện có
 
-- Sáu phòng hát (mở sẵn 2), sảnh lễ tân, góc Lan can, sân có bãi xe, chỗ chờ và chốt bảo vệ.
+- Tổng cộng 10 phòng trên 2 tầng (4 thường + 6 VIP), sảnh lễ tân, ghế chờ nhân viên, bãi xe và bảo vệ.
 - Mười một nhóm khách có đặc điểm ảnh hưởng thật (số lần gọi món, hay xin hát thêm, kỹ micro, ngân sách), gồm thêm hội nam trung niên và hội nam trẻ trâu trưởng thành, mỗi hội có ba diện mạo mới.
 - Trong lúc khách hát: gọi món (6 mặt hàng, có tồn kho), micro trục trặc, phòng nóng, xin hát thêm 30 phút.
 - Hóa đơn minh bạch: tiền phòng theo phút, từng món, phí Lan can, giảm giá xin lỗi; làm tròn 1.000đ.
 - Mất xe từ đêm 2 nếu không thuê bảo vệ: đền tiền và mất danh tiếng.
 - Lan can: 11 nhân viên giao lưu (7 nữ, 4 nam), tuyển tối đa 6; ba mẫu nam mới cởi trần sáu múi, mặc quần dài.
 - Hội toàn nam gọi nữ trong khoảng 90% trường hợp, 10% gọi nam; hội toàn nữ gọi nam. Cặp đôi và gia đình không gọi. Nhóm hỗn hợp có thể gọi nhân viên bất kỳ.
-- Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá sáu người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
+- Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá năm người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
 - Mỗi đêm có mục tiêu; tổng kết có thu chi, lời nhận xét của khách và ba món đầu tư.
 - Ba nâng cấp: dàn loa, micro dự phòng, xe đẩy phục vụ.
 

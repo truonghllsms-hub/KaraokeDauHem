@@ -17,6 +17,8 @@ func setup_new_game() -> void:
 		_state.rooms.append({
 			"id": def["id"],
 			"name": def["name"],
+			"floor": def.get("floor", 1),
+			"tier": def.get("tier", "standard"),
 			"capacity": def["capacity"],
 			"price_per_hour": def["price_per_hour"],
 			"unlock_cost": def["unlock_cost"],
@@ -43,6 +45,20 @@ func get_room(room_id: String) -> Variant:
 			return room
 	return null
 
+
+func floor_unlocked(floor_number: int) -> bool:
+	if floor_number == 1 or _state.floor2_unlocked:
+		return true
+	if _state.reputation < _data["balance"]["floor2_min_reputation"]:
+		return false
+	for room in _state.rooms:
+		if room["floor"] == 1 and room["state"] == "LOCKED":
+			return false
+	_state.floor2_unlocked = true
+	return true
+
+func floor_lock_reason() -> String:
+	return "Mở đủ 4 phòng thường và đạt %d danh tiếng để lên tầng 2." % _data["balance"]["floor2_min_reputation"]
 
 func unlocked_count() -> int:
 	var count: int = 0

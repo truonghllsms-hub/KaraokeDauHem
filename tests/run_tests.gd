@@ -163,9 +163,10 @@ func test_waiting_and_unlock() -> void:
 	check(sim.unlock_room("room_03") == "" and sim.state.money == money - 4000000, "Mở phòng 03 trừ 4.000.000đ")
 	check(sim.unlock_room("room_03") != "" and sim.state.money == money - 4000000, "Không mở trùng, không trừ tiền lần hai")
 	check(sim.unlock_room("room_04") == "", "Mở phòng 04")
+	sim.state.reputation = 60
 	sim.economy.record("TEST", -sim.state.money, "drain")
 	check(sim.unlock_room("room_05").contains("Không đủ tiền"), "Thiếu tiền: không mở được phòng")
-	check(sim.state.rooms.size() == 6 and sim.rooms.unlocked_count() == 4, "Quán có 6 phòng, mở sẵn 2 và vừa mở thêm 2")
+	check(sim.state.rooms.size() == 10 and sim.rooms.unlocked_count() == 4, "Quán có 10 phòng, mở sẵn 2 và vừa mở thêm 2")
 
 
 func test_closing_time() -> void:
@@ -349,7 +350,7 @@ func test_service() -> void:
 	money = sim.state.money
 	check(sim.buy_upgrade("spare_mics") == "" and sim.state.money == money - 1500000 and sim.service.upgrade_level("spare_mics") == 1, "Mua micro dự phòng")
 	check(sim.buy_upgrade("spare_mics").contains("cao nhất"), "Không mua quá cấp tối đa")
-	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_05")["sound"] == 2, "Dàn loa mới: mọi phòng lên cấp âm thanh 2")
+	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_05")["sound"] == 3, "Dàn loa mới: phòng VIP lên cấp âm thanh 3")
 	sim.state.stock["da"] = 0
 	var thirsty = sim.customers.add_group("drinking", 3, 60, sim.clock.minute)
 	sim.assign_group(thirsty["id"], "room_01")

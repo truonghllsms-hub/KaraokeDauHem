@@ -1,7 +1,6 @@
 extends Control
-## Mặt bằng quán nhìn từ trên xuống: sáu phòng hát (hai dãy, hành lang ở giữa), sảnh lễ tân và góc Lan can
-## bên phải, sân xe và chỗ chờ phía dưới. Chỉ hiển thị trạng thái của Simulation và biến cú bấm
-## thành việc cho chủ quán đi làm.
+## Hai tầng: 4 phòng thường và 6 VIP, hành lang giữa và cầu thang nối tầng.
+## Giữ tọa độ thế giới riêng cho mỗi tầng, camera chỉ hiển thị tầng đang chọn.
 
 signal report(reason: String)
 signal hint(text: String)
@@ -12,28 +11,33 @@ const ReferenceSkin = preload("res://scripts/ui/reference_skin.gd")
 const UI = preload("res://scripts/ui/ui_kit.gd")
 const Actor = preload("res://scripts/ui/actor.gd")
 const CharacterArt = preload("res://scripts/ui/character_art.gd")
-const ROOM_ART: Array = [preload("res://assets/topdown/room_green_spacious.webp"), preload("res://assets/topdown/room_purple_spacious.webp")]
+const MAP_STANDARD = preload("res://assets/topdown/floor1_final.webp")
+const MAP_VIP = preload("res://assets/topdown/floor2_final.webp")
 const SeatingPlan = preload("res://scripts/ui/seating_plan.gd")
 const Money = preload("res://scripts/core/money.gd")
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
-const VIEW_SIZE: Vector2 = Vector2(1024, 2809)
-const ROOM_W: float = 434.0
-const ROOM_H: float = 735.0
-const ROOM_COLS: Array = [24.0, 559.0]
-const ROOM_ROWS: Array = [0.0, 737.0, 1474.0]
-const CORRIDOR_X: float = 510.0
-const LOBBY_Y: float = 2209.0
-const YARD_Y: float = 2605.0
-const JUNCTION: Vector2 = Vector2(510, 2251)
-const GATE: Vector2 = Vector2(510, 2605)
-const OWNER_HOME: Vector2 = Vector2(200, 2331)
-const PICKUP: Vector2 = Vector2(350, 2396)
-const HOST_SLOTS: Array = [Vector2(700, 2341), Vector2(780, 2341), Vector2(860, 2341), Vector2(900, 2401), Vector2(900, 2461), Vector2(900, 2521)]
-const QUEUE_SLOTS: Array = [Vector2(340, 2481), Vector2(370, 2531), Vector2(660, 2481), Vector2(690, 2531)]
-const STREET: Vector2 = Vector2(510, 2851)
-const BIKE_SLOTS: Array = [Vector2(140, 2751), Vector2(220, 2751), Vector2(720, 2751), Vector2(300, 2751), Vector2(800, 2751), Vector2(380, 2751)]
-const GUARD_POS: Vector2 = Vector2(926, 2731)
+const VIEW_SIZE: Vector2 = Vector2(1024, 1264)
+const FLOOR2_OFFSET: float = 1400.0
+const MAP_Y: float = 64.0
+const ROOM_W: float = 446.0
+const ROOM_H: float = 400.0
+const ROOM_COLS: Array = [16.0, 566.0]
+const ROOM_ROWS: Array = [64.0, 464.0, 864.0]
+const CORRIDOR_X: float = 515.0
+const LOBBY_Y: float = 864.0
+const YARD_Y: float = 1084.0
+const JUNCTION: Vector2 = Vector2(515, 890)
+const GATE: Vector2 = Vector2(515, 1084)
+const STAIR1: Vector2 = Vector2(515, 300)
+const STAIR2: Vector2 = Vector2(515, 1700)
+const OWNER_HOME: Vector2 = Vector2(410, 1000)
+const PICKUP: Vector2 = Vector2(420, 1010)
+const HOST_SLOTS: Array = [Vector2(650, 960), Vector2(735, 960), Vector2(820, 960), Vector2(905, 960), Vector2(960, 1015), Vector2(960, 1070)]
+const QUEUE_SLOTS: Array = [Vector2(460, 1010), Vector2(460, 1065), Vector2(580, 1010), Vector2(580, 1065)]
+const STREET: Vector2 = Vector2(515, 1280)
+const BIKE_SLOTS: Array = [Vector2(140, 1210), Vector2(260, 1210), Vector2(720, 1210), Vector2(350, 1210), Vector2(800, 1210), Vector2(430, 1210)]
+const GUARD_POS: Vector2 = Vector2(900, 1220)
 const MAX_TASKS: int = 5
 
 const STATE_TEXT: Dictionary = {
@@ -55,6 +59,10 @@ const REQUEST_LABEL: Dictionary = {"ORDER": "GỌI MÓN", "MIC": "MICRO HỎNG",
 const REQUEST_COLOR: Dictionary = {"ORDER": UI.GOLD, "MIC": UI.BAD, "HOT": Color(1.0, 0.62, 0.3), "EXTEND": UI.INFO}
 
 var sim
+var current_floor: int = 1
+var _floor_buttons: Dictionary = {}
+var _stairs_button: Button
+var _stairs_label: Label
 var selected_group: int = 0
 var selected_room: String = ""
 var selected_host: String = ""
@@ -71,9 +79,6 @@ var _btn_open: Button
 var _lbl_toast: Label
 var _lbl_tasks: Label
 var _lbl_yard: Label
-var _note_texture: Texture2D
-var _lobby_texture: Texture2D
-var _yard_texture: Texture2D
 var _anim_time: float = 0.0
 var _toast_until: int = 0
 
@@ -88,13 +93,10 @@ func setup(p_sim) -> void:
 	custom_minimum_size = VIEW_SIZE
 	size = VIEW_SIZE
 	clip_contents = true
-	_note_texture = load("res://assets/sprites/note.svg")
 
-	_lobby_texture = load("res://assets/topdown/lobby_painted.webp")
-	_yard_texture = load("res://assets/topdown/yard.svg")
 	for i in sim.state.rooms.size():
 		_build_room(sim.state.rooms[i], i)
-	_lbl_yard = _add_label("", 13, UI.TEXT, Rect2(610, 2759, 350, 26), true)
+	_lbl_yard = _add_label("", 13, UI.TEXT, Rect2(610, 1225, 350, 26), true)
 	_lbl_yard.visible = false
 	_actors = Node2D.new()
 	_actors.y_sort_enabled = true
@@ -121,32 +123,33 @@ func setup(p_sim) -> void:
 
 	_owner = Actor.new()
 	_owner.setup(["owner"])
+	_owner.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 	_owner.position = OWNER_HOME
 	_owner.speed = 330.0
 	_owner.set_clickable(false)
 	_actors.add_child(_owner)
 
-	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 2496, 830, 48), true)
+	_lbl_toast = _add_label("", 22, UI.TEXT, Rect2(80, 1195, 830, 48), true)
 	_lbl_toast.clip_text = true
 	_lbl_toast.visible = false
 	_lbl_toast.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 5))
-	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 2431, 290, 32), true)
+	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 1050, 290, 32), true)
 	_lbl_tasks.visible = false
 
 	_btn_open = UI.button("MỞ CỬA ĐÓN KHÁCH", 18, UI.PINK)
-	_btn_open.position = Vector2(345, 2491)
+	_btn_open.position = Vector2(345, 1020)
 	_btn_open.visible = false
 	_btn_open.size = Vector2(290, 56)
 	_btn_open.pressed.connect(func() -> void: report.emit(sim.open_doors()))
 	add_child(_btn_open)
+	_build_floor_controls()
 
 
 func set_toast(text: String, color: Color) -> void:
 	_lbl_toast.text = text
 	_lbl_toast.add_theme_color_override("font_color", color)
-	if sim.state.phase == "OPEN":
-		_lbl_toast.visible = true
-		_toast_until = Time.get_ticks_msec() + 4500
+	_lbl_toast.visible = true
+	_toast_until = Time.get_ticks_msec() + 4500
 
 
 func task_count() -> int:
@@ -178,75 +181,127 @@ func _add_prop(texture_name: String, at: Vector2, prop_scale: float) -> Sprite2D
 
 
 
+func floor_of_room(room_id: String) -> int:
+	return sim.rooms.get_room(room_id)["floor"]
+
+func _world_floor(point: Vector2) -> int:
+	return 2 if point.y >= FLOOR2_OFFSET else 1
+
+func _floor_offset() -> Vector2:
+	return Vector2(0, FLOOR2_OFFSET if current_floor == 2 else 0)
+
+func set_floor(floor_number: int) -> bool:
+	if not sim.rooms.floor_unlocked(floor_number):
+		report.emit(sim.rooms.floor_lock_reason())
+		return false
+	current_floor = floor_number
+	_actors.position = -_floor_offset()
+	_refresh_rooms()
+	_refresh_floor_controls()
+	_apply_actor_visibility()
+	queue_redraw()
+	return true
+
+func _build_floor_controls() -> void:
+	for floor_number in [1, 2]:
+		var button: Button = UI.button("TẦNG %d" % floor_number, 25, UI.GOOD)
+		button.name = "Floor%d" % floor_number
+		button.position = Vector2(270 + (floor_number - 1) * 255, 7)
+		button.custom_minimum_size = Vector2(220, 48)
+		button.size = Vector2(220, 48)
+		button.add_theme_stylebox_override("normal", UI.box(Color("#fff0cb"), UI.TEXT, 2, 8))
+		button.add_theme_stylebox_override("pressed", UI.box(Color("#647c36"), UI.TEXT, 2, 8))
+		button.add_theme_color_override("font_pressed_color", Color("#fff2cb"))
+		button.toggle_mode = true
+		button.pressed.connect(func() -> void: set_floor(floor_number))
+		add_child(button)
+		_floor_buttons[floor_number] = button
+	_stairs_button = ReferenceSkin.hit(Rect2(465, 70, 100, 225), "Cầu thang")
+	_stairs_button.name = "Stairs"
+	_stairs_button.pressed.connect(func() -> void: set_floor(2 if current_floor == 1 else 1))
+	add_child(_stairs_button)
+	_stairs_label = _room_label(self, "", Rect2(452, 67, 126, 32), 15)
+	_stairs_label.add_theme_stylebox_override("normal", UI.box(Color("#ffe6b5"), UI.TEXT, 2, 3))
+	_refresh_floor_controls()
+
+func _refresh_floor_controls() -> void:
+	for floor_number in [1, 2]:
+		var button: Button = _floor_buttons[floor_number]
+		var ready: bool = sim.rooms.floor_unlocked(floor_number)
+		var attention: int = 0
+		for room in sim.state.rooms:
+			if room["floor"] != floor_number:
+				continue
+			var group = sim.customers.get_group(room["group_id"])
+			if room["state"] in ["DIRTY", "BROKEN"] or not room["request"].is_empty() or (group != null and sim.hosts.needs_staff(group)):
+				attention += 1
+		button.text = ("TẦNG %d" % floor_number) + (" · KHÓA" if not ready else (" · !%d" % attention if attention else ""))
+		button.set_pressed_no_signal(current_floor == floor_number)
+		button.tooltip_text = sim.rooms.floor_lock_reason() if not ready else "Đổi tầng · %d phòng cần chú ý" % attention
+	_stairs_button.tooltip_text = "Lên tầng 2" if current_floor == 1 else "Xuống tầng 1"
+	_stairs_label.text = "LÊN TẦNG 2 ↑" if current_floor == 1 else "XUỐNG TẦNG 1 ↓"
+
 func _room_rect(index: int) -> Rect2:
 	@warning_ignore("integer_division")
-	return Rect2(ROOM_COLS[index % 2], ROOM_ROWS[2 - index / 2], 434.0 if index % 2 == 0 else 421.0, ROOM_H)
+	var row: int = 1 - index / 2 if index < 4 else (index - 4) / 2
+	var floor_offset: float = 0.0 if index < 4 else FLOOR2_OFFSET
+	return Rect2(ROOM_COLS[index % 2], MAP_Y + row * ROOM_H + floor_offset, ROOM_W, ROOM_H)
 
+func _room_label(parent: Control, text: String, at: Rect2, font_size: int = 22) -> Label:
+	var label: Label = UI.label(text, font_size, UI.TEXT, true)
+	label.position = at.position
+	label.size = at.size
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(label)
+	return label
 
 func _build_room(room: Dictionary, index: int) -> void:
-	var room_id: String = room["id"]
 	var rect: Rect2 = _room_rect(index)
-	var origin: Vector2 = rect.position
-	var center_x: float = origin.x + ROOM_W * 0.5
-
-	var furniture: Node2D = Node2D.new()
-	add_child(furniture)
-	var sprite: TextureRect = TextureRect.new()
-	sprite.texture = ROOM_ART[index % 2]
-	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_SCALE
-	sprite.position = rect.position
-	sprite.size = rect.size
-	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	furniture.add_child(sprite)
-	furniture.visible = false
-	var badge_x: float = 177.0 if index % 2 == 0 else 137.0
-	var title: Label = _add_label("", 32, Color("#51361e"), Rect2(origin + Vector2(badge_x + 6, 15), Vector2(116, 44)), true)
-	title.add_theme_stylebox_override("normal", UI.box(Color("#ffe6b5"), UI.TEXT, 2, 2))
-	title.visible = false
-	var status: Label = _add_label("", 27, Color("#fff2cb"), Rect2(origin + Vector2(badge_x, 62), Vector2(130, 39)), true)
-	status.add_theme_stylebox_override("normal", UI.box(Color("#6d7d42"), Color("#fff0cb"), 2, 0))
-	status.visible = false
-	var info: Label = _add_label("", 14, UI.TEXT, Rect2(origin + Vector2(18, 47), Vector2(ROOM_W - 36, 23)), false)
+	var root: Control = Control.new()
+	root.position = rect.position
+	root.size = rect.size
+	root.visible = room["floor"] == current_floor
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+	var dimmer: ColorRect = ColorRect.new()
+	dimmer.position = Vector2(0, 65)
+	dimmer.size = Vector2(ROOM_W, ROOM_H - 65)
+	dimmer.color = Color(0.15, 0.10, 0.07, 0.48)
+	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(dimmer)
+	var furniture: Control = Control.new()
+	root.add_child(furniture)
+	var room_title: String = "P%02d" % (index + 1) if index < 4 else "VIP %02d" % (index - 3)
+	var title: Label = _room_label(root, room_title, Rect2(12, 10, 125, 43), 25)
+	title.add_theme_stylebox_override("normal", UI.box(Color("#ffe6b5"), UI.TEXT, 2, 5))
+	var kind: Label = _room_label(root, "PHÒNG VIP" if room["floor"] == 2 else "PHÒNG THƯỜNG", Rect2(140, 10, 132, 43), 17)
+	var status: Label = _room_label(root, "", Rect2(280, 12, 152, 39), 22)
+	status.add_theme_stylebox_override("normal", UI.box(Color("#6d7d42"), Color("#fff0cb"), 2, 5))
+	var info: Label = _room_label(root, "", Rect2(12, 55, 420, 25), 17)
 	info.visible = false
-	var center_text: Label = _add_label("", 26, UI.TEXT, Rect2(origin + Vector2(30, 110), Vector2(rect.size.x - 60, 80)), true)
+	var center_text: Label = _room_label(root, "", Rect2(90, 315, 270, 65), 20)
 	center_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	center_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	center_text.z_index = 2
-	var request: Label = _add_label("", 23, UI.TEXT, Rect2(origin + Vector2(20, 110), Vector2(rect.size.x - 40, 46)), true)
+	center_text.visible = false
+	var request: Label = _room_label(root, "", Rect2(20, 75, 406, 44), 20)
 	request.clip_text = true
-	request.z_index = 3
-	request.visible = false
 	var bar: ProgressBar = UI.progress(UI.PINK)
-	bar.position = origin + Vector2(20, ROOM_H - 18)
-	bar.size = Vector2(rect.size.x - 40, 10)
-	bar.custom_minimum_size = Vector2(0, 6)
+	bar.position = Vector2(18, ROOM_H - 14)
+	bar.size = Vector2(ROOM_W - 36, 8)
+	bar.custom_minimum_size = Vector2.ZERO
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bar)
-
-	var hit: Button = Button.new()
-	hit.flat = true
-	hit.focus_mode = Control.FOCUS_NONE
-	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	for style_name in ["normal", "hover", "pressed", "disabled", "focus"]:
-		hit.add_theme_stylebox_override(style_name, StyleBoxEmpty.new())
-	hit.position = origin
-	hit.size = rect.size
-	hit.pressed.connect(func() -> void: on_room_pressed(room_id))
-	add_child(hit)
-
-	_room_ui[room_id] = {"index": index, "furniture": furniture, "title": title, "info": info, "status": status,
-		"center": center_text, "request": request, "bar": bar, "hit": hit, "border": STATE_COLOR[room["state"]], "dim": false, "art": sprite}
+	root.add_child(bar)
+	var hit: Button = ReferenceSkin.hit(Rect2(Vector2.ZERO, rect.size))
+	hit.pressed.connect(func() -> void: on_room_pressed(room["id"]))
+	root.add_child(hit)
+	_room_ui[room["id"]] = {"root": root, "index": index, "dimmer": dimmer, "furniture": furniture, "title": title, "kind": kind, "info": info, "status": status, "center": center_text, "request": request, "bar": bar, "hit": hit, "art": furniture}
 
 
 # ---------------------------------------------------------------- Vị trí và đường đi
 
 func _rect_of(room_id: String) -> Rect2:
 	return _room_rect(_room_ui[room_id]["index"])
-
-
-func _active_source(index: int) -> Rect2:
-	return Rect2(24, 396, 434, 408) if index % 2 == 0 else Rect2(559, 396, 421, 408)
 
 
 func _seat_position(room_id: String) -> Vector2:
@@ -274,39 +329,40 @@ func _work_position(room_id: String) -> Vector2:
 
 
 func _zone(point: Vector2) -> int:
+	if _world_floor(point) == 2:
+		return 1 if point.x >= 462 and point.x <= 566 else 0
 	if point.y >= YARD_Y:
 		return 3
 	if point.y >= LOBBY_Y:
 		return 2
-	if point.x >= 458 and point.x <= 559:
-		return 1
-	return 0
-
+	return 1 if point.x >= 462 and point.x <= 566 else 0
 
 func _door(point: Vector2) -> Vector2:
-	var row: int = clampi(int(point.y / 737.0), 0, 2)
-	return Vector2(CORRIDOR_X, ROOM_ROWS[row] + ROOM_H - 50)
-
+	var floor_offset: float = FLOOR2_OFFSET if _world_floor(point) == 2 else 0.0
+	var row: int = clampi(int((point.y - floor_offset - MAP_Y) / ROOM_H), 0, 2 if floor_offset > 0 else 1)
+	return Vector2(CORRIDOR_X, floor_offset + MAP_Y + row * ROOM_H + ROOM_H - 38)
 
 func _route(from: Vector2, to: Vector2) -> Array:
 	var points: Array = []
 	var start: int = _zone(from)
 	var finish: int = _zone(to)
 	if start == 0:
-		points.append(Vector2(from.x, _door(from).y + 25))
+		points.append(Vector2(430 if from.x < CORRIDOR_X else 600, _door(from).y))
 		points.append(_door(from))
 	elif start >= 2:
-		# Counter workspace exits on the right, clear of its front edge.
-		if from.x < 340 and from.y < 2381:
-			points.append(Vector2(360, from.y))
+		if from.x < 400 and from.y < 1030:
+			points.append(Vector2(430, from.y))
 		points.append(Vector2(CORRIDOR_X, from.y))
+	if _world_floor(from) != _world_floor(to):
+		points.append(STAIR1 if _world_floor(from) == 1 else STAIR2)
+		points.append(STAIR2 if _world_floor(to) == 2 else STAIR1)
 	if finish == 0:
 		points.append(_door(to))
-		points.append(Vector2(to.x, _door(to).y + 25))
+		points.append(Vector2(430 if to.x < CORRIDOR_X else 600, _door(to).y))
 	else:
 		points.append(Vector2(CORRIDOR_X, to.y))
-	if finish >= 2 and to.x < 340 and to.y < 2381:
-		points.append(Vector2(360, to.y))
+	if finish >= 2 and to.x < 400 and to.y < 1030:
+		points.append(Vector2(430, to.y))
 	points.append(to)
 	return points
 
@@ -483,6 +539,8 @@ func advance_actors(delta: float) -> void:
 			actor.queue_free()
 	_refresh_rooms()
 	_refresh_yard()
+	_refresh_floor_controls()
+	_apply_actor_visibility()
 	_btn_open.visible = false
 	if _lbl_toast.visible and Time.get_ticks_msec() > _toast_until:
 		_lbl_toast.visible = false
@@ -524,6 +582,7 @@ func _sync_groups() -> void:
 			for i in group["size"]:
 				names.append(group["sprites"][i % group["sprites"].size()])
 			actor.setup(names, "×%d" % group["size"])
+			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 			actor.position = STREET
 			actor.set_tooltip("Bấm để chọn nhóm, rồi bấm vào phòng viền xanh.")
 			actor.pressed.connect(func() -> void: on_group_pressed(group_id))
@@ -589,8 +648,7 @@ func _sync_groups() -> void:
 		actor.set_highlight(false)
 		actor.singing = false
 		actor.pose = "standing"
-		var points: Array = _route(actor.position, Vector2(STREET.x, 540))
-		points.append(STREET)
+		var points: Array = _route(actor.position, STREET)
 		actor.walk_to(points)
 		_leaving.append(actor)
 		if selected_group == group_id:
@@ -605,6 +663,7 @@ func _sync_hosts() -> void:
 		if actor == null:
 			actor = Actor.new()
 			actor.setup([host["sprite"]])
+			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 			actor.position = HOST_SLOTS[i % HOST_SLOTS.size()]
 			actor.place_key = "lounge"
 			actor.set_tooltip("Bấm để chọn, rồi bấm vào phòng đang gọi Lan can.")
@@ -631,111 +690,63 @@ func _sync_hosts() -> void:
 			actor.set_bubble("")
 
 
+func _apply_actor_visibility() -> void:
+	_owner.visible = sim.state.phase != "PREP" and _world_floor(_owner.position) == current_floor
+	for actor in _group_actors.values():
+		actor.visible = _world_floor(actor.position) == current_floor
+	for actor in _host_actors.values():
+		actor.visible = sim.state.phase != "PREP" and _world_floor(actor.position) == current_floor
+	for actor in _leaving:
+		actor.visible = _world_floor(actor.position) == current_floor
+	_guard.visible = current_floor == 1 and sim.state.guard_hired and sim.state.phase != "PREP"
+	for bike in _bikes:
+		bike.visible = bike.visible and current_floor == 1
+	_lbl_tasks.visible = current_floor == 1 and task_count() > 0
+
 func _refresh_rooms() -> void:
 	var now: int = sim.clock.minute
-	var choosing = sim.customers.get_group(selected_group) if selected_group != 0 else null
 	for room in sim.state.rooms:
 		var ui: Dictionary = _room_ui[room["id"]]
-		var room_state: String = room["state"]
-		var locked: bool = room_state == "LOCKED"
-		ui["title"].text = "P%02d" % (ui["index"] + 1)
-		ui["status"].text = STATE_TEXT[room_state]
-		ui["status"].add_theme_color_override("font_color", STATE_COLOR[room_state])
-		var info: String = "%d người · %s/giờ" % [room["capacity"], Money.format(room["price_per_hour"])]
+		var locked: bool = room["state"] == "LOCKED"
+		ui["root"].position = _rect_of(room["id"]).position - _floor_offset()
+		ui["root"].visible = room["floor"] == current_floor
+		ui["dimmer"].visible = locked
+		ui["furniture"].visible = not locked
+		ui["status"].text = STATE_TEXT[room["state"]].trim_prefix("[").trim_suffix("]")
+		ui["status"].add_theme_color_override("font_color", Color("#fff2cb"))
+		ui["status"].get_theme_stylebox("normal").bg_color = Color("#8b704d") if locked else STATE_COLOR[room["state"]].darkened(0.25)
 		var center: String = ""
-		var center_color: Color = UI.TEXT
-		var border: Color = Color(STATE_COLOR[room_state], 0.85)
-		var dim: bool = locked
-		var tip: String = "Bấm để xem chi tiết."
+		var color: Color = UI.TEXT
+		var border: Color = UI.GOLD if selected_room == room["id"] else Color.TRANSPARENT
+		if locked:
+			center = "CHƯA MỞ\n%s" % Money.format(room["unlock_cost"])
+		elif room["state"] == "DIRTY":
+			center = "Bấm để dọn"
+		elif room["state"] == "CLEANING":
+			center = "Đang dọn · còn %d'" % maxi(0, room["task_end"] - now)
+		if selected_group != 0:
+			var preview: Dictionary = sim.preview_assign(selected_group, room["id"])
+			border = UI.GOOD if preview["reason"] == "" else UI.BAD
+			center = "XẾP ĐƯỢC" if preview["reason"] == "" else preview["reason"]
+			color = border
+		ui["center"].text = center
+		ui["center"].visible = center != ""
+		ui["center"].add_theme_color_override("font_color", color)
+		ui["center"].add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 6))
 		var bar: ProgressBar = ui["bar"]
 		bar.visible = false
-
-		match room_state:
-			"LOCKED":
-				center = "CHƯA MỞ\n%s" % Money.format(room["unlock_cost"])
-				tip = "Bấm để chọn, rồi mở phòng ở bảng Chi tiết."
-			"OCCUPIED":
-				info = "Còn %d' · tạm tính %s" % [maxi(0, room["session_end"] - now), Money.format(Money.room_fee(room["session_price"], now - room["session_start"]))]
-				_show_bar(bar, UI.PINK, now - room["session_start"], room["session_end"] - room["session_start"])
-			"DIRTY":
-				center = "Bấm để dọn"
-				center_color = UI.GOLD
-				tip = "Bấm để chủ quán tới dọn phòng."
-			"CLEANING":
-				info = "Còn %d' nữa là dọn xong" % maxi(0, room["task_end"] - now)
-				_show_bar(bar, UI.INFO, now - room["task_start"], room["task_end"] - room["task_start"])
-
-		# Đang chọn nhóm khách: tô rõ phòng nào xếp được và vì sao phòng kia thì không.
-		if choosing != null:
-			var preview: Dictionary = sim.preview_assign(selected_group, room["id"])
-			if preview["reason"] == "":
-				border = UI.GOOD.lerp(Color.WHITE, 0.35 + 0.35 * sin(_anim_time * 6.0))
-				center = "XẾP ĐƯỢC · dự kiến %s" % Money.format(preview["estimate"])
-				center_color = UI.GOOD
-				if preview["over_budget"]:
-					center += "\nĐắt hơn nhóm này dự tính: -%d hài lòng" % sim.data["balance"]["price_over_budget_penalty"]
-					center_color = UI.GOLD
-				tip = "Bấm để chủ quán dẫn nhóm vào phòng này."
-			else:
-				dim = true
-				center_color = UI.BAD
-				if STATE_BLOCK.has(room_state):
-					center = STATE_BLOCK[room_state]
-				elif choosing["size"] > room["capacity"]:
-					center = "Thiếu chỗ: chỉ chứa %d người" % room["capacity"]
-				else:
-					center = "Không kịp trước 24:00"
-				tip = preview["reason"]
-
-		# Yêu cầu của khách đang hát.
+		if room["state"] == "OCCUPIED":
+			_show_bar(bar, UI.PINK, now - room["session_start"], room["session_end"] - room["session_start"])
+		elif room["state"] == "CLEANING":
+			_show_bar(bar, UI.INFO, now - room["task_start"], room["task_end"] - room["task_start"])
 		var request: Dictionary = room["request"]
-		var badge: Label = ui["request"]
-		badge.visible = not request.is_empty()
-		if badge.visible:
+		ui["request"].visible = not request.is_empty()
+		if not request.is_empty():
 			var kind: String = request["kind"]
-			var left: int = maxi(0, request["deadline"] - now)
-			badge.text = " %s · còn %d'" % [request["text"] if kind == "ORDER" else REQUEST_LABEL[kind], left]
-			var blink: float = 0.8 + 0.2 * sin(_anim_time * 8.0) if left <= 4 else 1.0
-			badge.add_theme_stylebox_override("normal", UI.box(UI.PANEL.lightened(0.12), Color(REQUEST_COLOR[kind], blink), 2, 6))
-			if choosing == null and selected_host == "":
-				match kind:
-					"ORDER":
-						tip = "Bấm để chủ quán lấy món ở quầy rồi mang tới."
-					"MIC":
-						tip = "Bấm để chủ quán tới đổi micro."
-					_:
-						tip = "Bấm để trả lời khách."
-		if selected_host != "" and room_state == "OCCUPIED":
-			tip = "Bấm để cử nhân viên Lan can đang chọn vào phòng này."
-
-		var initial_art: bool = locked
-		ui["furniture"].visible = not initial_art
-		ui["title"].visible = true
-		var badge_x: float = 177.0 if ui["index"] % 2 == 0 else 137.0
-		ui["title"].position = _rect_of(room["id"]).position + Vector2(badge_x + 6, 54 if locked else 15)
-		ui["title"].size = Vector2(116, 68 if locked else 44)
-		ui["title"].text = "P%02d" % (ui["index"] + 1)
-		ui["status"].visible = not locked
-		ui["status"].text = STATE_TEXT[room_state].trim_prefix("[").trim_suffix("]")
-		ui["status"].add_theme_color_override("font_color", Color("#fff2cb"))
-		if locked and choosing == null:
-			center = ""
-
-		ui["info"].text = info
-		ui["center"].text = center
-		ui["center"].add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.94), UI.BORDER, 1, 6) if center != "" else StyleBoxEmpty.new())
-		ui["center"].add_theme_color_override("font_color", center_color)
-		ui["furniture"].modulate = Color.WHITE
-		ui["border"] = border
-		ui["dim"] = dim
-		ui["hit"].tooltip_text = tip
-		var highlight_color: Color = UI.GOLD if room["id"] == selected_room else (border if choosing != null else Color.TRANSPARENT)
-		if ui.get("highlight_color", Color(-1, -1, -1)) != highlight_color:
-			var outline: StyleBoxFlat = UI.box(Color.TRANSPARENT, highlight_color, 4, 0)
-			outline.shadow_size = 0
-			outline.set_corner_radius_all(4)
-			ui["hit"].add_theme_stylebox_override("normal", outline)
-			ui["highlight_color"] = highlight_color
+			ui["request"].text = "%s · %d'" % [request["text"] if kind == "ORDER" else REQUEST_LABEL[kind], maxi(0, request["deadline"] - now)]
+			ui["request"].add_theme_stylebox_override("normal", UI.box(UI.PANEL, REQUEST_COLOR[kind], 2, 5))
+		ui["hit"].tooltip_text = "%s · %s · %s/giờ" % [room["name"], STATE_TEXT[room["state"]], Money.format(room["price_per_hour"])]
+		ui["hit"].add_theme_stylebox_override("normal", UI.box(Color.TRANSPARENT, border, 3, 0))
 
 
 func _show_bar(bar: ProgressBar, color: Color, value: int, total: int) -> void:
@@ -750,11 +761,19 @@ func _show_bar(bar: ProgressBar, color: Color, value: int, total: int) -> void:
 func _draw() -> void:
 	if sim == null:
 		return
-	draw_rect(Rect2(Vector2.ZERO, VIEW_SIZE), Color("#dfcea8"))
-	for y in range(0, int(LOBBY_Y), 48):
-		draw_texture_rect_region(ReferenceSkin.ATLAS, Rect2(458, y, 101, 48), Rect2(458, 160, 101, 48))
-	for index in 6:
-		var rect: Rect2 = _room_rect(index)
-		var source: Rect2 = Rect2(24, 140, 434, 256) if index % 2 == 0 else Rect2(559, 140, 421, 256)
-		draw_texture_rect_region(ReferenceSkin.ATLAS, rect, source)
-	draw_texture_rect_region(ReferenceSkin.ATLAS, Rect2(0, LOBBY_Y, 984, 600), Rect2(0, 804, 984, 600))
+	draw_rect(Rect2(Vector2.ZERO, VIEW_SIZE), Color("#ead2ab"))
+	if current_floor == 1:
+		var cuts: Array = [[0, 440, 64, 400], [440, 830, 464, 400], [830, 1095, 864, 220], [1095, 1337, 1084, 180]]
+		for cut in cuts:
+			draw_texture_rect_region(MAP_STANDARD, Rect2(0, cut[2], 1024, cut[3]), Rect2(0, cut[0], MAP_STANDARD.get_width(), cut[1] - cut[0]))
+	else:
+		# Approved VIP map has a taller first row for the stair landing.
+		var source_rows: Array = [0, 490, 900, MAP_VIP.get_height()]
+		for row in 3:
+			draw_texture_rect_region(MAP_VIP, Rect2(0, MAP_Y + row * ROOM_H, 1024, ROOM_H), Rect2(0, source_rows[row], MAP_VIP.get_width(), source_rows[row + 1] - source_rows[row]))
+	for room in sim.state.rooms:
+		if room["floor"] != current_floor or room["state"] != "OCCUPIED":
+			continue
+		for point in _seating(room["id"])["stools"]:
+			var seat: Vector2 = point - _floor_offset() - Vector2(0, 10)
+			draw_style_box(UI.box(Color("#8b7844"), Color("#50351f"), 2, 6), Rect2(seat - Vector2(23, 8), Vector2(46, 20)))

@@ -155,7 +155,7 @@ func partial_and_cancel() -> void:
 func seating() -> void:
 	var valid: bool = true
 	for right in [false, true]:
-		var rect: Rect2 = Rect2(559 if right else 24, 820, 421 if right else 434, 735)
+		var rect: Rect2 = Rect2(559 if right else 24, 820, 446, 400)
 		for guests in range(1, 6):
 			for companions in range(0, guests + 1):
 				var plan: Dictionary = Seats.build(rect, guests, companions)

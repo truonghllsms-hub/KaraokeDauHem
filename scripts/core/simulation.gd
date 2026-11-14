@@ -306,6 +306,8 @@ func unlock_room(room_id: String) -> String:
 		return "Không tìm thấy phòng."
 	if room["state"] != "LOCKED":
 		return "%s đã mở rồi." % room["name"]
+	if not rooms.floor_unlocked(room["floor"]):
+		return rooms.floor_lock_reason()
 	var cost: int = room["unlock_cost"]
 	if not economy.can_afford(cost):
 		return "Không đủ tiền: mở %s cần %s." % [room["name"], Money.format(cost)]

@@ -75,5 +75,6 @@
   "goal_max": 10,
   "goal_unserved_max": 5,
   "goal_reputation_bonus": 2,
-  "lancan_men_request_male_percent": 10
+  "lancan_men_request_male_percent": 10,
+  "floor2_min_reputation": 60
 }

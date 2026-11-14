@@ -17,6 +17,8 @@
 
 ## Phòng
 
+Tầng 1 có 4 phòng thường, tầng 2 có 6 phòng VIP. Ban đầu chỉ P01–P02 mở sẵn. Mở đủ 4 phòng tầng 1 và đạt 60 danh tiếng để lên tầng 2; sau khi đạt, quyền lên tầng được giữ. Phòng VIP mở khóa riêng, giá giờ 500.000–750.000đ, khởi đầu âm thanh/cách âm cấp 2.
+
 Trạng thái: `LOCKED → AVAILABLE → OCCUPIED → DIRTY → CLEANING → AVAILABLE` (`BROKEN` để dành).
 
 - Không xếp khách vượt sức chứa, vào phòng bẩn/đang dọn/khóa, hoặc phòng đang có nhóm khác.
