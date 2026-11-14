@@ -1,10 +1,12 @@
 extends RefCounted
 ## Đọc dữ liệu định nghĩa từ res://data một lần và kiểm tra hợp lệ khi khởi động.
 
-const ROOM_KEYS: Array = ["floor", "tier", "id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
+const ROOM_KEYS: Array = [
+	"id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof", "floor",
+	"tier", "tier_name", "equipment", "perks", "upkeep_per_night", "comfort_bonus", "budget_bonus_percent", "mic_weight_percent",
+]
 const TYPE_KEYS: Array = ["id", "name", "weight", "size_min", "size_max", "budget_per_hour", "patience_min", "patience_max", "music", "greetings", "lancan_chance", "sprites", "trait", "orders_min", "orders_max", "extend_chance", "mic_penalty_mult"]
 const BALANCE_KEYS: Array = [
-	"floor2_min_reputation",
 	"starting_money",
 	"starting_reputation",
 	"queue_limit",
@@ -29,7 +31,6 @@ const BALANCE_KEYS: Array = [
 	"price_max",
 	"lancan_hire_cost",
 	"lancan_max_staff",
-	"lancan_men_request_male_percent",
 	"lancan_fee",
 	"lancan_minutes",
 	"lancan_request_delay",
@@ -77,7 +78,48 @@ const BALANCE_KEYS: Array = [
 	"goal_max",
 	"goal_unserved_max",
 	"goal_reputation_bonus",
+	"lancan_men_request_male_percent",
+	"floor2_min_reputation",
+	"staff_hire_cost",
+	"staff_max",
+	"staff_delay_clean",
+	"staff_delay_order",
+	"staff_delay_mic",
+	"staff_travel_minutes",
+	"staff_deliver_minutes",
+	"staff_fix_minutes",
+	"staff_energy_clean",
+	"staff_energy_deliver",
+	"staff_energy_fix",
+	"staff_tired_below",
+	"staff_tired_slowdown_percent",
+	"staff_rest_below",
+	"staff_rest_minutes",
+	"staff_rest_recovery",
+	"regular_min_satisfaction",
+	"regular_max",
+	"regular_return_chance",
+	"regular_patience_bonus_percent",
+	"regular_favorite_room_bonus",
+	"regular_favorite_product_chance",
+	"regular_favorite_product_bonus",
+	"regular_keep_satisfaction",
+	"regular_lost_below",
+	"price_refuse_over_percent",
+	"star_thresholds",
+	"reviews_kept",
+	"line_first_min",
+	"line_first_max",
+	"line_gap_min",
+	"line_gap_max",
+	"line_banter_chance",
+	"line_duet_chance",
+	"line_duet_chance_with_host",
+	"reputation_by_stars",
+	"reputation_four_star_cap",
+	"goal_unserved_per_room",
 ]
+const STAFF_KEYS: Array = ["id", "name", "role", "speed", "wage", "starter", "about"]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
 const UPGRADE_KEYS: Array = ["id", "name", "cost", "max_level", "effect"]
 const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage", "gender"]
@@ -91,6 +133,29 @@ static func load_all() -> Dictionary:
 	var balance = _read("res://data/balance.json", errors)
 	var hosts = _read("res://data/hosts.json", errors)
 	var products = _read("res://data/products.json", errors)
+	var staff = _read("res://data/staff.json", errors)
+	var lyrics = _read("res://data/lyrics.json", errors)
+	var banter = _read("res://data/banter.json", errors)
+	if lyrics is Dictionary:
+		_require(lyrics, ["sprite_age", "songs", "lines"], "lyrics.json", errors)
+		for line in lyrics.get("lines", []):
+			_require(line, ["id", "age", "genre", "family", "mood", "song_id", "text"], "lyrics.json", errors)
+	elif lyrics != null:
+		errors.append("lyrics.json: phải là một đối tượng.")
+	if banter is Dictionary:
+		_require(banter, ["pairs", "reactions", "host_lines"], "banter.json", errors)
+	elif banter != null:
+		errors.append("banter.json: phải là một đối tượng.")
+	var regulars = _read("res://data/regulars.json", errors)
+	if staff is Array:
+		for member in staff:
+			_require(member, STAFF_KEYS, "staff.json", errors)
+	elif staff != null:
+		errors.append("staff.json: phải là một danh sách.")
+	if regulars is Dictionary:
+		_require(regulars, ["become_chance", "names", "greetings"], "regulars.json", errors)
+	elif regulars != null:
+		errors.append("regulars.json: phải là một đối tượng.")
 	var upgrades = _read("res://data/upgrades.json", errors)
 	if products is Array:
 		for product in products:
@@ -142,7 +207,7 @@ static func load_all() -> Dictionary:
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 
-	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades}
+	return {"errors": errors, "rooms": rooms, "customers": customers, "balance": balance, "hosts": hosts, "products": products, "upgrades": upgrades, "staff": staff, "regulars": regulars, "lyrics": lyrics, "banter": banter}
 
 
 static func _read(path: String, errors: Array):
@@ -158,6 +223,10 @@ static func _read(path: String, errors: Array):
 
 
 ## JSON của Godot đọc mọi số thành float; đổi các số nguyên về int.
+static func normalize(value):
+	return _normalize(value)
+
+
 static func _normalize(value):
 	if typeof(value) == TYPE_FLOAT:
 		if value == floor(value):

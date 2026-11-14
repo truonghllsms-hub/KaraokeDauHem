@@ -9,7 +9,22 @@
     "sound": 1,
     "soundproof": 1,
     "floor": 1,
-    "tier": "standard"
+    "tier": "standard",
+    "tier_name": "Phòng thường",
+    "equipment": [
+      "Dàn loa tiêu chuẩn",
+      "2 micro không dây",
+      "Màn hình 43 inch",
+      "Sofa da",
+      "Bàn và đèn màu cơ bản"
+    ],
+    "perks": [
+      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+    ],
+    "upkeep_per_night": 0,
+    "comfort_bonus": 0,
+    "budget_bonus_percent": 0,
+    "mic_weight_percent": 100
   },
   {
     "id": "room_02",
@@ -21,7 +36,22 @@
     "sound": 1,
     "soundproof": 1,
     "floor": 1,
-    "tier": "standard"
+    "tier": "standard",
+    "tier_name": "Phòng thường",
+    "equipment": [
+      "Dàn loa tiêu chuẩn",
+      "2 micro không dây",
+      "Màn hình 43 inch",
+      "Sofa da",
+      "Bàn và đèn màu cơ bản"
+    ],
+    "perks": [
+      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+    ],
+    "upkeep_per_night": 0,
+    "comfort_bonus": 0,
+    "budget_bonus_percent": 0,
+    "mic_weight_percent": 100
   },
   {
     "id": "room_03",
@@ -33,7 +63,22 @@
     "sound": 1,
     "soundproof": 1,
     "floor": 1,
-    "tier": "standard"
+    "tier": "standard",
+    "tier_name": "Phòng thường",
+    "equipment": [
+      "Dàn loa tiêu chuẩn",
+      "2 micro không dây",
+      "Màn hình 43 inch",
+      "Sofa da",
+      "Bàn và đèn màu cơ bản"
+    ],
+    "perks": [
+      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+    ],
+    "upkeep_per_night": 0,
+    "comfort_bonus": 0,
+    "budget_bonus_percent": 0,
+    "mic_weight_percent": 100
   },
   {
     "id": "room_04",
@@ -45,7 +90,22 @@
     "sound": 1,
     "soundproof": 1,
     "floor": 1,
-    "tier": "standard"
+    "tier": "standard",
+    "tier_name": "Phòng thường",
+    "equipment": [
+      "Dàn loa tiêu chuẩn",
+      "2 micro không dây",
+      "Màn hình 43 inch",
+      "Sofa da",
+      "Bàn và đèn màu cơ bản"
+    ],
+    "perks": [
+      "Thiết bị tiêu chuẩn, chi phí vận hành thấp."
+    ],
+    "upkeep_per_night": 0,
+    "comfort_bonus": 0,
+    "budget_bonus_percent": 0,
+    "mic_weight_percent": 100
   },
   {
     "id": "room_05",
@@ -57,7 +117,27 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   },
   {
     "id": "room_06",
@@ -69,7 +149,27 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   },
   {
     "id": "room_07",
@@ -81,7 +181,27 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   },
   {
     "id": "room_08",
@@ -93,7 +213,27 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   },
   {
     "id": "room_09",
@@ -105,7 +245,27 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   },
   {
     "id": "room_10",
@@ -117,6 +277,26 @@
     "sound": 2,
     "soundproof": 2,
     "floor": 2,
-    "tier": "vip"
+    "tier": "vip",
+    "tier_name": "Phòng VIP",
+    "equipment": [
+      "Dàn âm thanh cao cấp",
+      "4 micro không dây",
+      "Màn hình lớn 75 inch",
+      "Sofa cao cấp",
+      "Đèn sân khấu",
+      "Cách âm hai lớp"
+    ],
+    "perks": [
+      "Âm thanh và cách âm cấp 2: khách hài lòng hơn ngay khi vào phòng.",
+      "Không gian sang trọng: +4 hài lòng.",
+      "Khách chấp nhận giá cao hơn ngân sách thường 30%.",
+      "Micro tốt: ít trục trặc hơn một nửa.",
+      "Tốn thêm 150.000đ vận hành mỗi đêm."
+    ],
+    "upkeep_per_night": 150000,
+    "comfort_bonus": 4,
+    "budget_bonus_percent": 30,
+    "mic_weight_percent": 50
   }
 ]

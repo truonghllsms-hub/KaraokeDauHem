@@ -122,3 +122,42 @@ Mục tiêu: phục vụ ít nhất (3 + số đêm, tối đa 10) nhóm và kh�
 - `GameState` chỉ chứa dữ liệu thuần (Dictionary/Array/số/chuỗi), tham chiếu bằng ID, sẵn sàng để lưu.
 - Không dùng Autoload, không dùng `class_name`; các script nạp nhau bằng `preload`.
 - Ngẫu nhiên có seed; seed hiện trong nhật ký quán khi bắt đầu.
+
+## Đợt nội dung (nhánh claude/content-save-waiter-regulars)
+
+### Phòng: thường và VIP, lắp thiết bị
+Sáu phòng xây sẵn. Phòng 01–02 đã lắp thiết bị; 03–04 (thường) và 05–06 (VIP) phải lắp ở giai đoạn chuẩn bị.
+
+| | Phòng thường | Phòng VIP |
+|---|---|---|
+| Chi phí lắp | 4.000.000đ / 6.000.000đ | 12.000.000đ / 16.000.000đ |
+| Âm thanh, cách âm | cấp 1 | cấp 2 (+5 hài lòng) |
+| Sang trọng | — | +4 hài lòng |
+| Ngân sách khách chấp nhận | như thường | nới thêm 30% |
+| Micro trục trặc | bình thường | ít hơn một nửa |
+| Vận hành mỗi đêm | 0 | 150.000đ |
+
+Phòng chưa lắp không nhận khách và không tính vào lượng khách đến.
+
+### Giá phòng
+Khách thấy giá trước khi nhận phòng. Trong ngân sách: bình thường. Vượt đến 35%: nhận nhưng −10 hài lòng. Vượt trên 35%: từ chối.
+
+### Đánh giá sao và danh tiếng
+- Sao: hài lòng cuối lượt 90–100 → 5★, 75–89 → 4★, 60–74 → 3★, 40–59 → 2★, dưới 40 → 1★. Mỗi nhóm đã thanh toán một đánh giá; nhóm bỏ về không tính.
+- Danh tiếng đổi theo sao: 5★ +1, 4★ +1 (chỉ khi danh tiếng dưới 60), 3★ 0, 2★ −1, 1★ −3; nhóm bỏ về vì chờ lâu −1; đạt mục tiêu đêm +2.
+- Sao chưa ảnh hưởng lượng khách.
+
+### Mục tiêu đêm
+Phục vụ ít nhất (3 + số đêm, tối đa 10) nhóm và không quá (3 + số phòng đang hoạt động) nhóm bỏ về.
+
+### Nhân viên phục vụ
+Có sẵn Tí; tuyển thêm Mận (nhanh) hoặc Sáu Lúa (rẻ), phí 800.000đ. Nhân viên chờ 2–3 phút để chủ quán ra tay trước, rồi tự lo: micro hỏng trước, giao món, dọn phòng. Mỗi người một việc; việc đã có người lo thì bỏ ngay. Năng lượng dưới 40 làm chậm gấp rưỡi, dưới 20 thì nghỉ 15 phút.
+
+### Khách quen
+Nhóm hài lòng từ 80 có cơ hội thành khách quen có tên (trừ nhóm sinh nhật). Các đêm sau họ ghé lại (45% mỗi lượt sinh khách nếu tới lượt), kiên nhẫn hơn 30%, đúng phòng quen +5, hay gọi món quen (+1 khi giao). Hài lòng dưới 40 thì bỏ quán.
+
+### Câu hát và thoại
+Kho câu hát tự sáng tác ở `data/lyrics.json` (18 câu người trẻ, 18 trung niên, 18 lớn tuổi; có nhãn tuổi, thể loại, sắc thái, mã bài). Tuổi người cầm micro và gu nhạc của nhóm chỉ làm lệch xác suất. Thoại đối đáp, phản ứng sự cố và câu riêng của 8 nhân viên Lan can ở `data/banter.json`. Không lặp câu trong một lượt khách và hạn chế lặp trong đêm; không có câu hát khi đang báo micro hỏng. Không cộng điểm.
+
+### Lưu và tải
+Lưu ở giai đoạn chuẩn bị hoặc sau tổng kết (tự lưu được). Ghi tệp tạm, đọc lại kiểm tra, rồi thay tệp chính; bản cũ thành `.bak`. Tải: kiểm tra phiên bản, sổ giao dịch khớp số dư, ID phòng, nhân viên và tồn kho hợp lệ; tệp chính hỏng thì dùng `.bak`; không tự xóa tệp hỏng.

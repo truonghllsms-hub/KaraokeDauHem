@@ -1,0 +1,551 @@
+{
+ "_note": "Câu hát tự sáng tác cho game, không lấy từ bài hát có thật. age: young | middle | senior. family khớp với gu nhạc của nhóm (bolero | nhac_tre | remix).",
+ "age_names": {
+  "young": "Người trẻ",
+  "middle": "Trung niên",
+  "senior": "Lớn tuổi"
+ },
+ "sprite_age": {
+  "friend_m": "young",
+  "friend_f": "young",
+  "birthday_f": "young",
+  "birthday_m": "young",
+  "couple_m": "young",
+  "couple_f": "young",
+  "genz_f": "young",
+  "genz_m": "young",
+  "office_m": "middle",
+  "office_f": "middle",
+  "auntie": "middle",
+  "auntie_2": "middle",
+  "auntie_3": "middle",
+  "drunk_uncle": "middle",
+  "beer_uncle": "middle",
+  "uncle": "senior",
+  "grandpa": "senior",
+  "grandma": "senior",
+  "middle_m_1": "middle",
+  "middle_m_2": "middle",
+  "middle_m_3": "middle",
+  "young_m_1": "young",
+  "young_m_2": "young",
+  "young_m_3": "young"
+ },
+ "songs": {
+  "tin_nhan_chua_xem": "Tin Nhắn Chưa Xem",
+  "crush_oi_dung_chay": "Crush Ơi Đừng Chạy",
+  "deadline_va_em": "Deadline Và Em",
+  "quay_len_di": "Quẩy Lên Đi",
+  "nguoi_cu_co_nguoi_moi": "Người Cũ Có Người Mới",
+  "tra_sua_chia_doi": "Trà Sữa Chia Đôi",
+  "het_tien_van_vui": "Hết Tiền Vẫn Vui",
+  "bay_len_may": "Bay Lên Mây",
+  "thanh_xuan_tui_minh": "Thanh Xuân Tụi Mình",
+  "chieu_cu": "Chiều Cũ",
+  "ao_trang_ngay_xua": "Áo Trắng Ngày Xưa",
+  "muoi_nam_gap_lai": "Mười Năm Gặp Lại",
+  "pho_mua": "Phố Mưa",
+  "duong_ve_nha": "Đường Về Nhà",
+  "ca_phe_chu_nhat": "Cà Phê Sáng Chủ Nhật",
+  "loi_xin_loi_muon": "Lời Xin Lỗi Muộn",
+  "hai_dau_noi_nho": "Hai Đầu Nỗi Nhớ",
+  "dem_lien_hoan": "Đêm Liên Hoan",
+  "chieu_dau_ngo": "Chiều Đầu Ngõ",
+  "thu_que_me": "Thư Quê Mẹ",
+  "ben_song_cho": "Bến Sông Chờ",
+  "trang_xom_nho": "Đêm Trăng Xóm Nhỏ",
+  "ban_cu_nam_xua": "Bạn Cũ Năm Xưa",
+  "nho_co_huong": "Nhớ Cố Hương",
+  "mua_lua_chin": "Mùa Lúa Chín",
+  "tinh_gia": "Tình Già",
+  "chuyen_xe_ve_que": "Chuyến Xe Về Quê"
+ },
+ "lines": [
+  {
+   "id": "tin_nhan_chua_xem_1",
+   "age": "young",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "tin_nhan_chua_xem",
+   "text": "Tin nhắn còn đây, người đâu mất rồi…"
+  },
+  {
+   "id": "tin_nhan_chua_xem_2",
+   "age": "young",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "tin_nhan_chua_xem",
+   "text": "Em xem một giờ, anh chờ cả đêm…"
+  },
+  {
+   "id": "crush_oi_dung_chay_1",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "song_id": "crush_oi_dung_chay",
+   "text": "Crush ơi đừng chạy, tim anh đuổi không kịp…"
+  },
+  {
+   "id": "crush_oi_dung_chay_2",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "song_id": "crush_oi_dung_chay",
+   "text": "Thả tim một cái, anh vui cả tuần…"
+  },
+  {
+   "id": "deadline_va_em_1",
+   "age": "young",
+   "genre": "rap",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "deadline_va_em",
+   "text": "Sáng deadline, tối deadline, em là deadline anh không muốn nộp…"
+  },
+  {
+   "id": "deadline_va_em_2",
+   "age": "young",
+   "genre": "rap",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "deadline_va_em",
+   "text": "Sếp gọi anh nghe, em gọi anh bay…"
+  },
+  {
+   "id": "quay_len_di_1",
+   "age": "young",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "quay_len_di",
+   "text": "Giơ tay lên nào, hẻm nhỏ thành sân khấu…"
+  },
+  {
+   "id": "quay_len_di_2",
+   "age": "young",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "quay_len_di",
+   "text": "Đèn xoay vòng vòng, mình quay cuồng theo…"
+  },
+  {
+   "id": "nguoi_cu_co_nguoi_moi_1",
+   "age": "young",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "nguoi_cu_co_nguoi_moi",
+   "text": "Người ta có người mới, mình có thêm bài tủ…"
+  },
+  {
+   "id": "nguoi_cu_co_nguoi_moi_2",
+   "age": "young",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "nguoi_cu_co_nguoi_moi",
+   "text": "Khóc xong rồi hát, hát xong lại khóc…"
+  },
+  {
+   "id": "tra_sua_chia_doi_1",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "dễ thương",
+   "song_id": "tra_sua_chia_doi",
+   "text": "Ly trà sữa chia đôi, ống hút cắm hai đầu…"
+  },
+  {
+   "id": "tra_sua_chia_doi_2",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "dễ thương",
+   "song_id": "tra_sua_chia_doi",
+   "text": "Trân châu anh nhường, đường thì em giữ…"
+  },
+  {
+   "id": "het_tien_van_vui_1",
+   "age": "young",
+   "genre": "rap",
+   "family": "remix",
+   "mood": "hài",
+   "song_id": "het_tien_van_vui",
+   "text": "Cuối tháng ví mỏng như lời hứa của em…"
+  },
+  {
+   "id": "het_tien_van_vui_2",
+   "age": "young",
+   "genre": "rap",
+   "family": "remix",
+   "mood": "hài",
+   "song_id": "het_tien_van_vui",
+   "text": "Mì gói hai bữa, karaoke vẫn đi…"
+  },
+  {
+   "id": "bay_len_may_1",
+   "age": "young",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "bay_len_may",
+   "text": "Bass dội vào tim, chân không chạm đất…"
+  },
+  {
+   "id": "bay_len_may_2",
+   "age": "young",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "bay_len_may",
+   "text": "Đêm nay không ngủ, mai tính sau đi…"
+  },
+  {
+   "id": "thanh_xuan_tui_minh_1",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "hoài niệm",
+   "song_id": "thanh_xuan_tui_minh",
+   "text": "Thanh xuân như cơn mưa, ướt rồi vẫn muốn tắm…"
+  },
+  {
+   "id": "thanh_xuan_tui_minh_2",
+   "age": "young",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "hoài niệm",
+   "song_id": "thanh_xuan_tui_minh",
+   "text": "Mai này lớn lên, nhớ hẻm này nha…"
+  },
+  {
+   "id": "chieu_cu_1",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "hoài niệm",
+   "song_id": "chieu_cu",
+   "text": "Hẹn nhau chiều cũ, giờ ai còn chờ…"
+  },
+  {
+   "id": "chieu_cu_2",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "hoài niệm",
+   "song_id": "chieu_cu",
+   "text": "Quán xưa còn đó, ghế đã đổi người…"
+  },
+  {
+   "id": "ao_trang_ngay_xua_1",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "ao_trang_ngay_xua",
+   "text": "Áo trắng ngày xưa bay ngang cổng trường…"
+  },
+  {
+   "id": "ao_trang_ngay_xua_2",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "ao_trang_ngay_xua",
+   "text": "Thư tay chưa gửi, nằm im đáy cặp…"
+  },
+  {
+   "id": "muoi_nam_gap_lai_1",
+   "age": "middle",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "muoi_nam_gap_lai",
+   "text": "Mười năm gặp lại, bụng to tóc ít…"
+  },
+  {
+   "id": "muoi_nam_gap_lai_2",
+   "age": "middle",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "muoi_nam_gap_lai",
+   "text": "Nâng ly nước suối, mừng mình còn nhau…"
+  },
+  {
+   "id": "pho_mua_1",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "pho_mua",
+   "text": "Phố mưa lấp lánh, mình anh che dù…"
+  },
+  {
+   "id": "pho_mua_2",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "buồn",
+   "song_id": "pho_mua",
+   "text": "Em sang đường khác, mưa theo anh về…"
+  },
+  {
+   "id": "duong_ve_nha_1",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "duong_ve_nha",
+   "text": "Tan ca kẹt xe, lòng đã về trước…"
+  },
+  {
+   "id": "duong_ve_nha_2",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "duong_ve_nha",
+   "text": "Mâm cơm còn ấm là hết mệt rồi…"
+  },
+  {
+   "id": "ca_phe_chu_nhat_1",
+   "age": "middle",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "song_id": "ca_phe_chu_nhat",
+   "text": "Cà phê nhỏ giọt, chậm như ngày nghỉ…"
+  },
+  {
+   "id": "ca_phe_chu_nhat_2",
+   "age": "middle",
+   "genre": "pop",
+   "family": "nhac_tre",
+   "mood": "vui",
+   "song_id": "ca_phe_chu_nhat",
+   "text": "Báo chưa kịp đọc, con đòi đi chơi…"
+  },
+  {
+   "id": "loi_xin_loi_muon_1",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "loi_xin_loi_muon",
+   "text": "Lời xin lỗi muộn, anh tập trước gương…"
+  },
+  {
+   "id": "loi_xin_loi_muon_2",
+   "age": "middle",
+   "genre": "ballad",
+   "family": "nhac_tre",
+   "mood": "hài",
+   "song_id": "loi_xin_loi_muon",
+   "text": "Về nhà quên hết, chỉ biết rửa chén…"
+  },
+  {
+   "id": "hai_dau_noi_nho_1",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "hai_dau_noi_nho",
+   "text": "Em trong anh ngoài, hai đầu nỗi nhớ…"
+  },
+  {
+   "id": "hai_dau_noi_nho_2",
+   "age": "middle",
+   "genre": "trữ tình",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "hai_dau_noi_nho",
+   "text": "Vé tàu khứ hồi, tim đi một chiều…"
+  },
+  {
+   "id": "dem_lien_hoan_1",
+   "age": "middle",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "dem_lien_hoan",
+   "text": "Đêm nay không sếp, chỉ có anh em…"
+  },
+  {
+   "id": "dem_lien_hoan_2",
+   "age": "middle",
+   "genre": "remix",
+   "family": "remix",
+   "mood": "sôi nổi",
+   "song_id": "dem_lien_hoan",
+   "text": "Mai vào họp tiếp, giờ hát đã nào…"
+  },
+  {
+   "id": "chieu_dau_ngo_1",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "chieu_dau_ngo",
+   "text": "Chiều nghiêng đầu ngõ, thương nhớ người xa…"
+  },
+  {
+   "id": "chieu_dau_ngo_2",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "chieu_dau_ngo",
+   "text": "Giàn trầu còn xanh, người chưa về lại…"
+  },
+  {
+   "id": "thu_que_me_1",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "thu_que_me",
+   "text": "Thư quê mẹ gửi, nét chữ run run…"
+  },
+  {
+   "id": "thu_que_me_2",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "thu_que_me",
+   "text": "Con nơi phố thị, nhớ khói bếp chiều…"
+  },
+  {
+   "id": "ben_song_cho_1",
+   "age": "senior",
+   "genre": "dân ca",
+   "family": "bolero",
+   "mood": "trữ tình",
+   "song_id": "ben_song_cho",
+   "text": "Hò ơ… con đò chờ khách bến sông trưa…"
+  },
+  {
+   "id": "ben_song_cho_2",
+   "age": "senior",
+   "genre": "dân ca",
+   "family": "bolero",
+   "mood": "trữ tình",
+   "song_id": "ben_song_cho",
+   "text": "Ai về bên ấy, nhắn giùm câu thương…"
+  },
+  {
+   "id": "trang_xom_nho_1",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "trang_xom_nho",
+   "text": "Trăng lên xóm nhỏ, võng đưa kẽo kẹt…"
+  },
+  {
+   "id": "trang_xom_nho_2",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "ấm áp",
+   "song_id": "trang_xom_nho",
+   "text": "Tiếng ai ru cháu, ngọt cả đêm hè…"
+  },
+  {
+   "id": "ban_cu_nam_xua_1",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "ban_cu_nam_xua",
+   "text": "Ba lô còn đó, bạn cũ đâu rồi…"
+  },
+  {
+   "id": "ban_cu_nam_xua_2",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "ban_cu_nam_xua",
+   "text": "Gặp nhau tóc bạc, tay vẫn siết chặt…"
+  },
+  {
+   "id": "nho_co_huong_1",
+   "age": "senior",
+   "genre": "cải lương",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "nho_co_huong",
+   "text": "Ơ… trời khuya sương xuống, lòng tôi nhớ… cố… hương…"
+  },
+  {
+   "id": "nho_co_huong_2",
+   "age": "senior",
+   "genre": "cải lương",
+   "family": "bolero",
+   "mood": "buồn",
+   "song_id": "nho_co_huong",
+   "text": "Xuống xề một tiếng, nghe thương quá chừng…"
+  },
+  {
+   "id": "mua_lua_chin_1",
+   "age": "senior",
+   "genre": "dân ca",
+   "family": "bolero",
+   "mood": "vui",
+   "song_id": "mua_lua_chin",
+   "text": "Lúa vàng ngoài bãi, cò bay thẳng cánh…"
+  },
+  {
+   "id": "mua_lua_chin_2",
+   "age": "senior",
+   "genre": "dân ca",
+   "family": "bolero",
+   "mood": "vui",
+   "song_id": "mua_lua_chin",
+   "text": "Mùa này trúng lớn, cưới vợ cho con…"
+  },
+  {
+   "id": "tinh_gia_1",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "hài",
+   "song_id": "tinh_gia",
+   "text": "Bà ơi tui nói, năm chục năm vẫn thương…"
+  },
+  {
+   "id": "tinh_gia_2",
+   "age": "senior",
+   "genre": "bolero",
+   "family": "bolero",
+   "mood": "hài",
+   "song_id": "tinh_gia",
+   "text": "Thương thì rửa chén, đừng hát nữa ông…"
+  },
+  {
+   "id": "chuyen_xe_ve_que_1",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "chuyen_xe_ve_que",
+   "text": "Xe lăn bánh chậm, quê nhà gần lại…"
+  },
+  {
+   "id": "chuyen_xe_ve_que_2",
+   "age": "senior",
+   "genre": "nhạc xưa",
+   "family": "bolero",
+   "mood": "hoài niệm",
+   "song_id": "chuyen_xe_ve_que",
+   "text": "Hàng cau trước ngõ, đứng đợi bao mùa…"
+  }
+ ]
+}

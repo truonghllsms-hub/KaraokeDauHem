@@ -32,6 +32,22 @@ xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3
 
 Kịch bản mở màn hình chính, vào game, tự chơi trọn một đêm bằng đúng các thao tác của người chơi (chọn khách, bấm phòng, cử Lan can), và chụp 10 ảnh. Nó **không** giả lập cú bấm chuột hay phím thật.
 
+## Chơi thử tự động để soi cân bằng
+
+```bash
+godot --headless --path . --script res://tests/playtest.gd -- 1 7
+```
+
+In kết quả từng đêm (phục vụ, bỏ về, thu chi, danh tiếng, sao, khách quen, mục tiêu). Không có đạt/trượt.
+
+## Kết quả nhánh nội dung (14/11/2026)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `tests/run_tests.gd` | 341 kiểm tra, 0 lỗi (thêm nhân viên, khách quen, lưu/tải, phòng VIP, sao, câu hát) |
+| `ui_smoke.gd`, `ui_redesign.gd`, `ui_reference.gd` | Đều qua: giao diện hiện tại vẫn chạy với luật mới |
+| `playtest.gd` 3 seed × 7 đêm | Không vi phạm bất biến; danh tiếng không còn chạm 100 sau 5 đêm; mục tiêu đêm lúc đạt lúc trượt |
+
 ## Kịch bản chơi thử bằng tay
 
 1. "Chơi mới" → "Kho hàng" xem tồn → "MỞ CỬA ĐÓN KHÁCH" → phím `3` tua tới khi có khách.

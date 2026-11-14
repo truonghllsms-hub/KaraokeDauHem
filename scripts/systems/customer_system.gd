@@ -8,6 +8,8 @@ const Clock = preload("res://scripts/core/simulation_clock.gd")
 
 ## Tắt để kiểm thử từng kịch bản mà không có khách ngẫu nhiên.
 var spawning_enabled: bool = true
+## Hệ thống khách quen (Simulation gán sau khi khởi tạo); null thì không có khách quen ghé.
+var regulars = null
 
 var _state
 var _data: Dictionary
@@ -112,6 +114,11 @@ func add_group(type_id: String, size: int, planned_minutes: int, now: int, music
 		"discount_percent": 0,
 		# Dấu vết trải nghiệm, dùng để viết lời nhận xét cuối đêm.
 		"tags": [],
+		# Khách quen (rỗng nếu là khách vãng lai).
+		"regular_id": "",
+		"regular_name": "",
+		"favorite_room_id": "",
+		"favorite_product_id": "",
 	}
 	_state.next_group_id += 1
 	_state.groups.append(group)
@@ -174,16 +181,27 @@ func _spawn_random(now: int) -> void:
 	if weights.is_empty() or stay_options.is_empty():
 		return
 
-	var chosen: Dictionary = get_type(_pick_weighted(weights))
+	# Khách quen ghé lại (nếu có ai tới lượt), không thì sinh nhóm ngẫu nhiên.
+	var visitor: Variant = null
+	if regulars != null and not _state.regulars.is_empty():
+		var min_sizes: Dictionary = {}
+		for t in _data["customers"]["types"]:
+			min_sizes[t["id"]] = t["size_min"]
+		visitor = regulars.pick_visitor(_state.day, capacity, min_sizes)
+	var chosen: Dictionary = get_type(visitor["type"] if visitor != null else _pick_weighted(weights))
 	var size: int = _rng.randi_range(chosen["size_min"], mini(chosen["size_max"], capacity))
 	var planned: int = stay_options[_rng.randi_range(0, stay_options.size() - 1)]
 
 	if waiting_groups().size() >= balance["queue_limit"]:
 		_state.night["unserved"] += 1
-		_notify.call("Sảnh chờ hết chỗ, một nhóm %s thấy đông nên quay xe." % chosen["name"], "bad")
+		_notify.call("Sảnh chờ hết chỗ, %s thấy đông nên quay xe." % (visitor["name"] if visitor != null else "một nhóm " + chosen["name"]), "bad")
 		return
 
 	var group = add_group(chosen["id"], size, planned, now)
+	if visitor != null:
+		regulars.apply_to_group(group, visitor)
+		_notify.call("%s (%d người) ghé lại quán: \"%s\"" % [visitor["name"], size, regulars.greeting()], "good")
+		return
 	var greetings: Array = chosen["greetings"]
 	var line: String = greetings[_rng.randi_range(0, greetings.size() - 1)]
 	_notify.call("Nhóm %s (%d người) tới quầy: \"%s\"" % [group["type_name"], size, line], "info")

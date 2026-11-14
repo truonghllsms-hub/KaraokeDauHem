@@ -1,6 +1,9 @@
 extends RefCounted
-## Quản lý phòng và chuyển trạng thái:
+## Quản lý phòng và chuyển trạng thái. Cả sáu phòng đã được xây sẵn; trạng thái "LOCKED" nghĩa là
+## phòng CHƯA LẮP THIẾT BỊ (giữ tên cũ để tương thích), lắp xong thì thành AVAILABLE.
 ## LOCKED -> AVAILABLE -> OCCUPIED -> DIRTY -> CLEANING -> AVAILABLE. (BROKEN dành cho giai đoạn sau.)
+
+const Money = preload("res://scripts/core/money.gd")
 
 var _state
 var _data: Dictionary
@@ -31,6 +34,15 @@ func setup_new_game() -> void:
 			"host_id": "",
 			"host_ids": [],
 			"request": {},
+			"dirty_since": 0,
+			# Loại phòng và lợi ích (VIP khác phòng thường ở các số này).
+			"tier_name": def["tier_name"],
+			"equipment": def["equipment"].duplicate(),
+			"perks": def["perks"].duplicate(),
+			"upkeep_per_night": def["upkeep_per_night"],
+			"comfort_bonus": def["comfort_bonus"],
+			"budget_bonus_percent": def["budget_bonus_percent"],
+			"mic_weight_percent": def["mic_weight_percent"],
 			"session_start": 0,
 			"session_end": 0,
 			"session_price": 0,
@@ -80,7 +92,7 @@ func max_unlocked_capacity() -> int:
 func check_assign(room: Dictionary, group: Dictionary, now: int, night_minutes: int) -> String:
 	match room["state"]:
 		"LOCKED":
-			return "%s chưa mở." % room["name"]
+			return "%s chưa lắp thiết bị." % room["name"]
 		"OCCUPIED":
 			return "%s đang có khách." % room["name"]
 		"DIRTY":
@@ -95,7 +107,17 @@ func check_assign(room: Dictionary, group: Dictionary, now: int, night_minutes: 
 		return "%s chỉ chứa %d người, nhóm có %d người." % [room["name"], room["capacity"], group["size"]]
 	if now + group["planned_minutes"] > night_minutes:
 		return "Không kịp hát %d phút trước giờ đóng cửa." % group["planned_minutes"]
+	# Khách thấy giá trước khi nhận phòng: đắt hơn ngân sách quá nhiều thì họ từ chối.
+	var budget: int = effective_budget(room, group)
+	if room["price_per_hour"] * 100 > budget * (100 + _data["balance"]["price_refuse_over_percent"]):
+		return "Nhóm %s chê giá: %s tính %s/giờ, họ chỉ định chi khoảng %s/giờ." % [group["type_name"], room["name"], Money.format(room["price_per_hour"]), Money.format(budget)]
 	return ""
+
+
+## Ngân sách mỗi giờ nhóm chấp nhận cho phòng này (phòng VIP được nới thêm).
+func effective_budget(room: Dictionary, group: Dictionary) -> int:
+	@warning_ignore("integer_division")
+	return group["budget_per_hour"] * (100 + room.get("budget_bonus_percent", 0)) / 100
 
 
 func start_session(room: Dictionary, group: Dictionary, now: int) -> void:

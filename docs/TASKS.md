@@ -40,9 +40,24 @@
 - [x] Sân xe: mất xe từ đêm 2, thuê bảo vệ
 - [x] Mục tiêu mỗi đêm, lời nhận xét của khách, ba món nâng cấp ở bảng tổng kết
 
+**Đợt 5 — Nội dung (nhánh `claude/content-save-waiter-regulars`, chỉ luật chơi và dữ liệu)**
+- [x] Lưu/tải ở mốc cuối đêm, bản sao lưu, kiểm tra phiên bản
+- [x] Nhân viên phục vụ tự dọn, giao món, đổi micro; tuyển thêm
+- [x] Khách quen có tên, phòng quen, món quen
+- [x] Sáu phòng xây sẵn, lắp thiết bị; phòng VIP có lợi ích thật
+- [x] Khách từ chối khi giá vượt ngân sách quá 35%
+- [x] Đánh giá sao 1–5, tách khỏi danh tiếng; danh tiếng tăng chậm lại
+- [x] Kho câu hát và thoại (tự sáng tác), câu riêng cho 8 nhân viên Lan can
+- [ ] **Giao diện:** nối các tính năng trên theo `docs/INTEGRATION.md`
+- [ ] Chủ dự án duyệt câu hát, thoại và tên khách quen
+
 ## Việc tiếp theo
 
 **Từ góp ý chơi thử, chưa làm**
+- [ ] Tính cách cá nhân trong nhóm (ôm mic, ca sĩ phòng tắm, hệ đi ăn, thất tình…) có tác động gameplay
+- [ ] Sự kiện có lựa chọn: giành mic, sinh nhật bất ngờ, bài tủ chưa có, phòng bên quá ồn, để quên đồ
+- [ ] Tách kỹ năng Lan can thành giao tiếp / song ca / khuấy động / tinh tế
+- [ ] Đầu tư bãi xe (khóa, camera) thay cho chỉ một nút thuê bảo vệ
 - [ ] Giá giờ thấp điểm/cao điểm, combo phòng + nước, chia hóa đơn
 - [ ] Yêu cầu "không tìm thấy bài hát"; khách quen có phòng và đồ uống yêu thích; gia đình nhạy cảm với độ sạch
 - [ ] Âm thanh ("Em ơi thêm đá!", vỗ tay), chi tiết phòng (tablet, tambourine), ngày mưa

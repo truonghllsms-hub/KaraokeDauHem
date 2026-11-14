@@ -1,0 +1,63 @@
+{
+  "become_chance": {
+    "friends": 30,
+    "birthday": 0,
+    "company": 30,
+    "bolero_regular": 60,
+    "drinking": 40,
+    "aunties": 40,
+    "couple": 35,
+    "family": 35,
+    "genz": 25,
+    "middle_aged_men": 45,
+    "young_men": 25
+  },
+  "names": {
+    "friends": [
+      "Hội anh Tuấn",
+      "Nhóm bạn Vy"
+    ],
+    "company": [
+      "Phòng kế toán anh Long",
+      "Team chị Nga"
+    ],
+    "bolero_regular": [
+      "Chú Tư",
+      "Cô Ba",
+      "Bác Năm"
+    ],
+    "drinking": [
+      "Hội anh Bảy",
+      "Chiến hữu chú Sáu"
+    ],
+    "aunties": [
+      "Hội chị Hằng",
+      "Chị em cô Út"
+    ],
+    "couple": [
+      "Đôi Nam - Linh",
+      "Đôi Khoa - My"
+    ],
+    "family": [
+      "Nhà bác Hai",
+      "Gia đình cô Tám"
+    ],
+    "genz": [
+      "Team bé Na",
+      "Hội bạn Bin"
+    ],
+    "middle_aged_men": [
+      "Hội anh Hùng",
+      "Mấy anh xóm chợ"
+    ],
+    "young_men": [
+      "Team anh Tú",
+      "Hội bạn Long"
+    ]
+  },
+  "greetings": [
+    "Lại là tụi này nè, phòng quen còn không em?",
+    "Vẫn như mọi khi nha, quán mình hát đã nhất khu.",
+    "Ghé ủng hộ quán tiếp đây, nhớ tụi anh không?"
+  ]
+}

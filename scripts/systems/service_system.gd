@@ -8,6 +8,8 @@ const Clock = preload("res://scripts/core/simulation_clock.gd")
 
 ## Tắt để kiểm thử từng kịch bản mà không có yêu cầu ngẫu nhiên.
 var enabled: bool = true
+## Hàm (room, key, now) để phát thoại phản ứng; Simulation gán sau khi khởi tạo.
+var react: Callable = Callable()
 
 var _state
 var _data: Dictionary
@@ -126,21 +128,29 @@ func _open(room: Dictionary, request: Dictionary, now: int, timeout: int) -> voi
 func _open_random(room: Dictionary, group: Dictionary, now: int) -> void:
 	var balance: Dictionary = _data["balance"]
 	var mic_weight: int = balance["request_weight_mic_spare"] if upgrade_level("spare_mics") > 0 else balance["request_weight_mic"]
+	@warning_ignore("integer_division")
+	mic_weight = mic_weight * room.get("mic_weight_percent", 100) / 100
 	var roll: int = _rng.randi_range(1, balance["request_weight_order"] + mic_weight + balance["request_weight_hot"])
 	if roll <= balance["request_weight_order"]:
 		_open_order(room, group, now)
 	elif roll <= balance["request_weight_order"] + mic_weight:
 		_open(room, {"kind": "MIC", "text": "Micro trục trặc!"}, now, balance["mic_timeout"])
 		_notify.call("%s: micro hú rồi tắt tiếng, khách đang gọi." % room["name"], "bad")
+		_react(room, "mic_broken", now)
 	else:
 		_open(room, {"kind": "HOT", "text": "Phòng nóng quá!"}, now, balance["hot_timeout"])
 		_notify.call("%s: \"Phòng nóng quá em ơi!\"" % room["name"], "info")
+		_react(room, "hot", now)
 
 
 func _open_order(room: Dictionary, group: Dictionary, now: int) -> void:
 	var balance: Dictionary = _data["balance"]
 	var products: Array = _data["products"]
 	var product: Dictionary = products[_rng.randi_range(0, products.size() - 1)]
+	# Khách quen thường gọi món quen.
+	var favorite_id: String = group.get("favorite_product_id", "")
+	if favorite_id != "" and _rng.randi_range(1, 100) <= balance["regular_favorite_product_chance"]:
+		product = get_product(favorite_id)
 	var quantity: int = group["size"] if product["per_person"] else _rng.randi_range(1, 2)
 	var in_stock: int = _state.stock[product["id"]]
 	if in_stock <= 0:
@@ -159,6 +169,11 @@ func _open_order(room: Dictionary, group: Dictionary, now: int) -> void:
 	_notify.call("%s: \"%s\" (%d %s, %s)" % [room["name"], product["call"], quantity, product["unit"], Money.format(price)], "info")
 
 
+func _react(room: Dictionary, key: String, now: int) -> void:
+	if react.is_valid():
+		react.call(room, key, now)
+
+
 func _expire(room: Dictionary, group: Dictionary) -> void:
 	var balance: Dictionary = _data["balance"]
 	var request: Dictionary = room["request"]
@@ -167,6 +182,7 @@ func _expire(room: Dictionary, group: Dictionary) -> void:
 		"ORDER":
 			_state.stock[request["product_id"]] += request["quantity"]
 			group["tags"].append("cho_do")
+			_react(room, "order_late", request["deadline"])
 			_change_satisfaction.call(group, -balance["order_late_penalty"], "%s chờ đồ quá lâu, hủy món" % room["name"])
 		"MIC":
 			group["tags"].append("micro")
@@ -201,9 +217,11 @@ func deliver_order(room: Dictionary, now: int) -> String:
 	var group = _customers.get_group(room["group_id"])
 	var product = get_product(request["product_id"])
 	room["request"] = {}
-	group["bill_items"].append({"type": "ORDER", "amount": request["price"], "note": "%d %s %s" % [request["quantity"], product["unit"], product["name"]]})
+	group["bill_items"].append({"type": "ORDER", "amount": request["price"], "note": "%d %s %s" % [request["quantity"], product["unit"], product["name"]], "product_id": product["id"]})
 	var bonus: int = balance["order_bonus"]
 	var reason: String = "%s nhận món" % room["name"]
+	if group.get("favorite_product_id", "") == product["id"]:
+		bonus += balance["regular_favorite_product_bonus"]
 	if now - request["opened"] <= balance["fast_service_minutes"]:
 		bonus += balance["fast_service_bonus"]
 		reason = "%s nhận món rất nhanh" % room["name"]
@@ -220,6 +238,7 @@ func fix_mic(room: Dictionary, now: int) -> String:
 	room["request"] = {}
 	if now - request["opened"] <= _data["balance"]["fast_service_minutes"]:
 		_change_satisfaction.call(group, 1, "%s được đổi micro ngay" % room["name"])
+		_react(room, "mic_fixed_fast", now)
 	else:
 		_notify.call("Đã đổi micro mới cho %s." % room["name"], "info")
 	return ""
@@ -252,5 +271,6 @@ func answer(room: Dictionary, choice: String) -> String:
 		else:
 			room["request"] = {}
 			_change_satisfaction.call(group, -balance["extend_decline_penalty"], "%s bị từ chối hát thêm" % room["name"])
+			_react(room, "extend_declined", request["opened"])
 		return ""
 	return "Yêu cầu này cần chủ quán tới tận phòng."

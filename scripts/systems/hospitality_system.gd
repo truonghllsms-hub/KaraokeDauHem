@@ -12,6 +12,8 @@ var _economy
 var _customers
 var _rooms
 var _notify: Callable
+## Hàm (host, key, room_id, now) để phát câu riêng của nhân viên; Simulation gán sau khi khởi tạo.
+var speak: Callable = Callable()
 
 
 func _init(state, data: Dictionary, rng: RandomNumberGenerator, economy, customers, rooms, notify: Callable) -> void:
@@ -119,6 +121,8 @@ func assign(host: Dictionary, room: Dictionary, now: int) -> void:
 	room["host_id"] = room["host_ids"][0]
 	group["host_request"] = "ACTIVE"
 	_notify.call("%s vào %s góp vui %d phút." % [host["name"], room["name"], _data["balance"]["lancan_minutes"]], "info")
+	if speak.is_valid():
+		speak.call(host, "match" if host["music"] == group["music"] else "enter", room["id"], now)
 
 
 func tick(now: int) -> void:
@@ -166,6 +170,7 @@ func _complete(host: Dictionary, now: int) -> void:
 		var bonus: int = host["talk"] + host["duet"]
 		if host["music"] == group["music"]:
 			bonus += balance["lancan_music_match_bonus"]
+			group["tags"].append("lancan_hop_gu")
 		group["satisfaction"] = clampi(group["satisfaction"] + bonus, 0, 100)
 		group["bill_items"].append({"type": "LANCAN_FEE", "amount": balance["lancan_fee"], "note": "Lan can: " + host["name"]})
 		group["host_completed_count"] = group.get("host_completed_count", 0) + 1
@@ -180,6 +185,8 @@ func _complete(host: Dictionary, now: int) -> void:
 		if tip > 0:
 			text += ", được khách tip riêng %s" % Money.format(tip)
 		_notify.call(text + ".", "good")
+		if speak.is_valid():
+			speak.call(host, "finish", room["id"], now)
 	if room != null:
 		_unlink(room, host["id"])
 	_release(host, now)
@@ -209,6 +216,8 @@ func _release(host: Dictionary, now: int) -> void:
 		host["state"] = "RESTING"
 		host["rest_end"] = now + balance["lancan_rest_minutes"]
 		_notify.call("%s xin nghỉ %d phút lấy lại giọng." % [host["name"], balance["lancan_rest_minutes"]], "info")
+		if speak.is_valid():
+			speak.call(host, "rest", "", now)
 	else:
 		host["state"] = "READY"
 
