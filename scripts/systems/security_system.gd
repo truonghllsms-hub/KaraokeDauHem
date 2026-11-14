@@ -9,6 +9,7 @@ extends RefCounted
 const Money = preload("res://scripts/core/money.gd")
 
 var enabled: bool = true
+var visual_chase: bool = false
 
 var _state
 var _data: Dictionary
@@ -36,7 +37,7 @@ func is_active() -> bool:
 
 
 func _parked_groups() -> Array:
-	return _state.groups.filter(func(g: Dictionary) -> bool: return g["state"] == "IN_ROOM" or g["state"] == "WAITING")
+	return _state.groups.filter(func(g: Dictionary) -> bool: return g["state"] in ["IN_ROOM", "WAITING"] and ceili(g["size"] / 2.0) > g.get("stolen_bikes", 0))
 
 
 ## Đưa một tên trộm vào bãi xe ngay (dùng cho kiểm thử và công cụ debug).
@@ -58,7 +59,7 @@ func spawn(now: int) -> bool:
 		if _rng.randi_range(1, 100) <= balance["guard_catch_percent"]:
 			_state.thief["catch_at"] = now + balance["guard_react_minutes"] + balance["chase_minutes"]
 			_state.thief["chased_by"] = "guard"
-	_notify.call("Có người lạ rón rén đi vào bãi xe… Bấm vào hắn để chạy ra đuổi!", "bad")
+	_notify.call("Có người lạ lảng vảng ngoài bãi xe…", "bad")
 	return true
 
 
@@ -68,11 +69,19 @@ func chase(now: int) -> String:
 		return "Không có trộm nào trong bãi xe."
 	var thief: Dictionary = _state.thief
 	var arrive: int = now + _data["balance"]["chase_minutes"]
-	if thief["catch_at"] >= 0 and thief["catch_at"] <= arrive:
+	if thief["chased_by"] == "owner" or (thief["catch_at"] >= 0 and thief["catch_at"] <= arrive):
 		return "Đã có người đuổi theo rồi."
-	thief["catch_at"] = arrive
+	thief["catch_at"] = -1 if visual_chase else arrive
 	thief["chased_by"] = "owner"
 	return ""
+
+
+func confirm_chase(now: int) -> bool:
+	if not is_active() or _state.thief.get("chased_by", "") != "owner" or now >= _state.thief["escape"]:
+		return false
+	_state.thief["catch_at"] = now
+	tick(now)
+	return _state.thief["state"] == "CAUGHT"
 
 
 func tick(now: int) -> void:
@@ -108,13 +117,14 @@ func _steal(thief: Dictionary, now: int) -> void:
 	thief["state"] = "ESCAPED"
 	thief["resolved_at"] = now
 	var group = _customers.get_group(thief["group_id"])
-	if group == null:
+	if group == null or ceili(group["size"] / 2.0) <= group.get("stolen_bikes", 0):
 		var parked: Array = _parked_groups()
 		if parked.is_empty():
 			_notify.call("Tên trộm lảng vảng rồi bỏ đi tay không.", "info")
 			return
 		group = parked[0]
 		thief["group_id"] = group["id"]
+	group["stolen_bikes"] = group.get("stolen_bikes", 0) + 1
 	group["tags"].append("mat_xe")
 	group["satisfaction"] = clampi(group["satisfaction"] - balance["thief_satisfaction_penalty"], 0, 100)
 	_state.night["thefts"] += 1

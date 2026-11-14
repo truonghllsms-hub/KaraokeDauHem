@@ -20,6 +20,10 @@ signal pressed
 
 var speed: float = 190.0
 var place_key: String = ""
+var bubble_speaker: int = 0
+var _bubble_background: Color = Color.WHITE
+var _bubble_border: Color = UI.BORDER
+var _bubble_text_color: Color = UI.TEXT
 var carrying: bool = false
 var singing: bool = false
 var pose: String = "standing"
@@ -105,16 +109,28 @@ func set_tooltip(text: String) -> void:
 
 
 ## Bóng thoại phía trên đầu. Chuỗi rỗng để ẩn.
-func set_bubble(text: String, background: Color = Color(1, 1, 1, 0.95), border: Color = UI.PINK) -> void:
+func set_bubble(text: String, background: Color = Color(1, 1, 1, 0.95), border: Color = UI.PINK, text_color: Color = UI.TEXT) -> void:
 	if text == "":
 		_bubble.visible = false
 		return
-	if _bubble.text != text or not _bubble.visible:
+	if _bubble.text != text or _bubble_background != background or _bubble_border != border or _bubble_text_color != text_color:
 		_bubble.text = text
-		_bubble.add_theme_stylebox_override("normal", UI.box(background, border, 2, 4))
+		_bubble_background = background
+		_bubble_border = border
+		_bubble_text_color = text_color
+		_bubble.add_theme_color_override("font_color", text_color)
+		_bubble.add_theme_stylebox_override("normal", UI.box(background, border, 2, 6))
 		_bubble.reset_size()
 	_bubble.visible = true
-	_bubble.position = Vector2(-_bubble.size.x * 0.5, -132 - _bubble.size.y)
+	_place_bubble()
+
+func _place_bubble() -> void:
+	if _bubble == null or not _bubble.visible or _sprites.is_empty():
+		return
+	var index: int = clampi(bubble_speaker, 0, _sprites.size() - 1)
+	var at: Vector2 = _sprites[index].position
+	var art_height: float = CharacterArt.height(_people[index], "standing" if is_moving() else pose)
+	_bubble.position = at + Vector2(-_bubble.size.x * 0.5, -art_height - 10 - _bubble.size.y)
 
 
 func set_highlight(on: bool) -> void:
@@ -124,6 +140,9 @@ func set_highlight(on: bool) -> void:
 
 ## Viền sáng dưới chân khi được chọn và thanh kiên nhẫn trên đầu (xanh -> vàng -> đỏ).
 func _draw() -> void:
+	if _bubble != null and _bubble.visible:
+		var tail: Vector2 = _bubble.position + Vector2(_bubble.size.x * 0.5, _bubble.size.y)
+		draw_colored_polygon(PackedVector2Array([tail + Vector2(-6, 0), tail + Vector2(6, 0), tail + Vector2(0, 8)]), _bubble_background)
 	# Bóng tiếp đất giữ bước chân và vị trí sofa rõ khi thân người chuyển động.
 	for sprite in _sprites:
 		draw_set_transform(sprite.position + Vector2(0, 1), 0, Vector2(1, 0.22))
@@ -290,6 +309,8 @@ func advance(delta: float) -> void:
 			_sprites[i].flip_h = pose == "seated" and seated_faces_left
 		_sprites[i].position = base + Vector2(0, bob)
 		_sprites[i].rotation = tilt
+
+	_place_bubble()
 
 
 func save_view() -> Dictionary:

@@ -287,9 +287,11 @@ func _build_ui() -> void:
 	venue = VenueView.new()
 	venue.setup(sim)
 	sim.staff.visual_delivery = true
+	sim.security.visual_chase = true
 	venue.report.connect(_report)
 	venue.hint.connect(func(text: String) -> void: _set_notice(text, "info"))
 	venue.choice_requested.connect(_show_choice)
+	venue.next_day_requested.connect(_advance_day)
 	venue.inspect_requested.connect(func(_id: String) -> void: _show_venue_panel())
 	_map_stage.add_child(venue)
 	_reference_scroll = VScrollBar.new()
@@ -456,9 +458,8 @@ func _build_bottom_bar() -> Control:
 
 func _show_staff() -> void:
 	_show_overlay("ledger", "NHÂN SỰ", "Nhân viên phục vụ, giao lưu và bảo vệ được quản lý tại đây. Khu sofa ở sảnh là chỗ nhân viên ngồi chờ.", [
-		["Phục vụ", _show_waiters],
+		["Nhân viên quán", _show_waiters],
 		["Giao lưu âm nhạc", _show_lancan],
-		["Bảo vệ", _show_guard],
 		["Đóng", _close_overlay],
 	])
 
@@ -474,6 +475,10 @@ func _show_waiters() -> void:
 	roster.add_theme_constant_override("v_separation", 14)
 	for member in sim.state.staff:
 		roster.add_child(_staff_card(member, true))
+	if sim.state.guard_hired:
+		roster.add_child(_guard_card())
+	if roster.get_child_count() == 0:
+		content.add_child(UI.label("Bạn đang tự điều hành quán. Chưa tuyển nhân viên.", 22, UI.MUTED))
 	content.add_child(roster)
 	content.add_child(UI.section("Tuyển thêm người", "Phí tuyển %s · Tối đa %d người mỗi vai trò" % [Money.format(balance["staff_hire_cost"]), balance["staff_max_per_role"]]))
 	var candidates: GridContainer = GridContainer.new()
@@ -482,6 +487,8 @@ func _show_waiters() -> void:
 	candidates.add_theme_constant_override("v_separation", 14)
 	for candidate in sim.staff.candidates():
 		candidates.add_child(_staff_card(candidate, false))
+	if not sim.state.guard_hired:
+		candidates.add_child(_guard_card())
 	content.add_child(candidates)
 	_show_overlay("ledger", "NHÂN VIÊN QUÁN", "Nhân viên chờ 2–3 phút để bạn ra tay trước, rồi tự làm. Mệt thì làm chậm và xin nghỉ.", [["Đóng", _close_overlay]], content)
 
@@ -815,9 +822,6 @@ func _show_summary() -> void:
 		lines.append("KHÁCH NÓI GÌ")
 		for comment in summary["comments"]:
 			lines.append("  %s %s: \"%s\"" % ["★".repeat(comment.get("stars", 0)), comment["who"], comment["text"]])
-	if summary["day"] + 1 == sim.data["balance"]["theft_start_day"] and not sim.state.guard_hired:
-		lines.append("")
-		lines.append("Hàng xóm nhắn: dạo này khu mình hay mất xe. Từ đêm mai nên thuê bảo vệ (nút Bảo vệ).")
 	lines.append("")
 	lines.append("Đã tự lưu tiến trình.")
 	lines.append("CHỌN MỘT MÓN ĐẦU TƯ CHO ĐÊM MAI (không bắt buộc):")
@@ -833,10 +837,7 @@ func _show_summary() -> void:
 		return
 	_show_overlay("summary", "TỔNG KẾT ĐÊM %d" % summary["day"], "\n".join(lines), [
 		["Vay ngân hàng", _show_loan],
-		["Sang đêm tiếp theo", func() -> void:
-			_close_overlay()
-			_report(sim.next_day())
-			_on_message("Đêm %d: chuẩn bị mở cửa. Mục tiêu: %s." % [sim.state.day, sim.goal_text()], "info")],
+		["Sang đêm tiếp theo", _advance_day],
 	], _upgrade_list(_show_summary))
 
 
@@ -950,7 +951,7 @@ func _show_loan() -> void:
 ## Hướng dẫn từng bước cho hai đêm tập và lần đầu gặp trộm. Mỗi mẹo hiện đúng lúc, bấm "Đã hiểu" để ẩn.
 func _tutorial_step() -> Array:
 	var state = sim.state
-	if state.bankrupt:
+	if state.bankrupt or sim.security.is_active():
 		return []
 	var waiting: Array = sim.customers.waiting_groups()
 	var any_order: bool = false
@@ -965,8 +966,6 @@ func _tutorial_step() -> Array:
 			any_choice = any_choice or room["request"]["kind"] in ["HOT", "EXTEND"]
 		any_dirty = any_dirty or room["state"] == "DIRTY"
 		any_locked_floor1 = any_locked_floor1 or (room["floor"] == 1 and room["state"] == "LOCKED")
-	if not state.thief.is_empty() and sim.security.is_active():
-		return ["thief", "Có kẻ trộm đang rón rén vào bãi xe! Bấm ngay vào hắn để chủ quán chạy ra đuổi. Thuê bảo vệ ở Nhân sự để đỡ phải canh."]
 	if state.day == 1:
 		match state.phase:
 			"PREP":
@@ -977,13 +976,13 @@ func _tutorial_step() -> Array:
 				if not waiting.is_empty():
 					return ["d1_group", "Khách đang chờ ở sảnh (thanh trên đầu là độ kiên nhẫn). Bấm vào nhóm khách để chọn."]
 				if any_order:
-					return ["d1_order", "Phòng có nhãn vàng là khách gọi món. Bấm vào phòng: chủ quán ra quầy lấy món rồi mang tới. Giao nhanh thì khách vui hơn."]
+					return ["d1_order", "Phòng có nhãn vàng là khách gọi món. Bấm vào phòng: chủ quán ra tủ lạnh lấy món rồi mang tới. Giao nhanh thì khách vui hơn."]
 				if any_mic:
-					return ["d1_mic", "Nhãn đỏ là micro hỏng. Bấm vào phòng để đổi micro, để lâu khách sẽ bực và quán phải giảm giá."]
+					return ["d1_mic", "Khách gọi đổi micro trong bong bóng thoại. Bấm vào phòng để đổi micro, để lâu khách sẽ bực và quán phải giảm giá."]
 				if any_choice:
 					return ["d1_choice", "Phòng có yêu cầu đặc biệt (nóng, xin hát thêm). Bấm vào phòng để chọn cách xử lý."]
 				if any_dirty:
-					return ["d1_dirty", "Khách về để lại phòng bẩn. Tạp vụ Tí sẽ tự dọn sau ít phút, hoặc bấm vào phòng để tự dọn ngay."]
+					return ["d1_dirty", "Khách về để lại phòng bẩn. Bấm vào phòng để tự dọn. Khi muốn có người phụ, bạn có thể vào Nhân sự để tuyển."]
 				if state.night["served"] == 0:
 					return ["d1_wait", "Khách sẽ tới cổng sau ít phút. Bấm 2x hoặc 4x ở góc trên để tua nhanh."]
 				return ["d1_rating", "Mỗi nhóm trả tiền xong sẽ để lại đánh giá sao (góc phải). Nhiều sao thì khách tới đông hơn."]
@@ -991,8 +990,6 @@ func _tutorial_step() -> Array:
 		if any_locked_floor1:
 			return ["d2_expand", "Đêm tập 2 · Muốn đón nhiều khách hơn? Bấm một phòng \"Chưa lắp thiết bị\" để lắp. Thiếu tiền thì bấm \"Vay ngân hàng\" ở góc trái. Nhớ vào Kho nhập thêm hàng."]
 		return ["d2_staff", "Đêm tập 2 · Vào Nhân sự để thuê phục vụ (mang món) hoặc lễ tân (tự xếp khách vào phòng)."]
-	if state.day == 3 and state.phase == "PREP":
-		return ["d3_thief", "Hết đêm tập: từ đêm nay khách đông bình thường và bắt đầu có trộm xe. Thấy kẻ lạ ở bãi xe thì bấm vào để đuổi, hoặc thuê bảo vệ ở Nhân sự."]
 	if state.money < 0:
 		return ["negative", "Số dư đang âm! Nếu hết đêm sau vẫn âm, quán phá sản. Bấm nút đỏ ở góc trái để vay gỡ, hoặc cắt bớt chi phí."]
 	return []
@@ -1006,28 +1003,52 @@ func _refresh_tutorial() -> void:
 		return
 	_tutorial_key = step[0]
 	_tutorial_label.text = step[1]
-	_tutorial_panel.position.y = 214 if step[0] == "thief" else 1394 - maxf(112, _tutorial_panel.get_combined_minimum_size().y)
+	_tutorial_panel.position.y = 214
 	_tutorial_panel.visible = true
 
 
 func _show_guard() -> void:
-	var balance: Dictionary = sim.data["balance"]
+	_show_waiters()
+
+func _guard_card() -> Control:
+	var card: PanelContainer = UI.panel(Color("#fff9e9"), UI.BORDER)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	card.add_child(column)
+	var row: HBoxContainer = HBoxContainer.new()
+	var portrait: TextureRect = TextureRect.new()
+	portrait.texture = CharacterArt.texture("guard")
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.custom_minimum_size = Vector2(92, 118)
+	row.add_child(portrait)
+	var details: VBoxContainer = VBoxContainer.new()
+	details.add_child(UI.label("Bảo vệ · Chú Sáu", 24, UI.PURPLE, true))
+	details.add_child(UI.label("Trông xe ngoài quán", 20, UI.TEXT))
+	details.add_child(UI.label(Money.format(sim.data["balance"]["guard_wage"]) + "/đêm", 20, UI.MUTED))
+	row.add_child(details)
+	column.add_child(row)
 	var hired: bool = sim.state.guard_hired
-	var lines: Array = [
-		"Khách gửi xe ngoài sân. %s" % ("Từ đêm %d trở đi khu này có trộm xe." % balance["theft_start_day"] if not sim.theft_risk_active() else "Khu này đang có trộm xe."),
-		"• Thỉnh thoảng một tên trộm rón rén đi vào bãi xe. Bấm vào hắn để chủ quán chạy ra đuổi; chạy tới kịp trước khi hắn phá khóa xong thì xe an toàn.",
-		"• Có bảo vệ: bảo vệ tự đuổi, bắt được khoảng %d%% số vụ." % balance["guard_catch_percent"],
-		"• Mỗi vụ mất xe: quán đền %s cho khách, -%d danh tiếng, khách mất hứng (đánh giá thấp)." % [Money.format(balance["theft_compensation"]), balance["theft_reputation_penalty"]],
-		"• Lương bảo vệ: %s/đêm, đêm nào có trực là trả đêm đó." % Money.format(balance["guard_wage"]),
-		"",
-		"Hiện tại: %s" % ("ĐANG CÓ bảo vệ trông xe." if hired else "CHƯA thuê bảo vệ."),
-	]
-	_show_overlay("ledger", "BẢO VỆ SÂN XE", "\n".join(lines), [
-		["Cho nghỉ từ đêm sau" if hired else "Thuê bảo vệ", func() -> void:
-			sim.set_guard(not hired)
-			_show_guard()],
-		["Đóng", _close_overlay],
-	])
+	var action: Button = UI.button("Cho nghỉ" if hired else "Thuê bảo vệ", 22)
+	action.pressed.connect(func() -> void:
+		_report(sim.set_guard(not hired))
+		_show_waiters())
+	column.add_child(action)
+	return card
+
+func _advance_day() -> void:
+	var error: String = sim.next_day()
+	if error != "":
+		_report(error)
+		return
+	_close_overlay()
+	_last_summary = {}
+	venue.begin_day()
+	venue.set_floor(1)
+	venue.advance_actors(0)
+	_refresh()
+	sim.save_game(SaveManager.DEFAULT_PATH, venue.save_view())
+	_on_message("Đêm %d: chuẩn bị mở cửa." % sim.state.day, "info")
 
 
 func _show_choice(room_id: String) -> void:
@@ -1256,15 +1277,15 @@ func _show_overlay(kind: String, title: String, body: String, buttons: Array, ex
 		button.tooltip_text = entry[0]
 		button.pressed.connect(entry[1])
 		actions.add_child(button)
-	content.add_child(actions)
-	_fit_dialog.call_deferred(panel, content)
+	column.add_child(actions)
+	_fit_dialog.call_deferred(panel, content, actions)
 
 
-func _fit_dialog(panel: PanelContainer, content: VBoxContainer) -> void:
+func _fit_dialog(panel: PanelContainer, content: VBoxContainer, actions: Control) -> void:
 	await get_tree().process_frame
 	if not is_instance_valid(panel) or not is_instance_valid(content):
 		return
-	panel.custom_minimum_size.y = clampf(content.get_combined_minimum_size().y + 120, 460, minf(1260, get_viewport_rect().size.y - 100))
+	panel.custom_minimum_size.y = clampf(content.get_combined_minimum_size().y + actions.get_combined_minimum_size().y + 150, 460, minf(1260, get_viewport_rect().size.y - 100))
 	panel.reset_size()
 
 

@@ -3,6 +3,7 @@ extends RefCounted
 ## cùng một ID dùng cho ảnh tuyển dụng, đứng, ngồi và các hướng chủ quán.
 
 const SHEETS: Dictionary = {
+	"thief": preload("res://assets/characters/thief.webp"),
 	"staff_tasks": preload("res://assets/characters/staff_tasks.webp"),
 	"staff_idle": preload("res://assets/characters/staff_idle.webp"),
 	"new_men": preload("res://assets/characters/new_men_base.webp"),
@@ -17,6 +18,7 @@ const SHEETS: Dictionary = {
 }
 
 const REGIONS: Dictionary = {
+	"thief": [Rect2(50, 7, 301, 455), Rect2(445, 7, 284, 454), Rect2(842, 11, 275, 451), Rect2(1211, 3, 296, 456), Rect2(19, 591, 331, 404), Rect2(394, 527, 358, 467), Rect2(817, 518, 279, 486), Rect2(1228, 515, 220, 489)],
 	"staff_tasks": [Rect2(134, 13, 245, 424), Rect2(553, 16, 279, 421), Rect2(986, 15, 254, 422), Rect2(1423, 11, 229, 425), Rect2(132, 454, 233, 425), Rect2(545, 456, 231, 421), Rect2(967, 458, 242, 420), Rect2(1430, 458, 239, 420)],
 	"staff_idle": [Rect2(171, 13, 182, 485), Rect2(627, 18, 214, 480), Rect2(1127, 15, 216, 482), Rect2(155, 520, 194, 494), Rect2(629, 525, 215, 489), Rect2(1148, 520, 199, 494)],
 	"new_men": [Rect2(119, 15, 241, 424), Rect2(503, 11, 226, 429), Rect2(898, 14, 185, 423), Rect2(168, 448, 184, 377), Rect2(539, 454, 180, 371), Rect2(910, 448, 181, 376), Rect2(168, 838, 179, 401), Rect2(535, 837, 185, 403), Rect2(910, 837, 179, 403)],
@@ -31,6 +33,14 @@ const REGIONS: Dictionary = {
 }
 
 const PEOPLE: Dictionary = {
+	"thief_walk_0": ["thief", 0],
+	"thief_walk_1": ["thief", 1],
+	"thief_walk_2": ["thief", 2],
+	"thief_walk_3": ["thief", 3],
+	"thief_stealing": ["thief", 4],
+	"thief_running": ["thief", 5],
+	"thief_caught": ["thief", 6],
+	"thief": ["thief", 7],
 	"janitor_m": ["staff_idle", 0],
 	"janitor_f": ["staff_idle", 1],
 	"server_f": ["staff_idle", 2],
@@ -94,7 +104,9 @@ static var _cache: Dictionary = {}
 
 static func texture(person: String, pose: String = "standing", facing: String = "front") -> Texture2D:
 	var key: String = person
-	if pose == "carrying":
+	if person == "thief" and pose in ["stealing", "caught"]:
+		key = "thief_" + pose
+	elif pose == "carrying":
 		key = "owner_carrying_" + facing if person == "owner" else person + "_carrying"
 	elif pose == "cleaning" and person.begins_with("janitor_"):
 		key = person + "_cleaning"
@@ -120,6 +132,8 @@ static func texture(person: String, pose: String = "standing", facing: String = 
 
 
 static func height(person: String, pose: String = "standing") -> float:
+	if person == "thief" and pose == "stealing":
+		return 84.0
 	if person == "guard":
 		return 96.0
 	if person.begins_with("lancan_"):

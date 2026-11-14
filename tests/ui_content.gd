@@ -224,7 +224,7 @@ func _run() -> void:
 	menu.queue_free()
 	await process_frame
 	await _open_game()
-	_check(_sim.state.money == saved_money and _sim.rating_text() == saved_rating and _sim.state.staff.size() == 3 and _sim.state.loan_principal > 0, "Tiếp tục: đúng số dư, điểm sao, nhân viên và dư nợ")
+	_check(_sim.state.money == saved_money and _sim.rating_text() == saved_rating and _sim.state.staff.size() == 2 and _sim.state.loan_principal > 0, "Tiếp tục: đúng số dư, điểm sao, nhân viên và dư nợ")
 	_check(_sim.state.phase == "SUMMARY" and _sim.rooms.get_room("room_03")["state"] != "LOCKED", "Tiếp tục về đúng mốc cuối đêm, phòng đã lắp vẫn còn")
 	await process_frame
 	_check(_game._overlay_kind == "summary", "Tiếp tục: mở lại bảng tổng kết để sang đêm mới")

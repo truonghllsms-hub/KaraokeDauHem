@@ -45,6 +45,7 @@ func _run() -> void:
 	check(picked, "Owner reaches fridge")
 	advance(20)
 	check(not venue._owner.carrying and party["bill_items"].size() == 1, "Owner delivers once and returns empty-handed")
+	sim.hire_staff("staff_1")
 	sim.hire_staff("staff_3")
 	sim.hire_staff("staff_5")
 	sim.staff.enabled = true

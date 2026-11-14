@@ -211,8 +211,8 @@ func test_closing_time() -> void:
 	check(sim.state.phase == "SUMMARY", "24:00: chuyển sang tổng kết")
 	var summary: Dictionary = sim.state.history[0]
 	check(summary["room_revenue"] == 250000, "Doanh thu phòng trong báo cáo")
-	check(sim.state.money == money + 250000 - _data["staff"][0]["wage"] - operating_cost(sim), "Trừ lương và chi phí vận hành đúng một lần")
-	check(summary["profit"] == 250000 - _data["staff"][0]["wage"] - operating_cost(sim), "Lợi nhuận = thu - chi")
+	check(sim.state.money == money + 250000 - operating_cost(sim), "Trừ lương và chi phí vận hành đúng một lần")
+	check(summary["profit"] == 250000 - operating_cost(sim), "Lợi nhuận = thu - chi")
 	check(sim.rooms.get_room("room_01")["state"] == "AVAILABLE", "Kết ca: phòng được dọn")
 	check(sim.state.groups.is_empty(), "Kết ca: không còn nhóm khách nào")
 	var minute: int = sim.clock.minute
@@ -302,7 +302,7 @@ func test_lancan() -> void:
 	check(sim.check_invariants().is_empty(), "Bất biến ổn")
 	step(sim, 400)
 	var summary: Dictionary = sim.state.history[0]
-	check(summary["lancan_revenue"] == fee and summary["wages"] == _data["staff"][0]["wage"] + 250000 + 250000 + 300000, "Báo cáo có doanh thu Lan can và lương")
+	check(summary["lancan_revenue"] == fee and summary["wages"] == 250000 + 250000 + 300000, "Báo cáo có doanh thu Lan can và lương")
 	check(sim.economy.ledger_matches_balance(), "Số dư khớp sổ")
 
 
@@ -397,7 +397,7 @@ func test_service() -> void:
 func test_yard_and_goals() -> void:
 	print("Trộm xe, bảo vệ và mục tiêu đêm")
 	var balance: Dictionary = _data["balance"]
-	var wage_ti: int = _data["staff"][0]["wage"]
+	var wage_ti: int = 0
 	var sim = new_sim()
 	check(not sim.theft_risk_active(), "Đêm 1 chưa có trộm")
 	check(sim.goal_text().contains("4 nhóm") and sim.goal_text().contains("quá 5 nhóm"), "Mục tiêu đêm 1: phục vụ 4 nhóm, không quá 3 + 2 phòng = 5 nhóm bỏ về")
@@ -413,7 +413,7 @@ func test_yard_and_goals() -> void:
 	var first: Dictionary = sim.state.history[0]
 	check(first["goal_met"] and sim.state.reputation == rep + balance["goal_reputation_bonus"], "Đạt mục tiêu đêm: +2 danh tiếng")
 	check(first["comments"].size() == 3 and first["thefts"] == 0, "Tổng kết có 3 lời nhận xét, đêm 1 không mất xe")
-	check(first["wages"] == wage_ti, "Chưa thuê bảo vệ: chỉ trả lương tạp vụ")
+	check(first["wages"] == wage_ti, "Chưa tuyển ai: không trả lương")
 
 	# Đêm 3 (hết đêm tập): trộm rón rén vào bãi, không ai đuổi thì mất xe.
 	sim.next_day()
@@ -424,7 +424,7 @@ func test_yard_and_goals() -> void:
 	check(sim.theft_risk_active(), "Từ đêm 3 có trộm")
 	sim.open_doors()
 	check(sim.chase_thief().contains("Không có trộm"), "Không có trộm thì không đuổi")
-	var victim = sim.customers.add_group("friends", 3, 90, 0)
+	var victim = sim.customers.add_group("friends", 5, 90, 0)
 	sim.assign_group(victim["id"], "room_01")
 	step(sim, 5)
 	check(sim.security.spawn(sim.clock.minute) and sim.state.thief["state"] == "APPROACH" and sim.state.thief["group_id"] == victim["id"], "Trộm xuất hiện, nhắm xe của nhóm đang hát")
@@ -487,7 +487,8 @@ func test_staff() -> void:
 	var balance: Dictionary = _data["balance"]
 	var sim = new_sim()
 	sim.staff.enabled = true
-	check(sim.state.staff.size() == 1 and sim.state.staff[0]["role"] == "janitor", "Quán có sẵn một tạp vụ (Tí)")
+	check(sim.state.staff.is_empty(), "Ban đầu chủ quán làm một mình, chưa có nhân viên")
+	check(sim.hire_staff("staff_1") == "", "Tuyển tạp vụ Tí trước khi có người dọn")
 	var ti: Dictionary = sim.state.staff[0]
 	sim.open_doors()
 
@@ -730,7 +731,7 @@ func test_save_load() -> void:
 	check(state_text(copy) == state_text(sim), "Trạng thái sau khi tải giống hệt lúc lưu (tiền, kho, phòng, nhân viên, khách quen, ngẫu nhiên)")
 	check(copy.state.money == sim.state.money and copy.economy.ledger_matches_balance(), "Tiền và sổ giao dịch khớp sau khi tải")
 	check(copy.state.stock == sim.state.stock and str(copy.state.stock.keys()) == str(sim.state.stock.keys()), "Tồn kho giống hệt sau khi tải, giữ cả thứ tự mặt hàng")
-	check(copy.state.staff.size() == 2 and copy.state.hosts.size() == 1 and copy.service.upgrade_level("spare_mics") == 1, "Nhân viên, Lan can và nâng cấp được giữ")
+	check(copy.state.staff.size() == 1 and copy.state.hosts.size() == 1 and copy.service.upgrade_level("spare_mics") == 1, "Nhân viên, Lan can và nâng cấp được giữ")
 	check(copy.state.phase == "SUMMARY" and copy.clock.minute == Clock.NIGHT_MINUTES and copy.last_summary()["day"] == 1, "Tải về đúng mốc tổng kết đêm 1")
 	check(copy.check_invariants().is_empty(), "Bất biến ổn sau khi tải")
 
@@ -1039,7 +1040,7 @@ func test_finance() -> void:
 	step(sim, 360)
 	var summary: Dictionary = sim.state.history[0]
 	check(summary["loan_interest"] == 125000 and summary["loan_principal_paid"] == 500000 and summary["loan_balance"] == 4500000, "Cuối đêm tự trả lãi và một phần gốc")
-	check(summary["profit"] == -_data["staff"][0]["wage"] - operating_cost(sim) - 125000, "Lãi vay tính vào chi phí; trả gốc thì không")
+	check(summary["profit"] == -operating_cost(sim) - 125000, "Lãi vay tính vào chi phí; trả gốc thì không")
 	check(sim.economy.ledger_matches_balance(), "Sổ khớp sau khi trả nợ")
 	check(sim.repay_loan(1000000) == "" and sim.state.loan_principal == 3500000, "Trả bớt nợ gốc sau tổng kết")
 	check(sim.repay_loan(99000000) == "" and sim.state.loan_principal == 0, "Trả hết nợ (không trả quá dư nợ)")
