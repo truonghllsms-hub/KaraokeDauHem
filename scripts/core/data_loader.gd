@@ -1,9 +1,10 @@
 extends RefCounted
 ## Đọc dữ liệu định nghĩa từ res://data một lần và kiểm tra hợp lệ khi khởi động.
 
-const ROOM_KEYS: Array = ["id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
+const ROOM_KEYS: Array = ["floor", "tier", "id", "name", "capacity", "price_per_hour", "unlock_cost", "unlocked", "sound", "soundproof"]
 const TYPE_KEYS: Array = ["id", "name", "weight", "size_min", "size_max", "budget_per_hour", "patience_min", "patience_max", "music", "greetings", "lancan_chance", "sprites", "trait", "orders_min", "orders_max", "extend_chance", "mic_penalty_mult"]
 const BALANCE_KEYS: Array = [
+	"floor2_min_reputation",
 	"starting_money",
 	"starting_reputation",
 	"queue_limit",
@@ -28,6 +29,7 @@ const BALANCE_KEYS: Array = [
 	"price_max",
 	"lancan_hire_cost",
 	"lancan_max_staff",
+	"lancan_men_request_male_percent",
 	"lancan_fee",
 	"lancan_minutes",
 	"lancan_request_delay",
@@ -78,7 +80,7 @@ const BALANCE_KEYS: Array = [
 ]
 const PRODUCT_KEYS: Array = ["id", "name", "unit", "cost", "price", "per_person", "pack_size", "start_stock", "call"]
 const UPGRADE_KEYS: Array = ["id", "name", "cost", "max_level", "effect"]
-const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage"]
+const HOST_KEYS: Array = ["id", "name", "sprite", "personality", "talk", "duet", "music", "wage", "gender"]
 
 
 ## Trả về {"errors": Array[String], "rooms": Array, "customers": Dictionary, "balance": Dictionary, "hosts": Array}.
@@ -103,6 +105,8 @@ static func load_all() -> Dictionary:
 	if hosts is Array:
 		for host in hosts:
 			_require(host, HOST_KEYS, "hosts.json", errors)
+			if host.get("gender", "") not in ["male", "female"]:
+				errors.append("hosts.json: giới tính nhân viên không hợp lệ.")
 	elif hosts != null:
 		errors.append("hosts.json: phải là một danh sách.")
 
@@ -111,22 +115,30 @@ static func load_all() -> Dictionary:
 			errors.append("rooms.json: cần ít nhất một phòng.")
 		for room in rooms:
 			_require(room, ROOM_KEYS, "rooms.json", errors)
+			if room.get("floor", 0) not in [1, 2] or room.get("tier", "") != ("vip" if room.get("floor", 0) == 2 else "standard"):
+				errors.append("rooms.json: tầng hoặc hạng phòng không hợp lệ.")
 	elif rooms != null:
 		errors.append("rooms.json: phải là một danh sách.")
 
 	if customers is Dictionary:
-		_require(customers, ["music_names", "types"], "customers.json", errors)
+		_require(customers, ["music_names", "types", "sprite_genders"], "customers.json", errors)
 		var types = customers.get("types", [])
 		if types is Array:
 			if types.is_empty():
 				errors.append("customers.json: cần ít nhất một nhóm khách.")
 			for t in types:
 				_require(t, TYPE_KEYS, "customers.json", errors)
+				if t.get("size_min", 0) < 1 or t.get("size_max", 6) > 5 or t.get("size_min", 0) > t.get("size_max", 0):
+					errors.append("customers.json: mỗi nhóm phải có từ 1 đến 5 khách.")
+				if t.get("composition", "") not in ["men", "women", "mixed", "couple", "family"]:
+					errors.append("customers.json: thành phần nhóm khách không hợp lệ.")
 	elif customers != null:
 		errors.append("customers.json: phải là một đối tượng.")
 
 	if balance is Dictionary:
 		_require(balance, BALANCE_KEYS, "balance.json", errors)
+		if balance.get("lancan_men_request_male_percent", -1) < 0 or balance.get("lancan_men_request_male_percent", 101) > 100:
+			errors.append("balance.json: tỷ lệ gọi nhân viên nam phải từ 0 đến 100.")
 	elif balance != null:
 		errors.append("balance.json: phải là một đối tượng.")
 

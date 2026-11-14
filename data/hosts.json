@@ -7,7 +7,8 @@
     "talk": 4,
     "duet": 2,
     "music": "nhac_tre",
-    "wage": 250000
+    "wage": 250000,
+    "gender": "female"
   },
   {
     "id": "host_2",
@@ -17,7 +18,8 @@
     "talk": 2,
     "duet": 4,
     "music": "bolero",
-    "wage": 250000
+    "wage": 250000,
+    "gender": "female"
   },
   {
     "id": "host_3",
@@ -27,7 +29,8 @@
     "talk": 3,
     "duet": 3,
     "music": "remix",
-    "wage": 300000
+    "wage": 300000,
+    "gender": "female"
   },
   {
     "id": "host_4",
@@ -37,7 +40,8 @@
     "talk": 3,
     "duet": 5,
     "music": "bolero",
-    "wage": 350000
+    "wage": 350000,
+    "gender": "female"
   },
   {
     "id": "host_5",
@@ -47,7 +51,8 @@
     "talk": 4,
     "duet": 3,
     "music": "remix",
-    "wage": 300000
+    "wage": 300000,
+    "gender": "female"
   },
   {
     "id": "host_6",
@@ -57,7 +62,8 @@
     "talk": 3,
     "duet": 4,
     "music": "nhac_tre",
-    "wage": 350000
+    "wage": 350000,
+    "gender": "female"
   },
   {
     "id": "host_7",
@@ -67,7 +73,8 @@
     "talk": 5,
     "duet": 2,
     "music": "remix",
-    "wage": 300000
+    "wage": 300000,
+    "gender": "female"
   },
   {
     "id": "host_8",
@@ -77,6 +84,40 @@
     "talk": 4,
     "duet": 4,
     "music": "bolero",
-    "wage": 350000
+    "wage": 350000,
+    "gender": "male"
+  },
+  {
+    "id": "host_9",
+    "name": "Minh Khang",
+    "sprite": "lancan_9",
+    "personality": "Vui tính, sân khấu tự tin, khoe cơ bụng sáu múi",
+    "talk": 4,
+    "duet": 4,
+    "music": "nhac_tre",
+    "wage": 350000,
+    "gender": "male"
+  },
+  {
+    "id": "host_10",
+    "name": "Tuấn Phong",
+    "sprite": "lancan_10",
+    "personality": "Năng động, khuấy động tiệc và song ca remix",
+    "talk": 5,
+    "duet": 3,
+    "music": "remix",
+    "wage": 350000,
+    "gender": "male"
+  },
+  {
+    "id": "host_11",
+    "name": "Đức Huy",
+    "sprite": "lancan_11",
+    "personality": "Giọng trầm, giao lưu duyên dáng và thân thiện",
+    "talk": 3,
+    "duet": 5,
+    "music": "bolero",
+    "wage": 350000,
+    "gender": "male"
   }
 ]

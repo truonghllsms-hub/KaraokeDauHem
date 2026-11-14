@@ -2,6 +2,7 @@ extends SceneTree
 ## Kiểm thử headless, dùng chính bộ mô phỏng của game.
 ## Chạy: godot --headless --path . --script res://tests/run_tests.gd
 
+const Art = preload("res://scripts/ui/character_art.gd")
 const DataLoader = preload("res://scripts/core/data_loader.gd")
 const Simulation = preload("res://scripts/core/simulation.gd")
 const Money = preload("res://scripts/core/money.gd")
@@ -125,12 +126,11 @@ func test_assignment_rules() -> void:
 	var early = sim.customers.add_group("friends", 3, 45, 0)
 	check(sim.assign_group(early["id"], "room_01") != "", "Chưa mở cửa: không xếp phòng")
 	sim.open_doors()
-	var big = sim.customers.add_group("company", 8, 60, 0)
-	var reason: String = sim.assign_group(big["id"], "room_01")
-	check(reason.contains("chỉ chứa 6 người"), "Vượt sức chứa: báo rõ lý do (%s)" % reason)
+	check(sim.customers.add_group("company", 6, 60, 0) == null, "Từ chối nhóm trên 5 khách")
+	var big = sim.customers.add_group("company", 5, 60, 0)
 	check(sim.assign_group(big["id"], "room_04").contains("chưa mở"), "Phòng chưa mở: từ chối kèm lý do")
 	var preview: Dictionary = sim.preview_assign(big["id"], "room_02")
-	check(preview["reason"] == "" and preview["estimate"] == 350000 and not preview["over_budget"], "Xem trước: phòng 02 vừa nhóm 8 người, dự kiến 350.000đ")
+	check(preview["reason"] == "" and preview["estimate"] == 350000 and not preview["over_budget"], "Xem trước: phòng 02 vừa nhóm 5 người, dự kiến 350.000đ")
 	check(sim.preview_assign(early["id"], "room_02")["over_budget"], "Xem trước: báo vượt ngân sách của nhóm bạn bè")
 	check(sim.assign_group(early["id"], "room_01") == "", "Nhóm vừa sức chứa: xếp được")
 	var other = sim.customers.add_group("friends", 2, 45, 0)
@@ -163,9 +163,10 @@ func test_waiting_and_unlock() -> void:
 	check(sim.unlock_room("room_03") == "" and sim.state.money == money - 4000000, "Mở phòng 03 trừ 4.000.000đ")
 	check(sim.unlock_room("room_03") != "" and sim.state.money == money - 4000000, "Không mở trùng, không trừ tiền lần hai")
 	check(sim.unlock_room("room_04") == "", "Mở phòng 04")
+	sim.state.reputation = 60
 	sim.economy.record("TEST", -sim.state.money, "drain")
 	check(sim.unlock_room("room_05").contains("Không đủ tiền"), "Thiếu tiền: không mở được phòng")
-	check(sim.state.rooms.size() == 6 and sim.rooms.unlocked_count() == 4, "Quán có 6 phòng, mở sẵn 2 và vừa mở thêm 2")
+	check(sim.state.rooms.size() == 10 and sim.rooms.unlocked_count() == 4, "Quán có 10 phòng, mở sẵn 2 và vừa mở thêm 2")
 
 
 func test_closing_time() -> void:
@@ -197,17 +198,17 @@ func test_closing_time() -> void:
 
 func test_lancan() -> void:
 	print("Lan can")
-	check(_data["hosts"].size() == 8 and _data["customers"]["types"].size() == 9, "Có 8 ứng viên Lan can và 9 nhóm khách")
+	check(_data["hosts"].size() == 11 and _data["customers"]["types"].size() == 11, "Có 11 ứng viên giao lưu và 11 nhóm khách")
 	var has_students: bool = false
 	for t in _data["customers"]["types"]:
 		has_students = has_students or t["id"] == "students"
 	check(not has_students, "Đã bỏ nhóm sinh viên")
 	for def in _data["hosts"]:
-		check(ResourceLoader.exists("res://assets/sprites/%s.svg" % def["sprite"]), "Có hình cho " + def["name"])
+		check(Art.PEOPLE.has(def["sprite"]), "Có hình cho " + def["name"])
 	for t in _data["customers"]["types"]:
 		var all_found: bool = true
 		for sprite_name in t["sprites"]:
-			all_found = all_found and ResourceLoader.exists("res://assets/sprites/%s.svg" % sprite_name)
+			all_found = all_found and Art.PEOPLE.has(sprite_name)
 		check(all_found and t["greetings"].size() >= 2, "Có hình và câu thoại cho nhóm " + t["name"])
 	var sim = new_sim()
 	var fee: int = _data["balance"]["lancan_fee"]
@@ -216,12 +217,13 @@ func test_lancan() -> void:
 	check(sim.hire_host("host_1") != "" and sim.state.money == money - 1500000, "Không tuyển trùng")
 	check(sim.hire_host("host_2") == "", "Tuyển người thứ hai")
 	check(sim.hire_host("host_3") == "", "Tuyển người thứ ba")
-	check(sim.hire_host("host_4").contains("3 vị trí"), "Tối đa ba vị trí")
-	check(sim.hosts.candidates().size() == 5, "Còn 5 ứng viên chưa tuyển")
+	check(_data["balance"]["lancan_max_staff"] == 6, "Có sáu vị trí nhân viên")
+	check(sim.hosts.candidates().size() == 8, "Còn 8 ứng viên chưa tuyển")
 	sim.open_doors()
 	var g1 = sim.customers.add_group("birthday", 4, 90, 0)
 	var g2 = sim.customers.add_group("friends", 4, 90, 0)
 	g1["wants_host"] = true
+	g1["host_requested_count"] = 1
 	g2["wants_host"] = false
 	sim.assign_group(g1["id"], "room_01")
 	sim.assign_group(g2["id"], "room_02")
@@ -230,7 +232,7 @@ func test_lancan() -> void:
 	check(g1["host_request"] == "PENDING" and g2["host_request"] == "NONE", "Sau 5 phút nhóm muốn Lan can sẽ gọi")
 	check(sim.assign_host("host_1", "room_02") != "", "Phòng không gọi: từ chối")
 	check(sim.assign_host("host_1", "room_01") == "", "Phân công vào phòng đang gọi")
-	check(sim.assign_host("host_2", "room_01").contains("đã có"), "Mỗi phòng tối đa một nhân viên")
+	check(sim.assign_host("host_2", "room_01") != "", "Không phân công vượt số người nhóm đã gọi")
 	g2["host_request"] = "PENDING"
 	check(sim.assign_host("host_1", "room_02").contains("đang phục vụ"), "Một người không phục vụ hai phòng")
 	g2["host_request"] = "NONE"
@@ -258,6 +260,9 @@ func test_lancan() -> void:
 	step(sim, 20)
 	check(g3["host_request"] == "MISSED" and g3["satisfaction"] == sat - 3, "Gọi không ai tới: -3 hài lòng")
 	g3["host_request"] = "PENDING"
+	g3["host_request_closed"] = false
+	g3["host_request_at"] = sim.clock.minute
+	g3["host_requested_count"] = 1
 	sim.hosts.get_host("host_2")["state"] = "READY"
 	check(sim.assign_host("host_2", "room_01") == "", "Phân công lại")
 	sim.rooms.get_room("room_01")["session_end"] = sim.clock.minute + 3
@@ -275,7 +280,7 @@ func test_service() -> void:
 	var sim = new_sim()
 	var balance: Dictionary = _data["balance"]
 	sim.open_doors()
-	var group = sim.customers.add_group("company", 6, 90, 0)
+	var group = sim.customers.add_group("company", 5, 90, 0)
 	sim.assign_group(group["id"], "room_02")
 	var room = sim.rooms.get_room("room_02")
 	check(sim.deliver_order("room_02") != "" and sim.fix_mic("room_02") != "" and sim.answer_request("room_02", "ac") != "", "Không có yêu cầu: mọi thao tác phục vụ bị từ chối kèm lý do")
@@ -345,7 +350,7 @@ func test_service() -> void:
 	money = sim.state.money
 	check(sim.buy_upgrade("spare_mics") == "" and sim.state.money == money - 1500000 and sim.service.upgrade_level("spare_mics") == 1, "Mua micro dự phòng")
 	check(sim.buy_upgrade("spare_mics").contains("cao nhất"), "Không mua quá cấp tối đa")
-	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_05")["sound"] == 2, "Dàn loa mới: mọi phòng lên cấp âm thanh 2")
+	check(sim.buy_upgrade("sound") == "" and sim.rooms.get_room("room_05")["sound"] == 3, "Dàn loa mới: phòng VIP lên cấp âm thanh 3")
 	sim.state.stock["da"] = 0
 	var thirsty = sim.customers.add_group("drinking", 3, 60, sim.clock.minute)
 	sim.assign_group(thirsty["id"], "room_01")

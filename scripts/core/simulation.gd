@@ -306,6 +306,8 @@ func unlock_room(room_id: String) -> String:
 		return "Không tìm thấy phòng."
 	if room["state"] != "LOCKED":
 		return "%s đã mở rồi." % room["name"]
+	if not rooms.floor_unlocked(room["floor"]):
+		return rooms.floor_lock_reason()
 	var cost: int = room["unlock_cost"]
 	if not economy.can_afford(cost):
 		return "Không đủ tiền: mở %s cần %s." % [room["name"], Money.format(cost)]
@@ -476,18 +478,27 @@ func check_invariants() -> Array:
 			seen_groups[room["group_id"]] = true
 		elif room["group_id"] != 0:
 			problems.append("%s không có khách nhưng còn giữ ID nhóm." % room["name"])
-		if room["host_id"] != "":
-			var host = hosts.get_host(room["host_id"])
+		if room["host_id"] != ("" if room["host_ids"].is_empty() else room["host_ids"][0]):
+			problems.append("%s có danh sách nhân viên không nhất quán." % room["name"])
+		var paired: Dictionary = {}
+		for host_id in room["host_ids"]:
+			var host = hosts.get_host(host_id)
 			if room["state"] != "OCCUPIED" or host == null or host["state"] != "SERVING" or host["room_id"] != room["id"]:
 				problems.append("%s giữ nhân viên Lan can không hợp lệ." % room["name"])
+			elif paired.has(host["guest_index"]):
+				problems.append("Hai nhân viên cùng ghép một khách.")
+			else:
+				paired[host["guest_index"]] = true
 	for host in state.hosts:
 		if host["state"] == "SERVING":
 			var host_room = rooms.get_room(host["room_id"])
-			if host_room == null or host_room["host_id"] != host["id"]:
+			if host_room == null or not host_room["host_ids"].has(host["id"]):
 				problems.append("%s ghi là đang phục vụ nhưng không ở phòng nào." % host["name"])
 		elif host["room_id"] != "":
 			problems.append("%s đã xong việc nhưng còn giữ phòng." % host["name"])
 	for group in state.groups:
+		if group["size"] < 1 or group["size"] > 5:
+			problems.append("Nhóm khách phải có từ 1 đến 5 người.")
 		if group["state"] == "IN_ROOM" and not seen_groups.has(group["id"]):
 			problems.append("Nhóm %d ghi là đang hát nhưng không ở phòng nào." % group["id"])
 		if group["state"] != "IN_ROOM" and group["state"] != "WAITING":

@@ -8,7 +8,7 @@ Trạng thái: **bản dựng sớm, chơi được trọn nhiều đêm**. Xem 
 
 ## Yêu cầu
 
-- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, thiết kế 1280 × 720.
+- Godot **4.5.1 stable** (bản thường, không cần .NET). Renderer Compatibility, giao diện thiết kế dọc 1024 × 1536 theo đúng mẫu đã duyệt; giữ tỷ lệ trên màn hình khác.
 
 ## Cách chạy
 
@@ -26,6 +26,18 @@ python3 -m http.server 8060 --directory build/web
 
 Đẩy bản web lên Vercel: `python3 tools/deploy_vercel.py` (cần biến `VERCEL_TOKEN`).
 
+## Giao diện mới
+
+- Hai trang tầng: tầng 1 có 4 phòng thường (P01–P04), tầng 2 có 6 phòng VIP. P01–P02 mở sẵn; những phòng còn lại mở khóa riêng.
+- Mỗi tầng vừa một màn hình; bấm Tầng 1 / Tầng 2 hoặc cầu thang để chuyển tầng. Mở đủ 4 phòng thường và đạt 60 danh tiếng sẽ mở lối lên tầng 2; mốc này được giữ khi danh tiếng giảm. Nút tầng có số phòng đang cần phục vụ/dọn.
+- Tầng 1 có cầu thang cuối hành lang, tủ lạnh cạnh quầy, sofa chờ nhân viên mở rộng và không có bàn. TV cao trên vách để chừa cửa trượt; loa treo tường; không có cây hoặc gối rời trong nhà. Bảo vệ ngồi ghế nhựa ở vỉa hè.
+- **Quán** mở bảng chi tiết phòng/khách và nhật ký; bấm phòng trống/khóa cũng mở bảng chi tiết. **Nhân sự** chứa nhân viên giao lưu và bảo vệ. Kho, nâng cấp, thu chi giữ chức năng hiện có.
+- Khi chuẩn bị chưa có nhân vật; mở cửa thì các nhân vật và công việc hiện có hoạt động. Đây là thay đổi giao diện, chưa bổ sung hệ thống lưu game hoặc âm thanh.
+- Nhân vật minh họa theo mẫu A: chủ quán đi bốn hướng và cầm chổi khi dọn, bảo vệ ngồi ghế nhựa; khách và 11 nhân viên giao lưu có bốn khung bước chân/tay, tư thế đứng/ngồi hát, nét mặt vui, mất kiên nhẫn và mệt khi nghỉ. Thẻ tuyển dụng dùng cùng diện mạo với cảnh chơi.
+- Mỗi nhóm có tối đa 5 khách. Các phòng gọn có 5 cặp chỗ ngồi cố định, bổ sung ghế đơn khi gọi nhiều nhân viên: mỗi khách có một chỗ và nhân viên giao lưu ngồi cạnh khách đó. Khách và nhân viên ở hai dãy đều quay về TV. Nhân vật luôn giữ kích thước cố định theo tư thế, không thu nhỏ theo số người, khi được chọn hay theo nhịp thở.
+
+Bấm nút tạm dừng ở thanh trên cùng để mở cửa trong màn chuẩn bị, hoặc **Quán → MỞ CỬA ĐÓN KHÁCH**. Logo góc trái mở menu.
+
 ## Điều khiển
 
 | Thao tác | Cách làm |
@@ -35,27 +47,28 @@ python3 -m http.server 8060 --directory build/web
 | Giao món, đổi micro | Bấm phòng có nhãn vàng (gọi món) hoặc đỏ (micro hỏng): chủ quán đi làm |
 | Phòng nóng, xin hát thêm | Bấm phòng có nhãn cam/xanh: hiện lựa chọn |
 | Dọn phòng | Bấm phòng bẩn |
-| Lan can | Nút "Lan can" để tuyển; khi khách gọi: bấm nhân viên → bấm phòng |
-| Kho hàng, Bảo vệ, Nâng cấp | Các nút ở thanh dưới |
+| Lan can | Nút "Nhân sự" → "Giao lưu âm nhạc" để tuyển; khi khách gọi: bấm nhân viên → bấm phòng |
+| Kho hàng, Bảo vệ, Nâng cấp | Kho và Nâng cấp ở thanh dưới; Bảo vệ trong Nhân sự |
 | Mở phòng mới, chỉnh giá | Bấm phòng → bảng Chi tiết (chỉnh giá chỉ trước giờ mở cửa) |
 
 Chủ quán làm từng việc một (tối đa 5 việc chờ) — chọn việc nào trước là phần chơi chính.
 
 ## Tính năng hiện có
 
-- Sáu phòng hát (mở sẵn 2), sảnh lễ tân, góc Lan can, sân có bãi xe, chỗ chờ và chốt bảo vệ.
-- Chín nhóm khách có đặc điểm ảnh hưởng thật (số lần gọi món, hay xin hát thêm, kỹ micro, ngân sách).
+- Tổng cộng 10 phòng trên 2 tầng (4 thường + 6 VIP), sảnh lễ tân, ghế chờ nhân viên, bãi xe và bảo vệ.
+- Mười một nhóm khách có đặc điểm ảnh hưởng thật (số lần gọi món, hay xin hát thêm, kỹ micro, ngân sách), gồm thêm hội nam trung niên và hội nam trẻ trâu trưởng thành, mỗi hội có ba diện mạo mới.
 - Trong lúc khách hát: gọi món (6 mặt hàng, có tồn kho), micro trục trặc, phòng nóng, xin hát thêm 30 phút.
 - Hóa đơn minh bạch: tiền phòng theo phút, từng món, phí Lan can, giảm giá xin lỗi; làm tròn 1.000đ.
 - Mất xe từ đêm 2 nếu không thuê bảo vệ: đền tiền và mất danh tiếng.
-- Lan can: 8 nhân viên giao lưu âm nhạc, tuyển tối đa 3.
+- Lan can: 11 nhân viên giao lưu (7 nữ, 4 nam), tuyển tối đa 6; ba mẫu nam mới cởi trần sáu múi, mặc quần dài.
+- Hội toàn nam gọi nữ trong khoảng 90% trường hợp, 10% gọi nam; hội toàn nữ gọi nam. Cặp đôi và gia đình không gọi. Nhóm hỗn hợp có thể gọi nhân viên bất kỳ.
+- Một nhóm có thể gọi nhiều người, tối đa một nhân viên cho mỗi khách và không quá năm người mỗi lượt. Phí tính riêng từng phiên hoàn tất; phiên chưa xong khi khách về không thu phí. Yêu cầu thiếu người có thời hạn, không hủy những phiên đang phục vụ.
 - Mỗi đêm có mục tiêu; tổng kết có thu chi, lời nhận xét của khách và ba món đầu tư.
 - Ba nâng cấp: dàn loa, micro dự phòng, xe đẩy phục vụ.
 
 ## Hạn chế hiện tại
 
 - Chưa có: lưu/tải, âm thanh, nhân viên phục vụ, giá giờ cao điểm và combo, sự kiện theo mùa, mục tiêu 7 đêm, phá sản.
-- Hình là SVG sinh bằng mã (`tools/make_sprites.py`); hoạt ảnh mới là nhún nhảy và lật hướng.
 - Cân bằng mới ở mức sơ bộ.
 
 ## Cấu trúc
@@ -66,6 +79,7 @@ scripts/core/    Trạng thái, đồng hồ, bộ điều phối mô phỏng
 scripts/systems/ Phòng, khách, kinh tế, Lan can, phục vụ (gọi món/sự cố)
 scripts/ui/      Màn mặt bằng, nhân vật, bảng điều khiển
 assets/sprites/  Hình SVG nguyên bản
+assets/characters/ Atlas nhân vật minh họa nền trong suốt
 tests/           Kiểm thử headless và kịch bản tự chơi qua giao diện
 docs/            Thiết kế, công việc, kiểm thử
 ```

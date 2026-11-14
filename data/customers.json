@@ -10,7 +10,7 @@
       "name": "Bạn bè",
       "weight": 4,
       "size_min": 2,
-      "size_max": 6,
+      "size_max": 5,
       "budget_per_hour": 260000,
       "patience_min": 18,
       "patience_max": 30,
@@ -32,14 +32,15 @@
       "orders_min": 1,
       "orders_max": 2,
       "extend_chance": 55,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "mixed"
     },
     {
       "id": "birthday",
       "name": "Sinh nhật",
       "weight": 2,
       "size_min": 4,
-      "size_max": 10,
+      "size_max": 5,
       "budget_per_hour": 380000,
       "patience_min": 20,
       "patience_max": 32,
@@ -61,14 +62,15 @@
       "orders_min": 2,
       "orders_max": 3,
       "extend_chance": 35,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "mixed"
     },
     {
       "id": "company",
       "name": "Liên hoan công ty",
       "weight": 2,
-      "size_min": 6,
-      "size_max": 12,
+      "size_min": 5,
+      "size_max": 5,
       "budget_per_hour": 550000,
       "patience_min": 12,
       "patience_max": 22,
@@ -90,7 +92,8 @@
       "orders_min": 2,
       "orders_max": 3,
       "extend_chance": 20,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "mixed"
     },
     {
       "id": "bolero_regular",
@@ -118,14 +121,15 @@
       "orders_min": 1,
       "orders_max": 2,
       "extend_chance": 30,
-      "mic_penalty_mult": 2
+      "mic_penalty_mult": 2,
+      "composition": "mixed"
     },
     {
       "id": "drinking",
       "name": "Hội bạn nhậu",
       "weight": 2,
       "size_min": 3,
-      "size_max": 8,
+      "size_max": 5,
       "budget_per_hour": 420000,
       "patience_min": 10,
       "patience_max": 18,
@@ -147,14 +151,15 @@
       "orders_min": 2,
       "orders_max": 3,
       "extend_chance": 45,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "men"
     },
     {
       "id": "aunties",
       "name": "Hội chị em",
       "weight": 2,
       "size_min": 4,
-      "size_max": 9,
+      "size_max": 5,
       "budget_per_hour": 300000,
       "patience_min": 18,
       "patience_max": 30,
@@ -177,7 +182,8 @@
       "orders_min": 1,
       "orders_max": 2,
       "extend_chance": 50,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "women"
     },
     {
       "id": "couple",
@@ -205,14 +211,15 @@
       "orders_min": 0,
       "orders_max": 1,
       "extend_chance": 25,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "couple"
     },
     {
       "id": "family",
       "name": "Gia đình",
       "weight": 2,
       "size_min": 4,
-      "size_max": 8,
+      "size_max": 5,
       "budget_per_hour": 340000,
       "patience_min": 20,
       "patience_max": 34,
@@ -234,14 +241,15 @@
       "orders_min": 1,
       "orders_max": 2,
       "extend_chance": 15,
-      "mic_penalty_mult": 1
+      "mic_penalty_mult": 1,
+      "composition": "family"
     },
     {
       "id": "genz",
       "name": "Hội Gen Z",
       "weight": 2,
       "size_min": 3,
-      "size_max": 6,
+      "size_max": 5,
       "budget_per_hour": 320000,
       "patience_min": 12,
       "patience_max": 22,
@@ -262,7 +270,95 @@
       "orders_min": 1,
       "orders_max": 2,
       "extend_chance": 30,
-      "mic_penalty_mult": 2
+      "mic_penalty_mult": 2,
+      "composition": "mixed"
+    },
+    {
+      "id": "middle_aged_men",
+      "name": "Hội anh em trung niên",
+      "weight": 3,
+      "size_min": 3,
+      "size_max": 5,
+      "budget_per_hour": 420000,
+      "patience_min": 10,
+      "patience_max": 18,
+      "music": {
+        "bolero": 5,
+        "nhac_tre": 2,
+        "remix": 2
+      },
+      "lancan_chance": 75,
+      "sprites": [
+        "middle_m_1",
+        "middle_m_2",
+        "middle_m_3"
+      ],
+      "greetings": [
+        "Anh em lâu ngày mới gặp, cho phòng hát bolero nghe ngọt nha!",
+        "Cho mấy anh thêm đá với đĩa trái cây, rồi mời người vào song ca."
+      ],
+      "trait": "Hát bolero, gọi đá và món nhắm, hay mời nhân viên giao lưu.",
+      "orders_min": 2,
+      "orders_max": 3,
+      "extend_chance": 45,
+      "mic_penalty_mult": 1,
+      "composition": "men"
+    },
+    {
+      "id": "young_men",
+      "name": "Hội nam trẻ trâu",
+      "weight": 3,
+      "size_min": 3,
+      "size_max": 5,
+      "budget_per_hour": 320000,
+      "patience_min": 12,
+      "patience_max": 22,
+      "music": {
+        "remix": 6,
+        "nhac_tre": 4
+      },
+      "lancan_chance": 65,
+      "sprites": [
+        "young_m_1",
+        "young_m_2",
+        "young_m_3"
+      ],
+      "greetings": [
+        "Anh em quẩy remix, cho phòng nào đèn đẹp nha!",
+        "Mới xong kèo bóng đá, tụi anh ghé hát thêm tăng hai."
+      ],
+      "trait": "Nhóm nam trưởng thành thích remix, hoạt náo và dễ sốt ruột.",
+      "orders_min": 1,
+      "orders_max": 2,
+      "extend_chance": 30,
+      "mic_penalty_mult": 2,
+      "composition": "men"
     }
-  ]
+  ],
+  "sprite_genders": {
+    "friend_m": "male",
+    "friend_f": "female",
+    "birthday_f": "female",
+    "birthday_m": "male",
+    "office_m": "male",
+    "office_f": "female",
+    "uncle": "male",
+    "auntie": "female",
+    "drunk_uncle": "male",
+    "beer_uncle": "male",
+    "auntie_2": "female",
+    "auntie_3": "female",
+    "couple_m": "male",
+    "couple_f": "female",
+    "grandpa": "male",
+    "grandma": "female",
+    "genz_f": "female",
+    "genz_m": "male",
+    "middle_m_1": "male",
+    "middle_m_2": "male",
+    "middle_m_3": "male",
+    "young_m_1": "male",
+    "young_m_2": "male",
+    "young_m_3": "male"
+  }
 }

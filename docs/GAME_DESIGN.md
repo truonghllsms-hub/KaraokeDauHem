@@ -17,6 +17,8 @@
 
 ## Phòng
 
+Tầng 1 có 4 phòng thường, tầng 2 có 6 phòng VIP. Ban đầu chỉ P01–P02 mở sẵn. Mở đủ 4 phòng tầng 1 và đạt 60 danh tiếng để lên tầng 2; sau khi đạt, quyền lên tầng được giữ. Phòng VIP mở khóa riêng, giá giờ 500.000–750.000đ, khởi đầu âm thanh/cách âm cấp 2.
+
 Trạng thái: `LOCKED → AVAILABLE → OCCUPIED → DIRTY → CLEANING → AVAILABLE` (`BROKEN` để dành).
 
 - Không xếp khách vượt sức chứa, vào phòng bẩn/đang dọn/khóa, hoặc phòng đang có nhóm khác.
@@ -25,21 +27,23 @@ Trạng thái: `LOCKED → AVAILABLE → OCCUPIED → DIRTY → CLEANING → AVA
 
 ## Khách
 
-Chín nhóm trong `data/customers.json`, khác nhau về số người, giá mong đợi, kiên nhẫn, gu nhạc và tỉ lệ gọi Lan can:
+Mười một nhóm trong `data/customers.json`, khác nhau về số người, giá mong đợi, kiên nhẫn, gu nhạc và tỉ lệ gọi Lan can:
 
 | Nhóm | Số người | Giá mong đợi/giờ | Kiên nhẫn (phút) | Gọi Lan can |
 |---|---|---|---|---|
-| Bạn bè | 2–6 | 260.000đ | 18–30 | 15% |
-| Sinh nhật | 4–10 | 380.000đ | 20–32 | 45% |
-| Liên hoan công ty | 6–12 | 550.000đ | 12–22 | 50% |
+| Bạn bè | 2–5 | 260.000đ | 18–30 | 15% |
+| Sinh nhật | 4–5 | 380.000đ | 20–32 | 45% |
+| Liên hoan công ty | 5 | 550.000đ | 12–22 | 50% |
 | Khách quen bolero | 2–5 | 300.000đ | 22–36 | 35% |
-| Hội bạn nhậu | 3–8 | 420.000đ | 10–18 | 60% |
-| Hội chị em | 4–9 | 300.000đ | 18–30 | 30% |
+| Hội bạn nhậu | 3–5 | 420.000đ | 10–18 | 60% |
+| Hội chị em | 4–5 | 300.000đ | 18–30 | 30% |
 | Cặp đôi | 2 | 240.000đ | 14–24 | 0% |
-| Gia đình | 4–8 | 340.000đ | 20–34 | 0% |
-| Hội Gen Z | 3–6 | 320.000đ | 12–22 | 20% |
+| Gia đình | 4–5 | 340.000đ | 20–34 | 0% |
+| Hội Gen Z | 3–5 | 320.000đ | 12–22 | 20% |
+| Hội anh em trung niên | 3–5 | 420.000đ | 10–18 | 75% |
+| Hội nam trẻ trâu | 3–5 | 320.000đ | 12–22 | 65% |
 
-Tên nhóm và câu thoại là bản nháp, chờ chủ dự án duyệt.
+Mỗi nhóm tối đa 5 khách; nhân viên giao lưu có chỗ riêng cạnh khách và không tính vào số khách. Kích thước nhân vật cố định, không thay đổi theo số người trong phòng.
 
 - Trạng thái: `WAITING → IN_ROOM → CHECKOUT → LEAVING`, hoặc `LEFT_UNSERVED`.
 - Thời lượng hát: 45/60/75/90 phút. Hàng chờ tối đa 4 nhóm; nhóm tới khi hàng đầy sẽ quay đi.

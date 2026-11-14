@@ -40,6 +40,21 @@ func candidates() -> Array:
 	return result
 
 
+func can_request(group: Dictionary) -> bool:
+	return group.get("composition", "mixed") not in ["couple", "family"] and group["type"] not in ["couple", "family"]
+
+
+func needs_staff(group: Dictionary) -> bool:
+	return can_request(group) and group["host_request"] in ["PENDING", "ACTIVE"] and not group.get("host_request_closed", false) and group.get("host_assigned_count", 0) < group.get("host_requested_count", 1)
+
+
+func request_label(group: Dictionary) -> String:
+	if not needs_staff(group):
+		return ""
+	var gender: String = {"male": "nam", "female": "nữ", "any": "giao lưu"}.get(group.get("host_gender", "any"), "giao lưu")
+	return "Gọi %d %s · còn thiếu %d" % [group.get("host_requested_count", 1), gender, group.get("host_requested_count", 1) - group.get("host_assigned_count", 0)]
+
+
 func hire(host_id: String) -> String:
 	var balance: Dictionary = _data["balance"]
 	if get_host(host_id) != null:
@@ -79,11 +94,14 @@ func check_assign(host: Dictionary, room: Dictionary, now: int) -> String:
 		return "%s đang nghỉ lấy sức." % host["name"]
 	if room["state"] != "OCCUPIED":
 		return "%s không có khách." % room["name"]
-	if room["host_id"] != "":
-		return "%s đã có nhân viên Lan can." % room["name"]
 	var group = _customers.get_group(room["group_id"])
-	if group == null or group["host_request"] != "PENDING":
+	if group == null or not needs_staff(group):
 		return "Khách ở %s không gọi Lan can." % room["name"]
+	if group.get("host_assigned_count", 0) >= group["size"]:
+		return "Mỗi khách chỉ ghép với một nhân viên trong lượt này."
+	var preference: String = group.get("host_gender", "any")
+	if preference != "any" and host["gender"] != preference:
+		return "Nhóm này đang gọi nhân viên %s." % ("nam" if preference == "male" else "nữ")
 	if now + _data["balance"]["lancan_minutes"] > room["session_end"]:
 		return "Khách ở %s sắp về, không đủ %d phút." % [room["name"], _data["balance"]["lancan_minutes"]]
 	return ""
@@ -95,7 +113,10 @@ func assign(host: Dictionary, room: Dictionary, now: int) -> void:
 	host["room_id"] = room["id"]
 	host["group_id"] = group["id"]
 	host["service_end"] = now + _data["balance"]["lancan_minutes"]
-	room["host_id"] = host["id"]
+	host["guest_index"] = group.get("host_assigned_count", 0)
+	group["host_assigned_count"] = host["guest_index"] + 1
+	room["host_ids"].append(host["id"])
+	room["host_id"] = room["host_ids"][0]
 	group["host_request"] = "ACTIVE"
 	_notify.call("%s vào %s góp vui %d phút." % [host["name"], room["name"], _data["balance"]["lancan_minutes"]], "info")
 
@@ -113,7 +134,7 @@ func tick(now: int) -> void:
 	if _state.hosts.is_empty():
 		return
 	for group in _state.groups:
-		if group["state"] != "IN_ROOM" or not group["wants_host"]:
+		if group["state"] != "IN_ROOM" or not group["wants_host"] or not can_request(group):
 			continue
 		var room = _rooms.get_room(group["room_id"])
 		if group["host_request"] == "NONE":
@@ -121,18 +142,23 @@ func tick(now: int) -> void:
 			if now - room["session_start"] >= balance["lancan_request_delay"] and early_enough:
 				group["host_request"] = "PENDING"
 				group["host_request_at"] = now
-				_notify.call("%s: nhóm %s gọi Lan can: \"Có ai song ca cho đỡ chênh vênh không em?\"" % [room["name"], group["type_name"]], "info")
-		elif group["host_request"] == "PENDING":
+				_notify.call("%s: %s." % [room["name"], request_label(group)], "info")
+		elif needs_staff(group):
 			var too_late: bool = now + balance["lancan_minutes"] > room["session_end"]
 			if too_late or now - group["host_request_at"] >= balance["lancan_request_timeout"]:
-				group["host_request"] = "MISSED"
+				group["host_request_closed"] = true
+				group["host_request"] = "ACTIVE" if group.get("host_assigned_count", 0) > group.get("host_completed_count", 0) else ("DONE" if group.get("host_assigned_count", 0) > 0 else "MISSED")
 				group["tags"].append("lancan_lo")
-				group["satisfaction"] = clampi(group["satisfaction"] - balance["lancan_ignored_penalty"], 0, 100)
-				_notify.call("Gọi Lan can mà không ai tới: -%d hài lòng" % balance["lancan_ignored_penalty"], "bad")
+				var missing: int = group.get("host_requested_count", 1) - group.get("host_assigned_count", 0)
+				var penalty: int = ceili(float(balance["lancan_ignored_penalty"] * missing) / group.get("host_requested_count", 1))
+				group["satisfaction"] = clampi(group["satisfaction"] - penalty, 0, 100)
+				_notify.call("Thiếu %d nhân viên giao lưu: -%d hài lòng" % [missing, penalty], "bad")
 
 
 ## Phiên phục vụ hoàn tất: ghi phí vào hóa đơn phòng, cộng hài lòng, tính tip cho nhân viên.
 func _complete(host: Dictionary, now: int) -> void:
+	if host["state"] != "SERVING":
+		return
 	var balance: Dictionary = _data["balance"]
 	var group = _customers.get_group(host["group_id"])
 	var room = _rooms.get_room(host["room_id"])
@@ -142,7 +168,9 @@ func _complete(host: Dictionary, now: int) -> void:
 			bonus += balance["lancan_music_match_bonus"]
 		group["satisfaction"] = clampi(group["satisfaction"] + bonus, 0, 100)
 		group["bill_items"].append({"type": "LANCAN_FEE", "amount": balance["lancan_fee"], "note": "Lan can: " + host["name"]})
-		group["host_request"] = "DONE"
+		group["host_completed_count"] = group.get("host_completed_count", 0) + 1
+		if group["host_completed_count"] >= group.get("host_assigned_count", 0):
+			group["host_request"] = "DONE" if group.get("host_request_closed", false) or group.get("host_assigned_count", 0) >= group.get("host_requested_count", 1) else "PENDING"
 		group["tags"].append("lancan")
 		@warning_ignore("integer_division")
 		var tip: int = Money.round_to_thousand(_rng.randi_range(0, balance["lancan_tip_max"]) * group["satisfaction"] / 100)
@@ -152,19 +180,24 @@ func _complete(host: Dictionary, now: int) -> void:
 		if tip > 0:
 			text += ", được khách tip riêng %s" % Money.format(tip)
 		_notify.call(text + ".", "good")
-		room["host_id"] = ""
+	if room != null:
+		_unlink(room, host["id"])
 	_release(host, now)
 
 
 ## Khách rời phòng khi phiên chưa xong: không thu phí dịch vụ.
 func release_room(room: Dictionary, now: int) -> void:
-	if room["host_id"] == "":
-		return
-	var host = get_host(room["host_id"])
-	room["host_id"] = ""
-	if host != null:
-		_notify.call("Khách về sớm, phiên của %s không tính phí." % host["name"], "info")
-		_release(host, now)
+	for host_id in room["host_ids"].duplicate():
+		var host = get_host(host_id)
+		_unlink(room, host_id)
+		if host != null:
+			_notify.call("Khách về sớm, phiên của %s không tính phí." % host["name"], "info")
+			_release(host, now)
+
+
+func _unlink(room: Dictionary, host_id: String) -> void:
+	room["host_ids"].erase(host_id)
+	room["host_id"] = "" if room["host_ids"].is_empty() else room["host_ids"][0]
 
 
 func _release(host: Dictionary, now: int) -> void:

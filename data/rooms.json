@@ -2,61 +2,121 @@
   {
     "id": "room_01",
     "name": "Phòng 01",
-    "capacity": 6,
+    "capacity": 5,
     "price_per_hour": 250000,
     "unlock_cost": 0,
     "unlocked": true,
     "sound": 1,
-    "soundproof": 1
+    "soundproof": 1,
+    "floor": 1,
+    "tier": "standard"
   },
   {
     "id": "room_02",
     "name": "Phòng 02",
-    "capacity": 8,
+    "capacity": 5,
     "price_per_hour": 350000,
     "unlock_cost": 0,
     "unlocked": true,
     "sound": 1,
-    "soundproof": 1
+    "soundproof": 1,
+    "floor": 1,
+    "tier": "standard"
   },
   {
     "id": "room_03",
     "name": "Phòng 03",
-    "capacity": 6,
+    "capacity": 5,
     "price_per_hour": 260000,
     "unlock_cost": 4000000,
     "unlocked": false,
     "sound": 1,
-    "soundproof": 1
+    "soundproof": 1,
+    "floor": 1,
+    "tier": "standard"
   },
   {
     "id": "room_04",
     "name": "Phòng 04",
-    "capacity": 10,
+    "capacity": 5,
     "price_per_hour": 420000,
     "unlock_cost": 6000000,
     "unlocked": false,
     "sound": 1,
-    "soundproof": 1
+    "soundproof": 1,
+    "floor": 1,
+    "tier": "standard"
   },
   {
     "id": "room_05",
-    "name": "Phòng 05",
-    "capacity": 12,
+    "name": "VIP 01",
+    "capacity": 5,
     "price_per_hour": 500000,
-    "unlock_cost": 9000000,
+    "unlock_cost": 6000000,
     "unlocked": false,
-    "sound": 1,
-    "soundproof": 1
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
   },
   {
     "id": "room_06",
-    "name": "Phòng VIP",
-    "capacity": 15,
+    "name": "VIP 02",
+    "capacity": 5,
+    "price_per_hour": 550000,
+    "unlock_cost": 8000000,
+    "unlocked": false,
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
+  },
+  {
+    "id": "room_07",
+    "name": "VIP 03",
+    "capacity": 5,
+    "price_per_hour": 600000,
+    "unlock_cost": 10000000,
+    "unlocked": false,
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
+  },
+  {
+    "id": "room_08",
+    "name": "VIP 04",
+    "capacity": 5,
+    "price_per_hour": 650000,
+    "unlock_cost": 12000000,
+    "unlocked": false,
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
+  },
+  {
+    "id": "room_09",
+    "name": "VIP 05",
+    "capacity": 5,
     "price_per_hour": 700000,
     "unlock_cost": 14000000,
     "unlocked": false,
-    "sound": 1,
-    "soundproof": 1
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
+  },
+  {
+    "id": "room_10",
+    "name": "VIP 06",
+    "capacity": 5,
+    "price_per_hour": 750000,
+    "unlock_cost": 16000000,
+    "unlocked": false,
+    "sound": 2,
+    "soundproof": 2,
+    "floor": 2,
+    "tier": "vip"
   }
 ]

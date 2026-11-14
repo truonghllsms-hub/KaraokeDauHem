@@ -2,6 +2,8 @@ extends RefCounted
 ## Sinh nhóm khách, quản lý hàng chờ và mức kiên nhẫn.
 ## Vòng đời: WAITING -> IN_ROOM -> CHECKOUT -> LEAVING, hoặc LEFT_UNSERVED nếu bỏ về.
 
+const MAX_GROUP_SIZE: int = 5
+
 const Clock = preload("res://scripts/core/simulation_clock.gd")
 
 ## Tắt để kiểm thử từng kịch bản mà không có khách ngẫu nhiên.
@@ -51,10 +53,28 @@ func music_name(music_id: String) -> String:
 ## Tạo một nhóm và đưa vào hàng chờ. Dùng chung cho sinh khách tự động, debug và kiểm thử.
 func add_group(type_id: String, size: int, planned_minutes: int, now: int, music: String = "") -> Variant:
 	var t = get_type(type_id)
-	if t == null:
+	if t == null or size < 1 or size > MAX_GROUP_SIZE:
 		return null
 	if music == "":
 		music = _pick_weighted(t["music"])
+	var members: Array = []
+	var genders: Dictionary = _data["customers"]["sprite_genders"]
+	var men: int = 0
+	for i in size:
+		var sprite: String = t["sprites"][i % t["sprites"].size()]
+		members.append(sprite)
+		if genders.get(sprite, "male") == "male":
+			men += 1
+	var composition: String = t["composition"]
+	if composition not in ["couple", "family"]:
+		composition = "men" if men == size else ("women" if men == 0 else "mixed")
+	var wants_host: bool = _rng.randi_range(1, 100) <= t["lancan_chance"] and composition not in ["couple", "family"]
+	var host_gender: String = "any"
+	if composition == "women":
+		host_gender = "male"
+	elif composition == "men":
+		host_gender = "male" if _rng.randi_range(1, 100) <= _data["balance"]["lancan_men_request_male_percent"] else "female"
+	var requested: int = _rng.randi_range(1, mini(size, _data["balance"]["lancan_max_staff"])) if wants_host else 1
 	var group: Dictionary = {
 		"id": _state.next_group_id,
 		"type": type_id,
@@ -69,9 +89,15 @@ func add_group(type_id: String, size: int, planned_minutes: int, now: int, music
 		"room_id": "",
 		"arrived_at": now,
 		"wait_minutes": 0,
-		"sprites": t["sprites"],
+		"sprites": members,
+		"composition": composition,
 		# Lan can: NONE -> PENDING -> ACTIVE -> DONE, hoặc MISSED nếu không ai tới.
-		"wants_host": _rng.randi_range(1, 100) <= t["lancan_chance"],
+		"wants_host": wants_host,
+		"host_gender": host_gender,
+		"host_requested_count": requested,
+		"host_assigned_count": 0,
+		"host_completed_count": 0,
+		"host_request_closed": false,
 		"host_request": "NONE",
 		"host_request_at": 0,
 		# Các khoản ngoài tiền phòng, được thu cùng lúc thanh toán.
@@ -134,7 +160,7 @@ func _leave_unserved(group: Dictionary, text: String, reputation_penalty: int) -
 
 func _spawn_random(now: int) -> void:
 	var balance: Dictionary = _data["balance"]
-	var capacity: int = _rooms.max_unlocked_capacity()
+	var capacity: int = mini(MAX_GROUP_SIZE, _rooms.max_unlocked_capacity())
 
 	# Chỉ sinh nhóm mà quán có phòng đủ chứa và còn kịp hát trước giờ đóng cửa.
 	var weights: Dictionary = {}

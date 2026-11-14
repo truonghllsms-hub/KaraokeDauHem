@@ -10,6 +10,8 @@ var day: int = 1
 var money: int = 0
 var reputation: int = 40
 
+var floor2_unlocked: bool = false
+
 var rooms: Array = []
 ## Các nhóm khách đang có mặt (WAITING hoặc IN_ROOM).
 var groups: Array = []

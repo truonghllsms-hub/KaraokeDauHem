@@ -18,11 +18,11 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 14)
 	center.add_child(column)
 
-	var sign_panel: PanelContainer = UI.panel(UI.PANEL_DARK, UI.PINK)
+	var sign_panel: PanelContainer = UI.panel(UI.PANEL_DARK, UI.PURPLE)
 	column.add_child(sign_panel)
 	var sign_box: VBoxContainer = VBoxContainer.new()
 	sign_panel.add_child(sign_box)
-	var title: Label = UI.label("KARAOKE ĐẦU HẺM", 52, UI.PINK, true)
+	var title: Label = UI.label("KARAOKE ĐẦU HẺM", 52, UI.PURPLE, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sign_box.add_child(title)
 	var tagline: Label = UI.label("Phòng lạnh · Loa hay · Trái cây tươi · Giữ xe miễn phí", 18, UI.GOLD)
@@ -33,7 +33,7 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 18)
 	column.add_child(spacer)
 
-	var new_game: Button = UI.button("Chơi mới", 22, UI.PINK)
+	var new_game: Button = UI.button("Chơi mới", 22, UI.PURPLE)
 	new_game.pressed.connect(_on_new_game)
 	column.add_child(new_game)
 
@@ -51,7 +51,7 @@ func _ready() -> void:
 	quit_button.pressed.connect(func() -> void: get_tree().quit())
 	column.add_child(quit_button)
 
-	var note: Label = UI.label("Bản dựng sớm · Giai đoạn 1: một lượt khách hoàn chỉnh", 13, UI.MUTED)
+	var note: Label = UI.label("Quán nhỏ đầu hẻm · Một đêm thật vui", 13, UI.MUTED)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(note)
 
