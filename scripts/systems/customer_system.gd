@@ -157,7 +157,7 @@ func is_tutorial_night() -> bool:
 ## Tổng lượng khách so với lúc mới mở quán (sao × danh tiếng × đêm tập).
 func demand_percent() -> int:
 	@warning_ignore("integer_division")
-	return arrival_percent() * reputation_percent() / 100 * tutorial_percent() / 100
+	return arrival_percent() * reputation_percent() / 100 * tutorial_percent() / 100 * (100 + 5*int(_state.upgrades.get("marketing", 0))) / 100
 
 
 func remove_group(group: Dictionary) -> void:
@@ -176,13 +176,16 @@ func tick(now: int) -> void:
 		elif group["wait_minutes"] >= group["patience"]:
 			_leave_unserved(group, "Nhóm %s chờ quá lâu nên bỏ về." % group["type_name"], balance["reputation_unserved_penalty"])
 
+	if spawning_enabled and _state.day == 1:
+		_training_tick(now)
+		return
 	if spawning_enabled and now <= balance["last_spawn_minute"] and now >= _state.next_arrival_minute:
 		_spawn_random(now)
 		# Quán càng nhiều phòng thì khách tới càng dày, để lượng khách không vượt sức phục vụ.
 		var interval: int = _rng.randi_range(balance["spawn_interval_min"], balance["spawn_interval_max"])
 		@warning_ignore("integer_division")
 		# Lượng khách theo điểm sao và danh tiếng, không theo số phòng: mở phòng chỉ có lời khi đủ khách.
-		_state.next_arrival_minute = now + maxi(1, interval * 1000000 / (arrival_percent() * reputation_percent() * tutorial_percent()))
+		_state.next_arrival_minute = now + maxi(1, interval * 100 / maxi(1, demand_percent()))
 
 
 ## Giờ đóng cửa: những nhóm còn chờ ra về, không trừ danh tiếng.
@@ -253,3 +256,20 @@ func _pick_weighted(weights: Dictionary) -> String:
 		if roll <= 0:
 			return key
 	return weights.keys()[0]
+
+
+func training_count() -> int:
+	return int(_state.night.get("training_spawned", mini(2, maxi(0, _state.next_group_id-1))))
+
+func _training_tick(now: int) -> void:
+	var count: int = training_count()
+	if count >= 2 or now < _state.next_arrival_minute or not _state.groups.is_empty(): return
+	if not _state.rooms.any(func(room: Dictionary) -> bool: return room["state"] == "AVAILABLE"): return
+	var group = add_group("couple" if count == 0 else "friends", 2 if count == 0 else 3, 45 if count == 0 else 60, now, "nhac_tre")
+	if group == null: return
+	group["wants_host"] = false
+	group["requests_left"] = 1
+	group["extend_chance"] = 0
+	_state.night["training_spawned"] = count+1
+	_state.next_arrival_minute = now+5
+	_notify.call("Ca hướng dẫn: nhóm %d/2 đã tới. Bấm chọn khách rồi chọn phòng thường." % (count+1), "info")

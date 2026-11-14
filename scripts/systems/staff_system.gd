@@ -252,7 +252,7 @@ func _take_seat_job(member: Dictionary, now: int) -> void:
 ## Thời gian làm theo tốc độ; năng lượng thấp thì chậm hơn. Tối thiểu 1 phút.
 func _duration(member: Dictionary, base_minutes: int) -> int:
 	var balance: Dictionary = _data["balance"]
-	var scaled: float = base_minutes * 100.0 / maxi(1, member["speed"])
+	var scaled: float = base_minutes * 100.0 / maxi(1, member["speed"]) / (1.0 + 0.08*int(_state.upgrades.get("staff_training", 0)))
 	if member["energy"] < balance["staff_tired_below"]:
 		scaled = scaled * balance["staff_tired_slowdown_percent"] / 100.0
 	return maxi(1, int(ceil(scaled)))

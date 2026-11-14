@@ -75,6 +75,8 @@ func tick(now: int) -> void:
 		if group == null:
 			continue
 		_next_at[room_id] = now + _rng.randi_range(balance["line_gap_min"], balance["line_gap_max"])
+		if room["host_id"] != "" and _rng.randi_range(1,100) <= 55 and _companion_banter(room, group, now):
+			continue
 		if room["host_id"] == "" and _rng.randi_range(1, 100) <= balance["line_banter_chance"] and _banter(room, group, now):
 			continue
 		_song(room, group, now)
@@ -283,3 +285,30 @@ func _pair_speakers(pair: Dictionary, group: Dictionary) -> Array:
 			if pair.get("reply_age", ages.get(members[second], "middle")) != ages.get(members[second], "middle"): continue
 			return [first, second]
 	return []
+
+
+func _companion_banter(room: Dictionary, group: Dictionary, now: int) -> bool:
+	if group.get("composition", "") in ["couple", "family"]: return false
+	var serving: Array = _state.hosts.filter(func(host): return host["state"] == "SERVING" and host["room_id"] == room["id"])
+	if serving.is_empty(): return false
+	var host: Dictionary = serving[_rng.randi_range(0,serving.size()-1)]
+	var used: Dictionary = _used_by_group.get(group["id"], {})
+	var options: Array = []
+	for pair in _data["banter"].get("companion_pairs", []):
+		if pair["composition"] != group.get("composition", "") or pair["host_gender"] != host["gender"]: continue
+		if not pair.get("host_ids", []).is_empty() and not pair["host_ids"].has(host["id"]): continue
+		var copy: Dictionary = pair.duplicate()
+		copy["text"] = String(pair["text"]).replace("{host}", host["name"])
+		if not used.has(copy["text"]) and not _used_tonight.has(copy["text"]): options.append(copy)
+	if options.is_empty(): return false
+	var pair: Dictionary = options[_rng.randi_range(0,options.size()-1)]
+	var event: Dictionary = _event(room, group, "BANTER", "companion", pair["text"], now)
+	var index: int = clampi(host.get("guest_index", 0), 0, group["size"]-1)
+	event["speaker_index"] = index
+	event["speaker_sprite"] = _members(group)[index]
+	event["speaker_age"] = _data["lyrics"]["sprite_age"].get(event["speaker_sprite"], "middle")
+	event["reply_text"] = _host_address(pair["reply"], room["id"])
+	event["reply_host_id"] = host["id"]
+	event["reply_speaker_index"] = -1
+	_publish(event)
+	return true

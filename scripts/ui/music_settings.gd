@@ -57,13 +57,13 @@ func _ready() -> void:
 		_tracks.add_item(track["title"] + " · " + track["mood"])
 	_tracks.item_selected.connect(func(index: int) -> void: music.select_track(index))
 	add_child(_tracks)
-	_status = UI.label("", 20, UI.MUTED)
+	_status = UI.label("", 22, UI.MUTED)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_status)
 	_retry = UI.button("Thử tải lại", 22, UI.INFO)
 	_retry.pressed.connect(func() -> void: music.select_track(music.track_index))
 	add_child(_retry)
-	var credits: Label = UI.label("Nhạc: Kevin MacLeod · incompetech.com\nGiấy phép Creative Commons Attribution 4.0.\nĐã chuyển định dạng và cân âm lượng.", 18, UI.MUTED)
+	var credits: Label = UI.label("Nhạc: Kevin MacLeod · incompetech.com\nGiấy phép Creative Commons Attribution 4.0.\nĐã chuyển định dạng và cân âm lượng.", 22, UI.MUTED)
 	credits.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(credits)
 	var links: HFlowContainer = HFlowContainer.new()
@@ -71,7 +71,7 @@ func _ready() -> void:
 	for entry in [["Nguồn bản đang chọn", "source"], ["Giấy phép CC BY 4.0", "license"]]:
 		var link: LinkButton = LinkButton.new()
 		link.text = entry[0]
-		link.add_theme_font_size_override("font_size", 18)
+		link.add_theme_font_size_override("font_size", 22)
 		link.add_theme_color_override("font_color", UI.PURPLE)
 		link.add_theme_color_override("font_hover_color", UI.TEXT)
 		var destination: String = entry[1]

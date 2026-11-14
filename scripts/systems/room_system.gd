@@ -146,7 +146,7 @@ func start_cleaning(room: Dictionary, now: int) -> String:
 		return "%s không cần dọn." % room["name"]
 	room["state"] = "CLEANING"
 	room["task_start"] = now
-	room["task_end"] = now + _data["balance"]["clean_minutes"]
+	room["task_end"] = now + maxi(2, _data["balance"]["clean_minutes"] - int(_state.upgrades.get("cleaning", 0)))
 	return ""
 
 
@@ -163,3 +163,9 @@ func tick(now: int) -> Array:
 			finish_cleaning(room)
 			finished.append(room)
 	return finished
+
+
+func price_bounds(room: Dictionary) -> Vector2i:
+	var balance: Dictionary = _data["balance"]
+	var suffix: String = "vip" if room.get("tier", "standard") == "vip" else "standard"
+	return Vector2i(balance.get("price_min_"+suffix, balance["price_min"]), balance.get("price_max_"+suffix, balance["price_max"]))

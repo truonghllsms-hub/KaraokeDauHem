@@ -71,7 +71,7 @@ func _ready() -> void:
 	var settings: Button = UI.button("Cài đặt âm thanh", 23, UI.GOLD)
 	settings.pressed.connect(_show_settings)
 	column.add_child(settings)
-	var note: Label = UI.label("Tự lưu cuối đêm · 3 ô lưu riêng trong lúc chơi", 18, UI.MUTED)
+	var note: Label = UI.label("Tự lưu cuối đêm · 3 ô lưu riêng trong lúc chơi", 22, UI.MUTED)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(note)
 

@@ -163,5 +163,12 @@ func _run() -> void:
 	venue._btn_open.pressed.emit()
 	check(sim.state.phase == "PREP" and sim.state.day == 5, "Closing summary still leaves a working next-day action")
 	await shot("e08_next_day")
+	sim.hire_staff("staff_3")
+	venue.advance_actors(0)
+	var original_speed: float = venue._staff_actors["staff_3"].speed
+	check(sim.buy_upgrade("staff_training") == "", "Purchase training after hiring staff")
+	venue.advance_actors(0)
+	check(venue._staff_actors["staff_3"].speed > original_speed, "Training immediately accelerates existing staff actors")
+	check(venue._lbl_tasks.get_theme_font_size("font_size") >= 22, "Pending-work label remains readable")
 	print("EXPERIENCE FAILURES: ", failures)
 	quit(1 if failures else 0)

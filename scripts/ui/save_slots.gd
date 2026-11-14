@@ -14,7 +14,7 @@ func _ready() -> void:
 		_add_slot(SaveManager.DEFAULT_PATH, "Tự lưu cuối đêm")
 	for i in SaveManager.MANUAL_PATHS.size():
 		_add_slot(SaveManager.MANUAL_PATHS[i], "Ô lưu %d" % (i + 1))
-	var note: Label = UI.label("Bản lưu nằm trên trình duyệt và thiết bị này. Mỗi ô giữ một tiến trình riêng.", 19, UI.MUTED)
+	var note: Label = UI.label("Bản lưu nằm trên trình duyệt và thiết bị này. Mỗi ô giữ một tiến trình riêng.", 22, UI.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(note)
 func _add_slot(path: String, title: String) -> void:
@@ -36,7 +36,7 @@ func _add_slot(path: String, title: String) -> void:
 		details = "Đêm %d · %s · %s\n%s · %s" % [state["day"], Clock.time_text(minute), phase, Money.format(state["money"]), str(snapshot.get("saved_at", "")).replace("T", " ")]
 	elif SaveManager.has_save(path):
 		details = "Bản lưu chưa đọc được. " + saved["error"]
-	var description: Label = UI.label(details, 20, UI.TEXT)
+	var description: Label = UI.label(details, 22, UI.TEXT)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_child(description)
 	var action: Button = UI.button("Lưu vào đây" if saving else "Tải game", 22)

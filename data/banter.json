@@ -379,5 +379,73 @@
    "finish": "Cảm ơn anh chị, chúc cả phòng tối nay thật vui.",
    "rest": "Huy xin phép nghỉ ít phút cho giọng ấm lại."
   }
- }
+ },
+ "companion_pairs": [
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Bé bỏ việc đi, về làm vợ anh, anh nuôi!",
+   "reply": "Anh thuộc lời bài này trước rồi mình tính tiếp nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "{host} xinh thế này, anh quên luôn lời bài hát.",
+   "reply": "Quên lời thì em nhắc, anh đừng bỏ nhịp nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Anh vừa nhận lương, tối nay em hát hết bài tủ cho anh nghe nhé.",
+   "reply": "Anh nhớ giữ tiền ăn sáng nữa nha, em còn nhiều bài lắm!"
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Anh không say bia, anh say giọng em!",
+   "reply": "Vậy cho em xin một tràng vỗ tay cho tỉnh nào."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Đi phụ hồ mấy bữa anh lại sang gặp {host} nhé!",
+   "reply": "Anh giữ sức đi làm, bữa nào ghé mình lại song ca."
+  },
+  {
+   "composition": "men",
+   "host_gender": "female",
+   "text": "Chốt đơn làm vợ anh nha {host}!",
+   "reply": "Anh chốt bài tiếp theo trước đi, phòng mình đang chờ kìa."
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Anh sáu múi đẹp zai quá!",
+   "reply": "Em cảm ơn chị, đoạn điệp khúc mình cùng hát nhé.",
+   "host_ids": [
+    "host_9"
+   ]
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Anh {host} đứng gần là chị quên hết giai điệu.",
+   "reply": "Chị hát phần đầu, em đỡ phần sau nha."
+  },
+  {
+   "composition": "women",
+   "host_gender": "male",
+   "text": "Về phụ chị coi tiệm đi, chị bao cơm ngày ba bữa!",
+   "reply": "Nghe cũng hấp dẫn đó chị, giờ mình làm nốt bài này đã nha."
+  },
+  {
+   "composition": "men",
+   "host_gender": "male",
+   "text": "Ông em sáu múi khuấy một bài đi, hội anh vỗ tay!",
+   "reply": "Vậy mọi người vào điệp khúc cùng em nha!",
+   "host_ids": [
+    "host_9"
+   ]
+  }
+ ]
 }

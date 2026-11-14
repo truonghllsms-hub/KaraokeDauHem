@@ -151,5 +151,9 @@
     55,
     75
   ],
-  "loan_rate_permille_per_day": 35
+  "loan_rate_permille_per_day": 35,
+  "price_min_standard": 100000,
+  "price_max_standard": 400000,
+  "price_min_vip": 450000,
+  "price_max_vip": 2000000
 }

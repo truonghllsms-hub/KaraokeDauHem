@@ -66,6 +66,8 @@ func write(group: Dictionary, stars: int, context: Dictionary) -> Dictionary:
 	_rng.seed = hash([_seed, _state.day, group["id"], "review"])
 	var lib: Dictionary = _data["reviews"]
 	var tags: Array = group["tags"]
+	var profile: Dictionary = _companion_profile(group, stars, context)
+	if not profile.is_empty(): return profile
 	var used: Dictionary = _recent("text")
 	var main_tag: String = ""
 	var order: Array = BAD_TAGS + GOOD_TAGS if stars <= 3 else GOOD_TAGS + BAD_TAGS
@@ -106,3 +108,27 @@ static func _template_needs(options: Array, token: String) -> bool:
 		if not String(option).contains(token):
 			return false
 	return true
+
+
+func _companion_profile(group: Dictionary, stars: int, context: Dictionary) -> Dictionary:
+	if stars < 4 or group.get("composition", "") in ["couple", "family"] or str(context.get("host", "")) == "": return {}
+	if BAD_TAGS.any(func(tag): return group["tags"].has(tag)): return {}
+	var matches: Array = _data["hosts"].filter(func(host): return host["name"] == context["host"])
+	if matches.is_empty(): return {}
+	var host: Dictionary = matches[0]
+	var used: Dictionary = _recent("text")
+	var names: Dictionary = _recent("who")
+	var options: Array = []
+	for profile in _data["reviews"].get("companion_profiles", []):
+		if profile["composition"] != group.get("composition", "") or profile["host_gender"] != host["gender"]:
+			continue
+		if not profile.get("host_ids", []).is_empty() and not profile["host_ids"].has(host["id"]):
+			continue
+		if not profile.get("types", []).is_empty() and not profile["types"].has(group["type"]):
+			continue
+		if not used.has(_fill(profile["text"], context)) and not names.has(profile["who"]):
+			options.append(profile)
+	if options.is_empty() or _rng.randi_range(1,100) > 60: return {}
+	var chosen: Dictionary = _pick(options)
+	var text: String = _fill(chosen["text"], context)
+	return {"who": chosen["who"], "badge": "%d bài đánh giá" % _rng.randi_range(1,12), "text": text, "main": text}

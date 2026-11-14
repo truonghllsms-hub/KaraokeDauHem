@@ -410,7 +410,7 @@ func _build_side_panel() -> Control:
 	_price_row.add_child(cheaper)
 	_price_row.add_child(pricier)
 	_btn_unlock = UI.button("", 13, UI.GOLD)
-	_btn_unlock.tooltip_text = "Thêm một phòng để nhận nhiều khách hơn. Khách cũng sẽ tới đông hơn."
+	_btn_unlock.tooltip_text = "Lắp thêm phòng để phục vụ nhiều nhóm cùng lúc; lượng khách còn tùy danh tiếng và quảng bá."
 	_btn_unlock.pressed.connect(func() -> void: _report(sim.unlock_room(venue.selected_room)))
 	detail_box.add_child(_btn_unlock)
 
@@ -509,9 +509,9 @@ func _staff_card(member: Dictionary, hired: bool) -> Control:
 	heading.add_child(portrait)
 	var identity: VBoxContainer = VBoxContainer.new()
 	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	identity.add_child(UI.label(sim.staff.role_name(member["role"]), 19, accent, true))
+	identity.add_child(UI.label(sim.staff.role_name(member["role"]), 22, accent, true))
 	identity.add_child(UI.label(member["name"], 27, UI.TEXT, true))
-	identity.add_child(UI.label("%s/đêm" % Money.format(member["wage"]), 19, UI.MUTED))
+	identity.add_child(UI.label("%s/đêm" % Money.format(member["wage"]), 22, UI.MUTED))
 	heading.add_child(identity)
 	column.add_child(heading)
 	if hired:
@@ -519,21 +519,23 @@ func _staff_card(member: Dictionary, hired: bool) -> Control:
 		var doing: String = "Đang rảnh" if task.is_empty() else VenueView.STAFF_BUBBLE.get(task["kind"], "Đang làm việc")
 		if task.get("room_id", "") != "":
 			doing += " · " + sim.rooms.get_room(task["room_id"])["name"]
-		var state: Label = UI.label(doing, 20, accent, true)
+		var state: Label = UI.label(doing, 22, accent, true)
 		state.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		column.add_child(state)
-		column.add_child(UI.label("Năng lượng %d/100 · Đã làm %d việc" % [member["energy"], member["tasks_done"]], 18, UI.MUTED))
+		var workload: Label = UI.label("Năng lượng %d/100 · Đã làm %d việc" % [member["energy"], member["tasks_done"]], 22, UI.MUTED)
+		workload.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(workload)
 		var energy: ProgressBar = UI.progress(accent)
 		energy.max_value = 100
 		energy.value = member["energy"]
 		column.add_child(energy)
 	else:
-		var about: Label = UI.label(member["about"], 19, UI.MUTED)
+		var about: Label = UI.label(member["about"], 22, UI.MUTED)
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		column.add_child(about)
-		column.add_child(UI.label("Tốc độ %d%%" % member["speed"], 19, accent, true))
+		column.add_child(UI.label("Tốc độ %d%%" % member["speed"], 22, accent, true))
 		var staff_id: String = member["id"]
-		var hire: Button = UI.button("Tuyển %s %s" % [sim.staff.role_name(member["role"]).to_lower(), member["name"]], 20, accent)
+		var hire: Button = UI.button("Tuyển · %s" % member["name"], 22, accent)
 		hire.custom_minimum_size.y = 56
 		hire.clip_text = true
 		hire.disabled = not sim.economy.can_afford(sim.data["balance"]["staff_hire_cost"])
@@ -689,7 +691,7 @@ func _fit_hud_text(label: Label, text: String, preferred_size: int) -> void:
 
 
 func _refresh_detail() -> void:
-	var text: String = "MỤC TIÊU ĐÊM NAY\n%s.\n\nCách chơi:\n• Bấm nhóm khách ở chỗ chờ, rồi bấm phòng viền xanh.\n• Phòng hiện nhãn màu là khách đang cần: bấm vào để xử lý.\n• Bấm phòng bẩn để dọn.\n• Chủ quán làm từng việc một, hãy chọn việc nào trước." % sim.goal_text()
+	var text: String = "MỤC TIÊU ĐÊM NAY\n%s.\n\nCách chơi:\n• Bấm nhóm khách ở chỗ chờ, rồi bấm phòng viền xanh.\n• Khách có bong bóng yêu cầu màu là đang cần phục vụ: bấm vào để xử lý.\n• Bấm phòng bẩn để dọn.\n• Chủ quán làm từng việc một, hãy chọn việc nào trước." % sim.goal_text()
 	var show_price: bool = false
 	var show_unlock: bool = false
 	var group = sim.customers.get_group(venue.selected_group) if venue.selected_group != 0 else null
@@ -733,6 +735,8 @@ func _refresh_detail() -> void:
 				text += "\n\nGọi %d nhân viên %s · đã cử %d · đang phục vụ %d\nPhí %s/người/%d phút." % [occupant["host_requested_count"], preference, occupant["host_assigned_count"], room["host_ids"].size(), Money.format(sim.data["balance"]["lancan_fee"]), sim.data["balance"]["lancan_minutes"]]
 			if occupant["discount_percent"] > 0:
 				text += "\n  Giảm %d%% tiền phòng (xin lỗi khách)" % occupant["discount_percent"]
+		var bounds: Vector2i = sim.rooms.price_bounds(room)
+		text += "\nGiá có thể chỉnh: %s–%s/giờ, mỗi bước %s." % [Money.format(bounds.x), Money.format(bounds.y), Money.format(sim.data["balance"]["price_step"])]
 		show_unlock = room["state"] == "LOCKED"
 		show_price = not show_unlock and sim.state.phase == "PREP"
 		if not show_unlock and sim.state.phase != "PREP" and occupant == null:
@@ -779,7 +783,7 @@ func _on_bill_paid(bill: Dictionary) -> void:
 	if bill["discount"] > 0:
 		lines.append("Giảm %d%% tiền phòng: -%s" % [bill["discount_percent"], Money.format(bill["discount"])])
 	lines.append("TỔNG: %s (làm tròn 1.000đ)" % Money.format(bill["total"]))
-	lines.append("%s · hài lòng %d/100 · \"%s\"" % ["★".repeat(bill.get("stars", 0)) + "☆".repeat(5 - bill.get("stars", 0)), bill["satisfaction"], bill["comment"]])
+	lines.append("%s · hài lòng %d/100 · \"%s\"" % ["%d/5" % bill.get("stars", 0), bill["satisfaction"], bill["comment"]])
 	_lbl_bill.text = "\n".join(lines)
 
 
@@ -814,14 +818,14 @@ func _show_summary() -> void:
 		lines.append("")
 		var before: int = summary["rating_before_x10"]
 		var after: int = summary["rating_after_x10"]
-		lines.append("ĐÁNH GIÁ SAO   Đêm nay: %s" % summary["night_rating_text"])
-		lines.append("               Cả quán: %s%s" % [summary["rating_text"], "" if before == 0 else " (trước đó %d,%d)" % [before / 10, before % 10]])
+		lines.append("ĐÁNH GIÁ SAO   Đêm nay: %s" % str(summary["night_rating_text"]).replace("★ ", ""))
+		lines.append("               Cả quán: %s%s" % [str(summary["rating_text"]).replace("★ ", ""), "" if before == 0 else " (trước đó %d,%d)" % [before / 10, before % 10]])
 		lines.append("               Khách đến đêm sau: %d%% so với bình thường" % sim.customers.arrival_percent())
 	if not summary["comments"].is_empty():
 		lines.append("")
 		lines.append("KHÁCH NÓI GÌ")
 		for comment in summary["comments"]:
-			lines.append("  %s %s: \"%s\"" % ["★".repeat(comment.get("stars", 0)), comment["who"], comment["text"]])
+			lines.append("  %s %s: \"%s\"" % ["%d/5" % comment.get("stars", 0), comment["who"], comment["text"]])
 	lines.append("")
 	lines.append("Đã tự lưu tiến trình.")
 	lines.append("CHỌN MỘT MÓN ĐẦU TƯ CHO ĐÊM MAI (không bắt buộc):")
@@ -859,8 +863,8 @@ func _upgrade_list(reopen: Callable) -> Control:
 		effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		effect.custom_minimum_size = Vector2(780, 52)
 		box.add_child(effect)
-		var buy: Button = UI.button("Đã tối đa" if level >= upgrade["max_level"] else "Mua · %s" % Money.format(upgrade["cost"]), 24, UI.GOLD)
-		buy.disabled = level >= upgrade["max_level"] or not sim.economy.can_afford(upgrade["cost"])
+		var buy: Button = UI.button("Đã tối đa" if level >= upgrade["max_level"] else "Lên cấp %d · %s" % [level+1, Money.format(sim.service.upgrade_cost(upgrade_id))], 24, UI.GOLD)
+		buy.disabled = level >= upgrade["max_level"] or not sim.economy.can_afford(sim.service.upgrade_cost(upgrade_id))
 		buy.pressed.connect(func() -> void:
 			var reason: String = sim.buy_upgrade(upgrade_id)
 			reopen.call()
@@ -923,7 +927,7 @@ func _show_loan() -> void:
 	if loan["principal"] > 0:
 		lines.append("Cuối đêm tới sẽ trả: %s (lãi %s + gốc %s)." % [Money.format(loan["next_payment"]["total"]), Money.format(loan["next_payment"]["interest"]), Money.format(loan["next_payment"]["principal"])])
 	lines.append("")
-	lines.append("⚠ Số dư âm sau quyết toán %d đêm liền là PHÁ SẢN. Đừng bốc họ quá sức trả." % sim.data["balance"]["bankrupt_after_negative_nights"])
+	lines.append("Lưu ý: Số dư âm sau quyết toán %d đêm liền là PHÁ SẢN. Đừng bốc họ quá sức trả." % sim.data["balance"]["bankrupt_after_negative_nights"])
 	if not loan["can_change"]:
 		lines.append("(Đang mở cửa: chỉ bốc họ hoặc trả nợ được trước giờ mở cửa hoặc sau tổng kết.)")
 	var buttons: Array = []
@@ -975,20 +979,22 @@ func _tutorial_step() -> Array:
 	if state.day == 1:
 		match state.phase:
 			"PREP":
-				return ["d1_open", "Đêm tập 1 · Chào chủ quán! Hai đêm đầu khách còn thưa để bạn làm quen. Bấm nút ▶ MỞ CỬA ĐÓN KHÁCH ở sảnh để bắt đầu."]
+				return ["d1_open", "Ngày đầu tập với 2 nhóm khách, không dồn thêm hàng chờ. Bấm MỞ CỬA ĐÓN KHÁCH để bắt đầu."]
 			"OPEN":
 				if venue.selected_group != 0:
 					return ["d1_room", "Phòng viền xanh là xếp được (có ghi giá dự kiến). Bấm vào phòng đó, chủ quán sẽ dẫn khách vào."]
 				if not waiting.is_empty():
 					return ["d1_group", "Khách đang chờ ở sảnh (thanh trên đầu là độ kiên nhẫn). Bấm vào nhóm khách để chọn."]
 				if any_order:
-					return ["d1_order", "Phòng có nhãn vàng là khách gọi món. Bấm vào phòng: chủ quán ra tủ lạnh lấy món rồi mang tới. Giao nhanh thì khách vui hơn."]
+					return ["d1_order", "Bong bóng xanh dương là khách gọi món. Bấm vào phòng: chủ quán ra tủ lạnh lấy món rồi mang tới. Giao nhanh thì khách vui hơn."]
 				if any_mic:
 					return ["d1_mic", "Khách gọi đổi micro trong bong bóng thoại. Bấm vào phòng để đổi micro, để lâu khách sẽ bực và quán phải giảm giá."]
 				if any_choice:
 					return ["d1_choice", "Phòng có yêu cầu đặc biệt (nóng, xin hát thêm). Bấm vào phòng để chọn cách xử lý."]
 				if any_dirty:
 					return ["d1_dirty", "Khách về để lại phòng bẩn. Bấm vào phòng để tự dọn. Khi muốn có người phụ, bạn có thể vào Nhân sự để tuyển."]
+				if state.rooms.any(func(room): return room["state"] == "OCCUPIED"):
+					return ["d1_singing", "Khách đang hát. Để ý bong bóng xanh khi khách gọi đồ; khách về thì bấm phòng để dọn. Ca hướng dẫn chỉ có 2 nhóm."]
 				if state.night["served"] == 0:
 					return ["d1_wait", "Khách sẽ tới cổng sau ít phút. Bấm 2x hoặc 4x ở góc trên để tua nhanh."]
 				return ["d1_rating", "Mỗi nhóm trả tiền xong sẽ để lại đánh giá sao (góc phải). Nhiều sao thì khách tới đông hơn."]
@@ -1068,7 +1074,7 @@ func _show_choice(room_id: String) -> void:
 		_report(sim.answer_request(room_id, choice))
 	if room["request"]["kind"] == "HOT":
 		_show_overlay("choice", "%s: \"PHÒNG NÓNG QUÁ EM ƠI!\"" % room["name"].to_upper(),
-			"Nhóm %s đang đổ mồ hôi.\n\n• Tăng điều hòa: tốn %s tiền điện, +%d hài lòng.\n• Xin khách thông cảm: không tốn tiền, -%d hài lòng." % [group["type_name"], Money.format(balance["ac_cost"]), balance["ac_bonus"], balance["hot_penalty"]],
+			"Nhóm %s đang đổ mồ hôi.\n\n• Tăng điều hòa: tốn %s tiền điện, +%d hài lòng.\n• Xin khách thông cảm: không tốn tiền, -%d hài lòng." % [group["type_name"], Money.format(sim.service.cooling_cost()), balance["ac_bonus"], balance["hot_penalty"]],
 			[["Tăng điều hòa", answer.bind("ac")], ["Xin khách thông cảm", answer.bind("ignore")]])
 	else:
 		var waiting: int = sim.customers.waiting_groups().size()
@@ -1161,18 +1167,18 @@ func _show_lancan() -> void:
 		var name_label: Label = UI.label(def["name"] + (" · Nam" if def["gender"] == "male" else " · Nữ"), 24, UI.PINK, true)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(name_label)
-		var about: Label = UI.label(def["personality"], 18, UI.MUTED)
+		var about: Label = UI.label(def["personality"], 22, UI.MUTED)
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		about.custom_minimum_size = Vector2(150, 32)
 		box.add_child(about)
-		var stats: Label = UI.label("Giao tiếp %d · Song ca %d\n%s · %s/đêm" % [def["talk"], def["duet"], sim.customers.music_name(def["music"]), Money.format(def["wage"])], 18, UI.TEXT)
+		var stats: Label = UI.label("Giao tiếp %d · Song ca %d\n%s · %s/đêm" % [def["talk"], def["duet"], sim.customers.music_name(def["music"]), Money.format(def["wage"])], 22, UI.TEXT)
 		stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(stats)
 		if hired != null:
-			var working: Label = UI.label("ĐANG LÀM · tip nhận %s" % Money.format(hired["tips_total"]), 18, UI.GOLD, true)
+			var working: Label = UI.label("ĐANG LÀM · tip nhận %s" % Money.format(hired["tips_total"]), 22, UI.GOLD, true)
 			working.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			working.custom_minimum_size = Vector2(0, 30)
+			working.custom_minimum_size = Vector2(0, 40)
 			working.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			box.add_child(working)
 		else:
@@ -1258,7 +1264,7 @@ func _show_overlay(kind: String, title: String, body: String, buttons: Array, ex
 	for entry in buttons:
 		if entry[0] == "Đóng":
 			close_action = entry[1]
-	var close: Button = UI.button("Đóng", 21, UI.BORDER)
+	var close: Button = UI.button("Đóng", 22, UI.BORDER)
 	close.custom_minimum_size = Vector2(105, 52)
 	close.pressed.connect(close_action)
 	header.add_child(close)

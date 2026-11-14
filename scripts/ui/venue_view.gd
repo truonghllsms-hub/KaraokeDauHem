@@ -157,10 +157,11 @@ func setup(p_sim) -> void:
 	_lbl_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_lbl_toast.size = Vector2(830, 64)
 	_lbl_toast.position.y = 1182
-	_lbl_toast.add_theme_font_size_override("font_size", 19)
+	_lbl_toast.add_theme_font_size_override("font_size", 22)
 	_lbl_toast.visible = false
 	_lbl_toast.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.93), UI.BORDER, 1, 5))
-	_lbl_tasks = _add_label("", 11, UI.GOLD, Rect2(350, 1050, 290, 32), true)
+	_lbl_tasks = _add_label("", 22, UI.TEXT, Rect2(365, 1060, 270, 40), true)
+	_lbl_tasks.add_theme_stylebox_override("normal", UI.box(Color(UI.PANEL, 0.94), UI.BORDER, 1, 8))
 	_lbl_tasks.visible = false
 
 	_btn_open = UI.button("▶  MỞ CỬA ĐÓN KHÁCH", 28, UI.PINK)
@@ -621,7 +622,7 @@ func advance_actors(delta: float) -> void:
 	if _lbl_toast.visible and Time.get_ticks_msec() > _toast_until:
 		_lbl_toast.visible = false
 	var count: int = task_count()
-	_lbl_tasks.text = "Việc đang chờ chủ quán: %d" % count if count > 0 else ""
+	_lbl_tasks.text = "Chờ làm: %d" % count if count > 0 else ""
 	queue_redraw()
 
 
@@ -800,11 +801,11 @@ func _sync_staff(delta: float) -> void:
 			actor.setup([CharacterArt.staff_sprite(member)])
 			actor.portals = [[STAIR1, STAIR2], [STAIR2, STAIR1]]
 			actor.position = _staff_slot(member, i)
-			actor.speed = 300.0
 			actor.set_clickable(false)
 			actor.set_tooltip("%s %s" % [sim.staff.role_name(member["role"]), member["name"]])
 			_actors.add_child(actor)
 			_staff_actors[staff_id] = actor
+		actor.speed = 300.0 * (1.0 + 0.08*sim.service.upgrade_level("staff_training"))
 		var task: Dictionary = member["task"]
 		var working: bool = not task.is_empty() and task["kind"] != "REST"
 		var delivery: bool = working and task["kind"] == "DELIVER"
@@ -821,6 +822,7 @@ func _sync_staff(delta: float) -> void:
 				elif task["kind"] == "SEAT":
 					target = QUEUE_SLOTS[0] + Vector2(-70, 0)
 			actor.walk_to(_route(actor.position, target))
+		actor.speed = 300.0 * (1.0 + 0.08*sim.service.upgrade_level("staff_training"))
 		actor.carrying = delivery and phase == "CARRY" and task.get("pickup_confirmed", false)
 		actor.pose = "cleaning" if working and task["kind"] == "CLEAN" and phase == "WORK" else "standing"
 		actor.mood = "tired" if member["energy"] < 40 else "neutral"
@@ -898,6 +900,8 @@ func _sync_thief(delta: float) -> void:
 
 
 func _on_thief_pressed() -> void:
+	if not is_instance_valid(_thief_actor):
+		return
 	var reason: String = sim.chase_thief()
 	if reason != "":
 		report.emit(reason)

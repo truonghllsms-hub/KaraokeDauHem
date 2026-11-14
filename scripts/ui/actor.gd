@@ -81,7 +81,7 @@ func setup(texture_names: Array, badge_text: String = "") -> void:
 	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_badge)
 
-	_bubble = UI.label("", 18, Color(0.2, 0.14, 0.22), true)
+	_bubble = UI.label("", 20, Color(0.2, 0.14, 0.22), true)
 	_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.visible = false
@@ -131,6 +131,9 @@ func _place_bubble() -> void:
 	var at: Vector2 = _sprites[index].position
 	var art_height: float = CharacterArt.height(_people[index], "standing" if is_moving() else pose)
 	_bubble.position = at + Vector2(-_bubble.size.x * 0.5, -art_height - 10 - _bubble.size.y)
+	var canvas_width: float = get_viewport_rect().size.x
+	var x: float = _bubble.global_position.x
+	_bubble.position.x += clampf(x, 8, maxf(8, canvas_width-8-_bubble.size.x))-x
 
 
 func set_highlight(on: bool) -> void:
@@ -142,6 +145,7 @@ func set_highlight(on: bool) -> void:
 func _draw() -> void:
 	if _bubble != null and _bubble.visible:
 		var tail: Vector2 = _bubble.position + Vector2(_bubble.size.x * 0.5, _bubble.size.y)
+		if not _sprites.is_empty(): tail.x = clampf(_sprites[clampi(bubble_speaker,0,_sprites.size()-1)].position.x, _bubble.position.x+8, _bubble.position.x+_bubble.size.x-8)
 		draw_colored_polygon(PackedVector2Array([tail + Vector2(-6, 0), tail + Vector2(6, 0), tail + Vector2(0, 8)]), _bubble_background)
 	# Bóng tiếp đất giữ bước chân và vị trí sofa rõ khi thân người chuyển động.
 	for sprite in _sprites:
